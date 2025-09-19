@@ -266,3 +266,21 @@ COMMENT ON COLUMN wallet_transactions.discount IS 'Скидка (%) примен
 COMMENT ON COLUMN wallet_transactions.description IS 'Комментарий к транзакции (пополнение, оплата за услугу).';
 COMMENT ON COLUMN wallet_transactions.created_at IS 'Дата и время проведения транзакции.';
 
+-- Таблица: push_subscriptions
+CREATE TABLE push_subscriptions (
+    id SERIAL PRIMARY KEY,
+    client_id INT NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    UNIQUE(client_id, endpoint)
+);
+
+COMMENT ON TABLE push_subscriptions IS 'Подписки клиентов на WebPush (VAPID).';
+COMMENT ON COLUMN push_subscriptions.client_id IS 'FK → clients.id. Клиент, связанный с подпиской.';
+COMMENT ON COLUMN push_subscriptions.endpoint IS 'Уникальный endpoint браузера для Web Push.';
+COMMENT ON COLUMN push_subscriptions.p256dh IS 'Публичный ключ клиента для шифрования сообщений (Base64).';
+COMMENT ON COLUMN push_subscriptions.auth IS 'Auth secret клиента для Web Push.';
+COMMENT ON COLUMN push_subscriptions.created_at IS 'Дата добавления подписки.';
+
