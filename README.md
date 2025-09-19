@@ -102,7 +102,7 @@ erDiagram
     }
 
     CLIENT_WALLETS {
-        int client_id PK FK
+        int client_id PK
         numeric balance
     }
 
