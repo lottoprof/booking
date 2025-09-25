@@ -31,8 +31,7 @@
 
 ## Архитектура
 
-<details>
-  <summary>Нажмите, чтобы увидеть подробности</summary>
+
 
 | Данные                                              | Где хранить | Зачем                      |
 | --------------------------------------------------- | ----------- | -------------------------- |
@@ -44,7 +43,9 @@
 | Уведомления / события                               | Redis       | Pub/Sub                    |
 | Сессии пользователей                                | Redis       | Временное хранилище        |
 
-```mermaid
+<details>
+  <summary>Нажмите, чтобы увидеть подробности</summary>
+  ```mermaid
 sequenceDiagram
     participant C as Клиент (браузер/PWA)
     participant API as FastAPI (REST /appointments)
@@ -69,9 +70,7 @@ sequenceDiagram
     R-->>N: событие "appointment created"
     N->>DB: SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE client_id=...
     N-->>C: WebPush уведомление (через VAPID)
-
 ```
-
 </details>
 
 ---
