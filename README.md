@@ -52,7 +52,6 @@ sequenceDiagram
     participant R as Redis (Cache + Pub/Sub)
     participant DB as PostgreSQL
     participant N as Notifier (WebPush/VAPID)
-
     C->>API: POST /appointments/book {...}
     API->>R: SETNX slot:<loc>:<time> reserved EX 120
     alt слот занят
@@ -60,17 +59,15 @@ sequenceDiagram
     else
         API-->>C: Слот предварительно забронирован
     end
-
     C->>API: POST /appointments/confirm {...}
     API->>DB: INSERT appointments
     API->>R: DEL slot:<loc>:<time>
     API->>R: PUBLISH appointments "created:{id}"
     API-->>C: ✅ Подтверждено
-
     R-->>N: событие "appointment created"
     N->>DB: SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE client_id=...
     N-->>C: WebPush уведомление (через VAPID)
-```
+  ```
 </details>
 
 ---
