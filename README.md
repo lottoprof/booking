@@ -208,3 +208,5 @@ sequenceDiagram
 * **push_subscriptions** — подписки клиентов для уведомлений (WebPush/VAPID).
 
 </details>
+
+
