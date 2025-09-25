@@ -183,250 +183,33 @@ sequenceDiagram
 
 ## Структура базы данных
 
-```mermaid
-erDiagram
+<details>
+  <summary>Нажмите, чтобы увидеть подробности</summary>
+Понял 👍
+Вместо тяжёлой ER-диаграммы для `README.md` лучше дать **перечень таблиц и их назначение**. Это будет проще для чтения, а для разработчиков полная схема БД остаётся в SQL.
 
-    LOCATIONS {
-        int id PK
-        text name
-        text country
-        text region
-        text city
-        text street
-        text house
-        text building
-        text office
-        text postal_code
-        int capacity
-        bool is_active
-        text notes
-    }
+---
 
-    LOCATION_SCHEDULES {
-        int id PK
-        int location_id FK
-        int day_of_week
-        time start_time
-        time end_time
-        bool is_day_off
-    }
+### 📋 Перечень таблиц и назначение
 
-    HOLIDAYS {
-        int id PK
-        int location_id FK
-        date date
-        bool is_working
-        text description
-    }
+* **locations** — филиалы/объекты (адрес, вместимость, активность).
+* **location_schedules** — базовое расписание работы филиала по дням недели.
+* **holidays** — исключения для филиалов (праздники, санитарные дни, переносы).
+* **workplaces** — рабочие места внутри филиала (кабинет, кресло, кушетка, массажный стол).
+* **workplace_services** — какие услуги доступны в конкретном рабочем месте.
+* **services** — услуги (название, длительность, перерывы, цена, возрастные ограничения).
+* **service_packages** — пакеты услуг (например: 5 сеансов по цене 4).
+* **specialists** — специалисты (ФИО, контакты, специализация, статус).
+* **service_specialists** — компетенции: какие услуги может оказывать специалист.
+* **specialist_schedules** — расписания работы специалистов по локациям и дням недели.
+* **breaks** — индивидуальные перерывы специалистов (разовые, по датам).
+* **clients** — клиенты (ФИО, контакты, дата рождения, пол).
+* **client_discounts** — персональные скидки клиента.
+* **client_packages** — купленные пакеты услуг и их остаток.
+* **client_wallets** — кошелёк клиента (текущий баланс).
+* **wallet_transactions** — транзакции по кошелькам (пополнения, списания, возвраты).
+* **appointments** — записи (бронирования): клиент + услуга + специалист + время.
+* **appointment_discounts** — скидки, применённые к конкретной записи.
+* **push_subscriptions** — подписки клиентов для уведомлений (WebPush/VAPID).
 
-    WORKPLACES {
-        int id PK
-        int location_id FK
-        text name
-        text kind
-        int capacity
-        text equipment
-        bool is_mobile
-        int display_order
-        text notes
-        bool is_active
-    }
-
-    SERVICES {
-        int id PK
-        text name
-        text description
-        text category
-        int duration_min
-        int break_min
-        numeric price
-        text color_code
-        int min_age
-        int max_age
-        bool is_package
-        int package_quantity
-        bool is_active
-    }
-
-    SERVICE_PACKAGES {
-        int id PK
-        text name
-        text description
-        int service_id FK
-        int quantity
-        numeric package_price
-        bool is_active
-    }
-
-    WORKPLACE_SERVICES {
-        int id PK
-        int workplace_id FK
-        int service_id FK
-        bool is_active
-        text notes
-    }
-
-    SPECIALISTS {
-        int id PK
-        text first_name
-        text last_name
-        text name
-        text iname
-        text specialization
-        text phone
-        text email
-        bigint tg_id
-        text notes
-        bool is_active
-    }
-
-    SERVICE_SPECIALISTS {
-        int id PK
-        int service_id FK
-        int specialist_id FK
-        bool is_default
-        bool is_active
-        text notes
-    }
-
-    SPECIALIST_SCHEDULES {
-        int id PK
-        int specialist_id FK
-        int location_id FK
-        int workplace_id FK
-        int day_of_week
-        time start_time
-        time end_time
-        bool is_day_off
-    }
-
-    BREAKS {
-        int id PK
-        int specialist_id FK
-        date date
-        time start_time
-        time end_time
-        text reason
-    }
-
-    CLIENTS {
-        int id PK
-        bigint tg_id
-        text phone
-        text email
-        text first_name
-        text last_name
-        text middle_name
-        text iname
-        date birth_date
-        text gender
-        text notes
-        bool is_active
-    }
-
-    CLIENT_DISCOUNTS {
-        int id PK
-        int client_id FK
-        numeric discount_percent
-        date valid_from
-        date valid_to
-        text description
-    }
-
-    CLIENT_PACKAGES {
-        int id PK
-        int client_id FK
-        int service_id FK
-        int total_quantity
-        int used_quantity
-        timestamp purchased_at
-        date valid_to
-        text notes
-    }
-
-    CLIENT_WALLETS {
-        int client_id PK
-        numeric balance
-    }
-
-    WALLET_TRANSACTIONS {
-        int id PK
-        int client_id FK
-        int appointment_id FK
-        numeric amount
-        text type
-        text description
-        text created_by
-        timestamp created_at
-    }
-
-    APPOINTMENTS {
-        int id PK
-        int location_id FK
-        int service_id FK
-        int workplace_id FK
-        int specialist_id FK
-        int client_id FK
-        timestamp start_time
-        timestamp end_time
-        text status
-        numeric final_price
-        text notes
-        text cancel_reason
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    APPOINTMENT_DISCOUNTS {
-        int id PK
-        int appointment_id FK
-        numeric discount_percent
-        text discount_reason
-    }
-
-    PUSH_SUBSCRIPTIONS {
-        int id PK
-        int client_id FK
-        text endpoint
-        text p256dh
-        text auth
-        timestamp created_at
-    }
-
-    %% Связи
-    LOCATIONS ||--o{ LOCATION_SCHEDULES : has
-    LOCATIONS ||--o{ HOLIDAYS : has
-    LOCATIONS ||--o{ WORKPLACES : has
-
-    WORKPLACES ||--o{ WORKPLACE_SERVICES : provides
-    SERVICES   ||--o{ WORKPLACE_SERVICES : available_in
-
-    SERVICES     ||--o{ SERVICE_SPECIALISTS : can_do
-    SPECIALISTS  ||--o{ SERVICE_SPECIALISTS : qualified
-
-    SPECIALISTS ||--o{ SPECIALIST_SCHEDULES : works_in
-    LOCATIONS   ||--o{ SPECIALIST_SCHEDULES : schedules
-    WORKPLACES  ||--o{ SPECIALIST_SCHEDULES : assigned_to
-
-    SPECIALISTS ||--o{ BREAKS : has
-
-    CLIENTS   ||--o{ APPOINTMENTS : books
-    LOCATIONS ||--o{ APPOINTMENTS : at
-    WORKPLACES||--o{ APPOINTMENTS : in
-    SERVICES  ||--o{ APPOINTMENTS : booked
-    SPECIALISTS ||--o{ APPOINTMENTS : performs
-
-    CLIENTS ||--|| CLIENT_WALLETS : owns
-    CLIENTS ||--o{ WALLET_TRANSACTIONS : has
-    APPOINTMENTS ||--o{ WALLET_TRANSACTIONS : related_to
-
-    APPOINTMENTS ||--o{ APPOINTMENT_DISCOUNTS : discounted
-    CLIENTS ||--o{ CLIENT_DISCOUNTS : has
-    CLIENTS ||--o{ CLIENT_PACKAGES : owns
-    SERVICES ||--o{ CLIENT_PACKAGES : package_of
-    SERVICES ||--o{ SERVICE_PACKAGES : template_for
-
-    CLIENTS ||--o{ PUSH_SUBSCRIPTIONS : notified
-```
-
-
+</details>
