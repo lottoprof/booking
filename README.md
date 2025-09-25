@@ -128,7 +128,6 @@ erDiagram
         bool is_active
         text notes
     }
-
     LOCATION_SCHEDULES {
         int id PK
         int location_id FK
@@ -137,7 +136,6 @@ erDiagram
         time end_time
         bool is_day_off
     }
-
     HOLIDAYS {
         int id PK
         int location_id FK
@@ -145,7 +143,6 @@ erDiagram
         bool is_working
         text description
     }
-
     WORKPLACES {
         int id PK
         int location_id FK
@@ -158,7 +155,6 @@ erDiagram
         text notes
         bool is_active
     }
-
     SERVICES {
         int id PK
         text name
@@ -174,7 +170,6 @@ erDiagram
         int package_quantity
         bool is_active
     }
-
     SERVICE_PACKAGES {
         int id PK
         text name
@@ -184,7 +179,6 @@ erDiagram
         numeric package_price
         bool is_active
     }
-
     WORKPLACE_SERVICES {
         int id PK
         int workplace_id FK
@@ -192,7 +186,6 @@ erDiagram
         bool is_active
         text notes
     }
-
     SPECIALISTS {
         int id PK
         text first_name
@@ -206,7 +199,6 @@ erDiagram
         text notes
         bool is_active
     }
-
     SERVICE_SPECIALISTS {
         int id PK
         int service_id FK
@@ -215,7 +207,6 @@ erDiagram
         bool is_active
         text notes
     }
-
     SPECIALIST_SCHEDULES {
         int id PK
         int specialist_id FK
@@ -226,7 +217,6 @@ erDiagram
         time end_time
         bool is_day_off
     }
-
     BREAKS {
         int id PK
         int specialist_id FK
@@ -235,7 +225,6 @@ erDiagram
         time end_time
         text reason
     }
-
     CLIENTS {
         int id PK
         bigint tg_id
@@ -250,7 +239,6 @@ erDiagram
         text notes
         bool is_active
     }
-
     CLIENT_DISCOUNTS {
         int id PK
         int client_id FK
@@ -259,7 +247,6 @@ erDiagram
         date valid_to
         text description
     }
-
     CLIENT_PACKAGES {
         int id PK
         int client_id FK
@@ -270,12 +257,10 @@ erDiagram
         date valid_to
         text notes
     }
-
     CLIENT_WALLETS {
         int client_id PK
         numeric balance
     }
-
     WALLET_TRANSACTIONS {
         int id PK
         int client_id FK
@@ -286,7 +271,6 @@ erDiagram
         text created_by
         timestamp created_at
     }
-
     APPOINTMENTS {
         int id PK
         int location_id FK
@@ -303,14 +287,12 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
-
     APPOINTMENT_DISCOUNTS {
         int id PK
         int appointment_id FK
         numeric discount_percent
         text discount_reason
     }
-
     PUSH_SUBSCRIPTIONS {
         int id PK
         int client_id FK
@@ -319,41 +301,33 @@ erDiagram
         text auth
         timestamp created_at
     }
-
     %% Связи
     LOCATIONS ||--o{ LOCATION_SCHEDULES : has
     LOCATIONS ||--o{ HOLIDAYS : has
     LOCATIONS ||--o{ WORKPLACES : has
-
     WORKPLACES ||--o{ WORKPLACE_SERVICES : provides
     SERVICES   ||--o{ WORKPLACE_SERVICES : available_in
-
     SERVICES     ||--o{ SERVICE_SPECIALISTS : can_do
     SPECIALISTS  ||--o{ SERVICE_SPECIALISTS : qualified
-
     SPECIALISTS ||--o{ SPECIALIST_SCHEDULES : works_in
     LOCATIONS   ||--o{ SPECIALIST_SCHEDULES : schedules
     WORKPLACES  ||--o{ SPECIALIST_SCHEDULES : assigned_to
-
     SPECIALISTS ||--o{ BREAKS : has
-
     CLIENTS   ||--o{ APPOINTMENTS : books
     LOCATIONS ||--o{ APPOINTMENTS : at
     WORKPLACES||--o{ APPOINTMENTS : in
     SERVICES  ||--o{ APPOINTMENTS : booked
     SPECIALISTS ||--o{ APPOINTMENTS : performs
-
     CLIENTS ||--|| CLIENT_WALLETS : owns
     CLIENTS ||--o{ WALLET_TRANSACTIONS : has
     APPOINTMENTS ||--o{ WALLET_TRANSACTIONS : related_to
-
     APPOINTMENTS ||--o{ APPOINTMENT_DISCOUNTS : discounted
     CLIENTS ||--o{ CLIENT_DISCOUNTS : has
     CLIENTS ||--o{ CLIENT_PACKAGES : owns
     SERVICES ||--o{ CLIENT_PACKAGES : package_of
     SERVICES ||--o{ SERVICE_PACKAGES : template_for
-
     CLIENTS ||--o{ PUSH_SUBSCRIPTIONS : notified
+```
 </details>
 
 ---
