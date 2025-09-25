@@ -46,7 +46,7 @@
 
 ```mermaid
 sequenceDiagram
-    participant C as Клиент (браузер/PWA/Telegram)
+    participant C as Клиент (браузер/PWA)
     participant API as FastAPI (REST /appointments)
     participant R as Redis (Cache + Pub/Sub)
     participant DB as PostgreSQL
@@ -69,6 +69,7 @@ sequenceDiagram
     R-->>N: событие "appointment created"
     N->>DB: SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE client_id=...
     N-->>C: WebPush уведомление (через VAPID)
+
 ```
 
 </details>
