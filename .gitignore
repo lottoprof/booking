@@ -1,0 +1,86 @@
+# -----------------------------
+# Python
+# -----------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+*.pkl
+*.egg-info/
+*.log
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# -----------------------------
+# FastAPI / Backend
+# -----------------------------
+backend/app/models/generated.py     # автогенерируемый ORM-файл
+backend/app/__pycache__/
+backend/alembic/__pycache__/
+
+# Alembic cache/temp
+backend/alembic/versions/__pycache__/
+
+# -----------------------------
+# SQLite (временная база)
+# -----------------------------
+data/sqlite/*.db
+data/sqlite/*.sqlite
+data/sqlite/*.sqlite3
+
+# Иногда SQLite создаёт вспомогательные файлы
+*.db-journal
+*.sqlite-journal
+*.sqlite3-journal
+*.db-shm
+*.db-wal
+
+# -----------------------------
+# Schema
+# -----------------------------
+# Разрешаем sql-файлы схем, но игнорируем временные
+schema/*.db
+schema/*.sqlite
+schema/*.sqlite3
+
+# -----------------------------
+# Docker / Compose
+# -----------------------------
+*.pid
+docker-compose.override.yml
+docker-compose.local.yml
+docker-data/
+.docker/
+
+# -----------------------------
+# Secrets / Env
+# -----------------------------
+.env
+.env.*
+*.secret
+*.key
+
+# -----------------------------
+# OS / Editor Junk
+# -----------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# -----------------------------
+# Logs / Temp
+# -----------------------------
+*.tmp
+*.temp
+tmp/
+logs/
+*.log
+
