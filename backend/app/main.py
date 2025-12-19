@@ -1,8 +1,44 @@
 from fastapi import FastAPI
-from .redis_client import redis_client
 
-app = FastAPI(title="Booking API (SQLite)")
+from .routers import (
+    company,
+    locations,
+    rooms,
+    roles,
+    users,
+    user_roles,
+    services,
+    service_packages,
+    service_rooms,
+    specialists,
+    calendar_overrides,
+    bookings,
+    client_packages,
+    client_discounts,
+    booking_discounts,
+    client_wallets,
+    wallet_transactions,
+    push_subscriptions,
+)
 
-@app.get("/health")
-def health():
-    return {"redis": redis_client.ping()}
+app = FastAPI(title="Booking API")
+
+app.include_router(company.router)
+app.include_router(locations.router)
+app.include_router(rooms.router)
+app.include_router(roles.router)
+app.include_router(users.router)
+app.include_router(user_roles.router)
+app.include_router(services.router)
+app.include_router(service_packages.router)
+app.include_router(service_rooms.router)
+app.include_router(specialists.router)
+app.include_router(calendar_overrides.router)
+app.include_router(bookings.router)
+app.include_router(client_packages.router)
+app.include_router(client_discounts.router)
+app.include_router(booking_discounts.router)
+app.include_router(client_wallets.router)
+app.include_router(wallet_transactions.router)
+app.include_router(push_subscriptions.router)
+
