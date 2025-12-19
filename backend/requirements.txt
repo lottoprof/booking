@@ -1,7 +1,10 @@
 fastapi
 uvicorn[standard]
 SQLAlchemy
-alembic
 pydantic
+pydantic-settings
+email-validator
 python-dotenv
 redis
+psycopg2-binary
+
