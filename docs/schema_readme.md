@@ -49,28 +49,6 @@ sqlacodegen sqlite:///data/sqlite/booking.db \
     --outfile backend/app/models/generated.py
 ```
 
-## 5. Создать миграцию Alembic
-
-```
-cd backend
-alembic revision --autogenerate -m "update schema"
-```
-
-→ Alembic создаст diff между PostgreSQL и ORM.
-
-## Проверить миграцию руками
-
-Обязательно убедиться, что:
-- миграция не создаёт неожиданных таблиц
-- нет лишних ALTER
-- нет потери данных
-
-## 6. После проверки:
-
-```
-alembic upgrade head
-```
-
 ## TO DO
 - добавить CI-проверку схемы,
 - сделать Makefile,
