@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Booking API Gateway Policy Schema",
+  "type": "object",
+  "required": ["version", "meta", "client_types", "rate_limits", "access_rules"],
+  "additionalProperties": false,
+
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+
+    "meta": {
+      "type": "object",
+      "required": ["name", "default_action"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "default_action": {
+          "type": "string",
+          "enum": ["deny", "allow"]
+        }
+      }
+    },
+
+    "client_types": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["description"],
+        "additionalProperties": false,
+        "properties": {
+          "description": { "type": "string" }
+        }
+      }
+    },
+
+    "rate_limits": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "required": ["limit", "window_sec"],
+          "additionalProperties": false,
+          "properties": {
+            "limit": { "type": "integer", "minimum": 1 },
+            "window_sec": { "type": "integer", "minimum": 1 }
+          }
+        }
+      }
+    },
+
+    "access_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "path", "methods", "allow"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+
+          "path": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^/.*"
+            }
+          },
+
+          "methods": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "enum": ["GET", "POST", "PATCH", "DELETE"]
+            }
+          },
+
+          "allow": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

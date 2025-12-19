@@ -1,0 +1,141 @@
+{
+  "version": 7,
+  "meta": {
+    "name": "booking-api-gateway-policy",
+    "default_action": "deny"
+  },
+
+  "client_types": {
+    "public": { "description": "Open booking client" },
+    "tg_client": { "description": "Telegram client (authenticated)" },
+    "admin_bot": { "description": "Telegram admin bot" },
+    "internal": { "description": "Internal service" }
+  },
+
+  "rate_limits": {
+    "public": { "ip": { "limit": 20, "window_sec": 60 } },
+    "tg_client": { "token": { "limit": 300, "window_sec": 60 } },
+    "admin_bot": { "token": { "limit": 600, "window_sec": 60 } },
+    "internal": { "token": { "limit": 5000, "window_sec": 60 } }
+  },
+
+  "access_rules": [
+    {
+      "name": "open-booking-create",
+      "path": ["/bookings"],
+      "methods": ["POST"],
+      "allow": ["public", "tg_client"]
+    },
+
+    {
+      "name": "booking-read",
+      "path": ["/bookings", "/bookings/*"],
+      "methods": ["GET"],
+      "allow": ["tg_client", "admin_bot", "internal"]
+    },
+
+    {
+      "name": "reference-read",
+      "path": [
+        "/company",
+        "/locations",
+        "/rooms",
+        "/services",
+        "/specialists"
+      ],
+      "methods": ["GET"],
+      "allow": ["tg_client", "admin_bot", "internal"]
+    },
+
+    {
+      "name": "client-packages-read",
+      "path": ["/client_packages", "/client_packages/*"],
+      "methods": ["GET"],
+      "allow": ["tg_client", "admin_bot", "internal"]
+    },
+
+    {
+      "name": "client-discounts",
+      "path": ["/client_discounts", "/client_discounts/*"],
+      "methods": ["GET", "POST", "PATCH", "DELETE"],
+      "allow": ["admin_bot", "internal"]
+    },
+
+    {
+      "name": "booking-discounts",
+      "path": ["/booking_discounts", "/booking_discounts/*"],
+      "methods": ["GET", "POST", "DELETE"],
+      "allow": ["admin_bot", "internal"]
+    },
+
+    {
+      "name": "calendar-overrides",
+      "path": ["/calendar_overrides", "/calendar_overrides/*"],
+      "methods": ["GET", "POST", "DELETE"],
+      "allow": ["admin_bot", "internal"]
+    },
+
+    {
+      "name": "wallet-read-own",
+      "path": ["/wallets/*", "/wallets/*/transactions"],
+      "methods": ["GET"],
+      "allow": ["tg_client", "admin_bot", "internal"]
+    },
+
+    {
+      "name": "wallet-system-read",
+      "path": [
+        "/client_wallets",
+        "/client_wallets/*",
+        "/wallet_transactions",
+        "/wallet_transactions/*"
+      ],
+      "methods": ["GET"],
+      "allow": ["admin_bot", "internal"]
+    },
+
+    {
+      "name": "wallet-domain-ops",
+      "path": [
+        "/wallets/*/deposit",
+        "/wallets/*/withdraw",
+        "/wallets/*/payment",
+        "/wallets/*/refund",
+        "/wallets/*/correction"
+      ],
+      "methods": ["POST"],
+      "allow": ["admin_bot", "internal"]
+    },
+
+    {
+      "name": "admin-management",
+      "path": [
+        "/company/*",
+        "/locations/*",
+        "/rooms/*",
+        "/services/*",
+        "/service_packages",
+        "/service_packages/*",
+        "/service_rooms",
+        "/service_rooms/*",
+        "/specialists/*",
+        "/roles",
+        "/roles/*",
+        "/users",
+        "/users/*",
+        "/user_roles",
+        "/user_roles/*"
+      ],
+      "methods": ["GET", "POST", "PATCH", "DELETE"],
+      "allow": ["admin_bot", "internal"]
+    },
+
+    {
+      "name": "push-subscriptions",
+      "path": ["/push_subscriptions", "/push_subscriptions/*"],
+      "methods": ["GET", "POST", "DELETE"],
+      "allow": ["tg_client", "admin_bot"]
+    }
+  ]
+}
+
