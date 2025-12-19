@@ -391,3 +391,10 @@ COMMENT ON COLUMN push_subscriptions.auth IS 'Auth secret клиента для 
 COMMENT ON COLUMN push_subscriptions.p256dh IS 'Публичный ключ клиента для шифрования сообщений (Base64).';
 COMMENT ON COLUMN push_subscriptions.created_at IS 'Дата добавления подписки.';
 
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    version INTEGER PRIMARY KEY,
+    applied_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+
+COMMENT ON TABLE schema_migrations IS 'Схема миграций.';
