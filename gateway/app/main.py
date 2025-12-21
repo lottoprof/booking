@@ -9,6 +9,9 @@ from app.middleware.access_policy import access_policy_middleware
 from app.middleware.audit import audit_middleware
 from app.proxy import proxy_request
 
+# Bot entrypoint
+from bot.app.main import process_update
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Booking API Gateway")
@@ -36,8 +39,7 @@ async def telegram_webhook(
         return {"ok": True}
 
     try:
-        # TODO: подключить aiogram dispatcher
-        logger.info(f"TG update: {update.get('update_id')}")
+        await process_update(update)
     except Exception:
         logger.exception("Telegram update processing failed")
 
@@ -48,4 +50,3 @@ async def telegram_webhook(
 @app.api_route("/{path:path}", methods=["GET", "POST", "PATCH", "DELETE"])
 async def gateway_proxy(request: Request, path: str) -> Response:
     return await proxy_request(request)
-
