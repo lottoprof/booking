@@ -3,16 +3,16 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import Update
 from aiogram.filters import Command
 
-from app.config import BOT_TOKEN
-from app.i18n.loader import load_messages, t, DEFAULT_LANG
-from app.keyboards.common import language_inline
-from app.utils.state import user_lang
+from bot.app.config import BOT_TOKEN
+from bot.app.i18n.loader import load_messages, t, DEFAULT_LANG
+from bot.app.keyboards.common import language_inline
+from bot.app.utils.state import user_lang
 
-from app.flows.admin.menu import admin_menu
-from app.flows.specialist.menu import specialist_menu
-from app.flows.client.menu import client_menu
+from bot.app.flows.admin.menu import admin_menu
+from bot.app.flows.specialist.menu import specialist_menu
+from bot.app.flows.client.menu import client_menu
 
-from app.auth import get_user_role
+from bot.app.auth import get_user_role
 
 
 logging.basicConfig(level=logging.INFO)

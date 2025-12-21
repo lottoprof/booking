@@ -1,5 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from app.i18n.loader import t
+from bot.app.i18n.loader import t
 
 
 def admin_main(lang: str):

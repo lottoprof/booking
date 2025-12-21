@@ -1,5 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from app.i18n.loader import get_available_langs, t
+from bot.app.i18n.loader import get_available_langs, t
 
 
 def language_inline():

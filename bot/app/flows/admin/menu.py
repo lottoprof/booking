@@ -1,11 +1,11 @@
 from aiogram import types
-from app.keyboards.admin import (
+from bot.app.keyboards.admin import (
     admin_main,
     admin_settings,
     admin_schedule,
     admin_clients,
 )
-from app.i18n.loader import t
+from bot.app.i18n.loader import t
 
 
 async def admin_menu(message: types.Message, lang: str):
