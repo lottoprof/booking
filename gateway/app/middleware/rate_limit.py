@@ -19,6 +19,7 @@ redis_client = redis.Redis(
     decode_responses=True
 )
 
+
 def _now() -> int:
     return int(time.time())
 
@@ -32,7 +33,6 @@ def _check_limit(key: str, limit: int, window_sec: int):
     pipe.ttl(key)
     count, ttl = pipe.execute()
 
-    # первый запрос — ставим TTL
     if ttl == -1:
         redis_client.expire(key, window_sec)
 
@@ -44,7 +44,16 @@ def _check_limit(key: str, limit: int, window_sec: int):
 
 
 async def rate_limit_middleware(request: Request, call_next):
-    client_type = request.state.client_type
+    client_type = getattr(request.state, 'client_type', None)
+
+    # Trusted internal endpoints — без rate limit
+    if client_type == "internal":
+        return await call_next(request)
+
+    # Неизвестный клиент — самые жёсткие лимиты
+    if client_type is None:
+        client_type = "public"
+
     headers = request.headers
 
     # -------- PUBLIC (IP + UA) --------
@@ -72,8 +81,5 @@ async def rate_limit_middleware(request: Request, call_next):
             _check_limit(key, limit=300, window_sec=60)
         elif client_type == "admin_bot":
             _check_limit(key, limit=600, window_sec=60)
-        elif client_type == "internal":
-            _check_limit(key, limit=5000, window_sec=60)
 
     return await call_next(request)
-

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, Header, HTTPException
 from fastapi.responses import Response
-from typing import Optional
+import logging
 
 from app.config import TG_WEBHOOK_SECRET
 from app.middleware.auth import auth_middleware
@@ -9,31 +9,37 @@ from app.middleware.access_policy import access_policy_middleware
 from app.middleware.audit import audit_middleware
 from app.proxy import proxy_request
 
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title="Booking API Gateway")
 
-# ===== Middleware order =====
+
+# ===== Middleware order (последний = первый в выполнении) =====
 app.middleware("http")(audit_middleware)
 app.middleware("http")(access_policy_middleware)
 app.middleware("http")(rate_limit_middleware)
-app.middleware("http")(auth_middleware)
+app.middleware("http")(auth_middleware)  # ПЕРВЫМ: устанавливает client_type
 
 
 # ===== Telegram webhook =====
 @app.post("/tg/webhook")
 async def telegram_webhook(
     request: Request,
-    x_telegram_bot_api_secret_token: Optional[str] = Header(None),
+    x_telegram_bot_api_secret_token: str | None = Header(None),
 ):
-    if not TG_WEBHOOK_SECRET:
-        raise HTTPException(500, "TG_WEBHOOK_SECRET not configured")
-
     if x_telegram_bot_api_secret_token != TG_WEBHOOK_SECRET:
-        raise HTTPException(403, "Invalid Telegram secret")
+        raise HTTPException(status_code=403)
 
-    update = await request.json()
+    try:
+        update = await request.json()
+    except Exception:
+        return {"ok": True}
 
-    # временно — только лог
-    print("TG UPDATE:", update)
+    try:
+        # TODO: подключить aiogram dispatcher
+        logger.info(f"TG update: {update.get('update_id')}")
+    except Exception:
+        logger.exception("Telegram update processing failed")
 
     return {"ok": True}
 
