@@ -329,3 +329,33 @@ class WalletTransactions(Base):
     booking = relationship('Bookings', back_populates='wallet_transactions')
     users = relationship('Users', back_populates='wallet_transactions')
     wallet = relationship('ClientWallets', back_populates='wallet_transactions')
+
+class AuditLog(Base):
+    __tablename__ = 'audit_log'
+
+    id = Column(Integer, primary_key=True)
+    event_type = Column(Text, nullable=False)
+
+    actor_user_id = Column(
+        ForeignKey('users.id', ondelete='SET NULL')
+    )
+    target_user_id = Column(
+        ForeignKey('users.id', ondelete='SET NULL')
+    )
+
+    payload = Column(Text)
+    created_at = Column(
+        Text,
+        nullable=False,
+        server_default=text('CURRENT_TIMESTAMP')
+    )
+
+    actor_user = relationship(
+        'Users',
+        foreign_keys=[actor_user_id]
+    )
+    target_user = relationship(
+        'Users',
+        foreign_keys=[target_user_id]
+    )
+

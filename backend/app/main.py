@@ -19,6 +19,7 @@ from .routers import (
     client_wallets,
     wallet_transactions,
     push_subscriptions,
+    audit_log,
 )
 
 app = FastAPI(title="Booking API")
@@ -41,4 +42,5 @@ app.include_router(booking_discounts.router)
 app.include_router(client_wallets.router)
 app.include_router(wallet_transactions.router)
 app.include_router(push_subscriptions.router)
+app.include_router(audit_log.router)
 
