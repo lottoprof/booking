@@ -111,7 +111,13 @@ async def process_update(update_data: dict):
     """
     try:
         update = Update(**update_data)
-        await dp.feed_update(bot, update)
+    except Exception as e:
+        logger.warning("Invalid Telegram update: %s", e)
+        return
+
+    try:
+        await dp.process_update(update)
     except Exception:
-        logger.exception("Failed to process Telegram update")
+        logger.exception("Error while processing Telegram update")
+
 
