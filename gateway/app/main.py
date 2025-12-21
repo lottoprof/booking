@@ -9,19 +9,15 @@ from app.middleware.access_policy import access_policy_middleware
 from app.middleware.audit import audit_middleware
 from app.proxy import proxy_request
 
-# Bot entrypoint
-from bot.app.main import process_update
-
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Booking API Gateway")
 
-
-# ===== Middleware order (последний = первый в выполнении) =====
+# ===== Middleware order =====
 app.middleware("http")(audit_middleware)
 app.middleware("http")(access_policy_middleware)
 app.middleware("http")(rate_limit_middleware)
-app.middleware("http")(auth_middleware)  # ПЕРВЫМ: устанавливает client_type
+app.middleware("http")(auth_middleware)
 
 
 # ===== Telegram webhook =====
@@ -39,6 +35,8 @@ async def telegram_webhook(
         return {"ok": True}
 
     try:
+        # Lazy import — избегаем circular dependency
+        from bot.app.main import process_update
         await process_update(update)
     except Exception:
         logger.exception("Telegram update processing failed")
@@ -50,3 +48,4 @@ async def telegram_webhook(
 @app.api_route("/{path:path}", methods=["GET", "POST", "PATCH", "DELETE"])
 async def gateway_proxy(request: Request, path: str) -> Response:
     return await proxy_request(request)
+
