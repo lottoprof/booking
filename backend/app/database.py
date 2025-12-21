@@ -5,7 +5,7 @@ from .config import settings
 # Создание движка SQLite
 # check_same_thread=False — обязательно для работы SQLite из разных потоков FastAPI
 engine = create_engine(
-    settings.database_url,
+    settings.resolved_database_url,
     connect_args={"check_same_thread": False}
 )
 
