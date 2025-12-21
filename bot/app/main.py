@@ -14,6 +14,7 @@ from bot.app.flows.admin.menu import admin_menu
 
 from bot.app.auth import get_user_role
 
+BOT_DIR = Path(__file__).resolve().parent
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-load_messages("app/i18n/messages.txt")
+load_messages(BOT_DIR / "i18n" / "messages.txt")
 
 
 # ===============================
