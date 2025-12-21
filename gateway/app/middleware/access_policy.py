@@ -39,14 +39,17 @@ class AccessPolicy:
 
 policy = AccessPolicy()
 
-
 async def access_policy_middleware(request: Request, call_next):
-    client_type = request.state.client_type
     path = request.url.path
+
+    # Инфраструктурные endpoints — без policy check
+    if path == "/tg/webhook":
+        return await call_next(request)
+
+    client_type = request.state.client_type
     method = request.method
 
     if not policy.is_allowed(path, method, client_type):
         raise HTTPException(status_code=403, detail="Access denied")
 
     return await call_next(request)
-
