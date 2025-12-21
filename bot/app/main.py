@@ -9,8 +9,8 @@ from bot.app.keyboards.common import language_inline
 from bot.app.utils.state import user_lang
 
 from bot.app.flows.admin.menu import admin_menu
-from bot.app.flows.specialist.menu import specialist_menu
-from bot.app.flows.client.menu import client_menu
+#from bot.app.flows.specialist.menu import specialist_menu
+#from bot.app.flows.client.menu import client_menu
 
 from bot.app.auth import get_user_role
 
@@ -65,18 +65,16 @@ async def language_callback(callback: types.CallbackQuery):
 # ROUTER
 # ===============================
 
+ROLE_HANDLERS = {
+    "admin": admin_menu,
+    # "specialist": specialist_menu,  # позже
+    # "client": client_menu,          # позже
+}
+
 async def route_by_role(message: types.Message, lang: str):
     role = await get_user_role(message.from_user.id)
-
-    if role == "admin":
-        await admin_menu(message, lang)
-        return
-
-    if role == "specialist":
-        await specialist_menu(message, lang)
-        return
-
-    await client_menu(message, lang)
+    handler = ROLE_HANDLERS.get(role, admin_menu)
+    await handler(message, lang)
 
 
 # ===============================
