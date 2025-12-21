@@ -3,6 +3,8 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import Update
 from aiogram.filters import Command
 
+from pathlib import Path
+
 from bot.app.config import BOT_TOKEN
 from bot.app.i18n.loader import load_messages, t, DEFAULT_LANG
 from bot.app.keyboards.common import language_inline
