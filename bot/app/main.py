@@ -1,5 +1,6 @@
 import logging
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import Update
 
 from app.config import BOT_TOKEN
 from app.i18n.loader import load_messages, t, DEFAULT_LANG
@@ -13,13 +14,28 @@ from app.flows.client.menu import client_menu
 from app.auth import get_user_role
 
 
+# ===============================
+# LOGGING
+# ===============================
+
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+# ===============================
+# BOT CORE (library mode)
+# ===============================
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
+# Загружаем переводы ОДИН РАЗ при импорте
+load_messages("app/i18n/messages.txt")
 
-# ========= START =========
+
+# ===============================
+# HANDLERS
+# ===============================
 
 @dp.message_handler(commands=["start"])
 async def start_handler(message: types.Message):
@@ -47,8 +63,6 @@ async def start_handler(message: types.Message):
     await route_by_role(message, lang)
 
 
-# ========= LANGUAGE CALLBACK =========
-
 @dp.callback_query_handler(lambda c: c.data.startswith("lang:"))
 async def language_callback(callback: types.CallbackQuery):
     tg_id = callback.from_user.id
@@ -63,7 +77,9 @@ async def language_callback(callback: types.CallbackQuery):
     await route_by_role(callback.message, lang)
 
 
-# ========= ROUTER =========
+# ===============================
+# ROUTER
+# ===============================
 
 async def route_by_role(message: types.Message, lang: str):
     """
@@ -84,12 +100,18 @@ async def route_by_role(message: types.Message, lang: str):
     await client_menu(message, lang)
 
 
-# ========= ENTRYPOINT =========
+# ===============================
+# GATEWAY ENTRYPOINT
+# ===============================
 
-if __name__ == "__main__":
-    # 1. Загружаем переводы (обязательно ДО polling)
-    load_messages("app/i18n/messages.txt")
-
-    # 2. Запуск бота
-    executor.start_polling(dp, skip_updates=True)
+async def process_update(update_data: dict):
+    """
+    Единственная точка входа для gateway.
+    Gateway передаёт сюда Telegram Update как dict.
+    """
+    try:
+        update = Update(**update_data)
+        await dp.feed_update(bot, update)
+    except Exception:
+        logger.exception("Failed to process Telegram update")
 

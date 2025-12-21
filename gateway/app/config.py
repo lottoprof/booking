@@ -2,7 +2,7 @@ import os
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 
-# Загружаем .env (как в backend)
+# Загружаем .env ЯВНО
 load_dotenv()
 
 # ===== Redis =====
@@ -25,4 +25,8 @@ DOMAIN_API_URL = os.getenv(
     "http://127.0.0.1:8000"
 )
 
+# ===== Telegram =====
+
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
+TG_WEBHOOK_SECRET = os.getenv("TG_WEBHOOK_SECRET")
+

@@ -16,6 +16,14 @@ def _initdata_key(init_data: str) -> str:
 
 
 async def auth_middleware(request: Request, call_next):
+    path = request.url.path
+
+    # ===== Telegram webhook (trusted external entry) =====
+    if path == "/tg/webhook":
+        # auth выполнен ранее по X-Telegram-Bot-Api-Secret-Token
+        request.state.client_type = "internal"
+        return await call_next(request)
+
     client_type = detect_client_type(request)
     request.state.client_type = client_type
 
