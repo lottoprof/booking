@@ -1,3 +1,30 @@
+# SQLite
+DATABASE_URL=sqlite:///./data/sqlite/booking.db
+
+# init_admin (ТОЛЬКО init_admin.py)
 ADMIN_TG_ID=123456789
 COMPANY_NAME=Default Company
+
+
+# Telegram
+
+# Токен Telegram-бота (BotFather)
+TG_BOT_TOKEN=123456:ABCDEF
+
+# Секрет для проверки webhook
+# Проверяется в gateway по заголовку:
+# X-Telegram-Bot-Api-Secret-Token
+TG_WEBHOOK_SECRET=super-secret-webhook-token
+
+# Telegram Webhook
+WEBHOOK_URL=https://example.site/tg/webhook
+
+# Redis
+#REDIS_URL=redis://redis:6379/1
+REDIS_URL=redis://127.0.0.1:6379/1
+
+
+# Backend
+DOMAIN_API_URL=http://backend:8000
+
 
