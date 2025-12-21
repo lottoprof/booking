@@ -41,3 +41,31 @@ class UserRead(BaseModel):
 
     model_config = {"from_attributes": True}
 
+class UserCreate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    middle_name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    tg_id: Optional[int] = None
+    tg_username: Optional[str] = None
+    notes: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class UserRead(BaseModel):
+    id: int
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    middle_name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    tg_id: Optional[int] = None
+    tg_username: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: bool
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+

@@ -71,3 +71,14 @@ def delete_user(id: int, db: Session = Depends(get_db)):
     obj.is_active = 0
     db.commit()
 
+@router.get("/by_tg/{tg_id}", response_model=UserRead)
+def get_user_by_tg_id(tg_id: int, db: Session = Depends(get_db)):
+    obj = (
+        db.query(DBUsers)
+        .filter(DBUsers.tg_id == tg_id, DBUsers.is_active == 1)
+        .first()
+    )
+    if not obj:
+        raise HTTPException(status_code=404, detail="User not found")
+    return obj
+

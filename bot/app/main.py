@@ -64,17 +64,21 @@ async def language_callback(callback: types.CallbackQuery):
 # ===============================
 # ROUTER
 # ===============================
-
 ROLE_HANDLERS = {
     "admin": admin_menu,
-    # "specialist": specialist_menu,  # позже
-    # "client": client_menu,          # позже
+    # "specialist": specialist_menu,
+    # "client": client_menu,
 }
 
 async def route_by_role(message: types.Message, lang: str):
     role = await get_user_role(message.from_user.id)
-    handler = ROLE_HANDLERS.get(role, admin_menu)
-    await handler(message, lang)
+    handler = ROLE_HANDLERS.get(role)
+    
+    if handler:
+        await handler(message, lang)
+    else:
+        # TODO: client_menu когда будет готов
+        await message.answer(f"Role: {role} (menu not implemented)")
 
 
 # ===============================
