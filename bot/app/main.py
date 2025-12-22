@@ -16,6 +16,7 @@ from bot.app.keyboards.admin import (
     admin_schedule,
     admin_clients,
 )
+from aiogram.types import ReplyKeyboardRemove
 
 from bot.app.flows.admin.menu import admin_menu
 #from bot.app.flows.specialist.menu import specialist_menu
@@ -35,10 +36,15 @@ dp = Dispatcher()
 load_messages(BOT_DIR / "i18n" / "messages.txt")
 
 async def switch_kb(message: types.Message, kb):
-    await message.bot.send_message(
-        chat_id=message.chat.id,
-        text="\u200b",
-        reply_markup=kb,
+    # 1. убрать старую клавиатуру
+    await message.answer(
+        "\u200b",
+        reply_markup=ReplyKeyboardRemove()
+    )
+    # 2. показать новую клавиатуру
+    await message.answer(
+        "\u200b",
+        reply_markup=kb
     )
 
 # ===============================
@@ -80,56 +86,30 @@ async def language_callback(callback: types.CallbackQuery):
 # ADMIN REPLY BUTTONS
 # ===============================
 
-@dp.message(F.text == t("admin:main:settings", DEFAULT_LANG))
-async def admin_settings_btn(message: types.Message):
+@dp.message()
+async def admin_reply_router(message: types.Message):
     role = await get_user_role(message.from_user.id)
     if role != "admin":
         return
+
     lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
-    await switch_kb(
-        message,
-        admin_settings(lang),
-    )
+    text = message.text
 
+    if text == t("admin:main:settings", lang):
+        await switch_kb(message, admin_settings(lang))
 
-@dp.message(F.text == t("admin:main:schedule", DEFAULT_LANG))
-async def admin_schedule_btn(message: types.Message):
-    role = await get_user_role(message.from_user.id)
-    if role != "admin":
-        return
-    lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
-    await switch_kb(
-        message,
-        admin_settings(lang),
-    )
+    elif text == t("admin:main:schedule", lang):
+        await switch_kb(message, admin_schedule(lang))
 
+    elif text == t("admin:main:clients", lang):
+        await switch_kb(message, admin_clients(lang))
 
-@dp.message(F.text == t("admin:main:clients", DEFAULT_LANG))
-async def admin_clients_btn(message: types.Message):
-    role = await get_user_role(message.from_user.id)
-    if role != "admin":
-        return
-    lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
-    await switch_kb(
-        message,
-        t("admin:main:schedule", lang),
-        admin_schedule(lang),
-    )
-
-
-@dp.message(F.text == t("admin:settings:back", DEFAULT_LANG))
-@dp.message(F.text == t("admin:schedule:back", DEFAULT_LANG))
-@dp.message(F.text == t("admin:clients:back", DEFAULT_LANG))
-async def admin_back_btn(message: types.Message):
-    role = await get_user_role(message.from_user.id)
-    if role != "admin":
-        return
-    lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
-    await switch_kb(
-        message,
-        t("admin:main:clients", lang),
-        admin_clients(lang),
-    )
+    elif text in (
+        t("admin:settings:back", lang),
+        t("admin:schedule:back", lang),
+        t("admin:clients:back", lang),
+    ):
+        await switch_kb(message, admin_main(lang))
 
 # ===============================
 # ROUTER
