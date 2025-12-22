@@ -1,7 +1,0 @@
-aiogram
-httpx
-python-dotenv
-async-timeout
-pydantic
-pydantic-settings
-
