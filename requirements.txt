@@ -1,0 +1,22 @@
+# ===== Core =====
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv
+
+# ===== HTTP / async =====
+httpx
+async-timeout
+
+# ===== Database =====
+SQLAlchemy
+psycopg2-binary
+redis
+
+# ===== Telegram bot =====
+aiogram
+
+# ===== Utils =====
+email-validator
+
