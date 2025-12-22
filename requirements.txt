@@ -1,22 +1,22 @@
-# ===== Core =====
-fastapi
-uvicorn[standard]
-pydantic
-pydantic-settings
-python-dotenv
+# ===== Core API =====
+fastapi==0.127.0
+uvicorn==0.40.0
 
-# ===== HTTP / async =====
-httpx
-async-timeout
+# ===== Config & Validation =====
+pydantic==2.12.5
+pydantic-settings==2.12.0
+email-validator==2.3.0
+python-dotenv==1.2.1
+
+# ===== HTTP =====
+httpx==0.28.1
+async-timeout==5.0.1
 
 # ===== Database =====
-SQLAlchemy
-psycopg2-binary
-redis
+SQLAlchemy==2.0.45
+psycopg2-binary==2.9.11
+redis==7.1.0
 
-# ===== Telegram bot =====
-aiogram
-
-# ===== Utils =====
-email-validator
+# ===== Telegram =====
+aiogram==3.23.0
 
