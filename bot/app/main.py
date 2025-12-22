@@ -34,12 +34,12 @@ dp = Dispatcher()
 
 load_messages(BOT_DIR / "i18n" / "messages.txt")
 
-async def switch_kb(message: types.Message, text: str, kb):
-    try:
-        await message.delete()
-    except Exception:
-        pass
-    await message.answer(text, reply_markup=kb)
+async def switch_kb(message: types.Message, kb):
+    await message.bot.send_message(
+        chat_id=message.chat.id,
+        text="\u200b",
+        reply_markup=kb,
+    )
 
 # ===============================
 # HANDLERS
@@ -88,7 +88,6 @@ async def admin_settings_btn(message: types.Message):
     lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
     await switch_kb(
         message,
-        t("admin:main:settings", lang),
         admin_settings(lang),
     )
 
@@ -101,8 +100,7 @@ async def admin_schedule_btn(message: types.Message):
     lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
     await switch_kb(
         message,
-        t("admin:main:schedule", lang),
-        admin_schedule(lang),
+        admin_settings(lang),
     )
 
 
@@ -114,8 +112,8 @@ async def admin_clients_btn(message: types.Message):
     lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
     await switch_kb(
         message,
-        t("admin:main:clients", lang),
-        admin_clients(lang),
+        t("admin:main:schedule", lang),
+        admin_schedule(lang),
     )
 
 
@@ -129,8 +127,8 @@ async def admin_back_btn(message: types.Message):
     lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
     await switch_kb(
         message,
-        t("admin:title", lang) if t("admin:title", lang) else "Admin",
-        admin_main(lang),
+        t("admin:main:clients", lang),
+        admin_clients(lang),
     )
 
 # ===============================
