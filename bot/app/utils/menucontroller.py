@@ -1,7 +1,10 @@
 # bot/app/utils/menucontroller.py
 
+import logging
 from aiogram.types import Message
 from aiogram.exceptions import TelegramBadRequest
+
+logger = logging.getLogger(__name__)
 
 
 class MenuController:
@@ -30,16 +33,20 @@ class MenuController:
         # удалить сообщение пользователя
         try:
             await message.delete()
-        except TelegramBadRequest:
-            pass
+            logger.info(f"DEBUG: deleted user message {message.message_id}")
+        except TelegramBadRequest as e:
+            logger.warning(f"DEBUG: failed to delete user message: {e}")
 
         # удалить предыдущее меню бота
         msg_id = self.last_menu_message.pop(chat_id, None)
         if msg_id:
             try:
                 await message.bot.delete_message(chat_id, msg_id)
-            except TelegramBadRequest:
-                pass
+                logger.info(f"DEBUG: deleted bot menu {msg_id}")
+            except TelegramBadRequest as e:
+                logger.warning(f"DEBUG: failed to delete bot menu: {e}")
+        else:
+            logger.info(f"DEBUG: no previous bot menu to delete for chat {chat_id}")
 
     async def navigate(self, message: Message, text: str, kb):
         """
@@ -55,6 +62,7 @@ class MenuController:
         # отправляем новое меню с заголовком
         msg = await message.answer(text, reply_markup=kb)
         self.last_menu_message[message.chat.id] = msg.message_id
+        logger.info(f"DEBUG: saved bot menu {msg.message_id} for chat {message.chat.id}")
 
     async def finish_to_inline(self, message: Message, text: str, inline_kb):
         """
@@ -79,4 +87,3 @@ class MenuController:
         """
         msg = await message.answer(text, reply_markup=kb)
         self.last_menu_message[message.chat.id] = msg.message_id
-
