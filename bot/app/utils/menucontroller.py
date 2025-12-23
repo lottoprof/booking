@@ -6,14 +6,11 @@ class MenuController:
     """
     UI-контроллер навигации Telegram-бота.
     
-    Управляет:
-    - очисткой чата (удаление сообщений пользователя и предыдущего меню)
-    - сменой reply-клавиатур
-    - переходом Reply → Inline
-    
-    Ключевой принцип:
-    ReplyKeyboard остаётся активной пока бот не пришлёт новую.
-    Сообщение можно удалить — клавиатура останется.
+    Принцип работы:
+    - При переходе удаляется сообщение пользователя
+    - Удаляется предыдущее сообщение бота (заголовок меню)
+    - Отправляется новое сообщение с заголовком и клавиатурой
+    - message_id сохраняется для удаления при следующем переходе
     """
 
     def __init__(self):
@@ -42,33 +39,20 @@ class MenuController:
             except TelegramBadRequest:
                 pass
 
-    async def _show_reply_menu(self, message: Message, kb):
-        """
-        Отправить новое меню с reply-клавиатурой.
-        Сообщение сразу удаляется — клавиатура остаётся.
-        """
-        # отправляем сообщение с клавиатурой
-        msg = await message.answer(".", reply_markup=kb)
-        
-        # сразу удаляем сообщение — клавиатура остаётся активной
-        try:
-            await msg.delete()
-        except TelegramBadRequest:
-            pass
-        
-        # не сохраняем message_id — сообщение уже удалено
-
-    async def navigate(self, message: Message, kb):
+    async def navigate(self, message: Message, text: str, kb):
         """
         Тип A — Reply → Reply
         
         Смена меню с очисткой чата:
         - удаляет сообщение пользователя
         - удаляет предыдущее меню бота
-        - показывает новую клавиатуру (чистый экран)
+        - отправляет новое сообщение с заголовком и клавиатурой
         """
         await self._clear(message)
-        await self._show_reply_menu(message, kb)
+        
+        # отправляем новое меню с заголовком
+        msg = await message.answer(text, reply_markup=kb)
+        self.last_menu_message[message.chat.id] = msg.message_id
 
     async def finish_to_inline(self, message: Message, text: str, inline_kb):
         """
@@ -77,22 +61,19 @@ class MenuController:
         Завершение reply-меню и переход к inline-взаимодействию:
         - удаляет сообщение пользователя
         - удаляет reply-меню
-        - показывает inline-сообщение
+        - показывает inline-сообщение (не сохраняем в last_menu)
         """
         await self._clear(message)
         await message.answer(text, reply_markup=inline_kb)
 
-    async def show_without_clear(self, message: Message, kb):
+    async def show_without_clear(self, message: Message, text: str, kb):
         """
         Тип C — Reply → Reply без очистки
         
         Традиционный выбор в пошаговых сценариях:
         - сообщение пользователя НЕ удаляется
         - предыдущее меню НЕ удаляется
-        - показывается новая клавиатура
+        - показывается новое меню
         """
-        msg = await message.answer(".", reply_markup=kb)
-        try:
-            await msg.delete()
-        except TelegramBadRequest:
-            pass
+        msg = await message.answer(text, reply_markup=kb)
+        self.last_menu_message[message.chat.id] = msg.message_id

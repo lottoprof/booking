@@ -1,54 +1,59 @@
-from aiogram import types
+from aiogram import Router, types
+from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.utils.state import user_lang
+from bot.app.auth import get_user_role
 from bot.app.keyboards.admin import (
     admin_main,
     admin_settings,
     admin_schedule,
     admin_clients,
 )
-from bot.app.i18n.loader import t
+
+router = Router()
 
 
-async def admin_menu(message: types.Message, lang: str):
-    await message.answer(
-        t("admin:main:settings", lang),
-        reply_markup=admin_main(lang)
-    )
+def setup(menu):
+    @router.message()
+    async def admin_reply(message: types.Message):
+        role = await get_user_role(message.from_user.id)
+        if role != "admin":
+            return
 
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+        text = message.text
 
-async def admin_menu_router(message: types.Message, lang: str):
-    text = message.text
+        # --- MAIN → подменю ---
+        if text == t("admin:main:settings", lang):
+            await menu.navigate(
+                message,
+                t("admin:main:settings", lang),
+                admin_settings(lang)
+            )
 
-    # --- MAIN ---
-    if text == t("admin:main:settings", lang):
-        await message.answer(
-            t("admin:main:settings", lang),
-            reply_markup=admin_settings(lang)
-        )
-        return
+        elif text == t("admin:main:schedule", lang):
+            await menu.navigate(
+                message,
+                t("admin:main:schedule", lang),
+                admin_schedule(lang)
+            )
 
-    if text == t("admin:main:schedule", lang):
-        await message.answer(
-            t("admin:main:schedule", lang),
-            reply_markup=admin_schedule(lang)
-        )
-        return
+        elif text == t("admin:main:clients", lang):
+            await menu.navigate(
+                message,
+                t("admin:main:clients", lang),
+                admin_clients(lang)
+            )
 
-    if text == t("admin:main:clients", lang):
-        await message.answer(
-            t("admin:main:clients", lang),
-            reply_markup=admin_clients(lang)
-        )
-        return
+        # --- BACK → главное меню ---
+        elif text in (
+            t("admin:settings:back", lang),
+            t("admin:schedule:back", lang),
+            t("admin:clients:back", lang),
+        ):
+            await menu.navigate(
+                message,
+                "🏠",  # или t("admin:main:title", lang)
+                admin_main(lang)
+            )
 
-    # --- BACK ---
-    if text in (
-        t("admin:settings:back", lang),
-        t("admin:schedule:back", lang),
-        t("admin:clients:back", lang),
-    ):
-        await message.answer(
-            t("admin:main:settings", lang),
-            reply_markup=admin_main(lang)
-        )
-        return
-
+    return router
