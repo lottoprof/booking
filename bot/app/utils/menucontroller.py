@@ -40,17 +40,14 @@ class MenuController:
                 await message.bot.delete_message(chat_id, msg_id)
             except TelegramBadRequest:
                 pass
-
     async def _show_reply_menu(self, message: Message, kb):
-        """
-        Отправить новое меню с reply-клавиатурой.
-        Использует zero-width space как текст сообщения.
-        """
-        msg = await message.answer(
-            "\u200b",  # zero-width space — валидный непустой текст
-            reply_markup=kb
-        )
+        msg = await message.answer(".", reply_markup=kb)
         self.last_menu_message[message.chat.id] = msg.message_id
+        # сразу удаляем сообщение — клавиатура остаётся
+        try:
+            await msg.delete()
+        except TelegramBadRequest:
+            pass
 
     async def navigate(self, message: Message, kb):
         """
