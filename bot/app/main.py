@@ -2,8 +2,8 @@ import logging
 from pathlib import Path
 
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import Update, Message, CallbackQuery, TelegramObject
 from aiogram.filters import Command
+from aiogram.types import Update, Message, CallbackQuery, TelegramObject
 
 from bot.app.config import BOT_TOKEN
 from bot.app.i18n.loader import load_messages, t, DEFAULT_LANG
@@ -30,6 +30,7 @@ dp = Dispatcher()
 menu = MenuController()
 
 load_messages(BOT_DIR / "i18n" / "messages.txt")
+
 
 # ===============================
 # ENTRYPOINTS
@@ -61,10 +62,17 @@ async def language_callback(callback: CallbackQuery):
 
     user_lang[tg_id] = lang
 
-    await callback.message.delete()
+    # удаляем сообщение с inline выбором языка
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+
     await callback.answer()
 
+    # ВАЖНО: передаём callback, а не callback.message
     await route_by_role(callback, lang)
+
 
 # ===============================
 # ROLE ROUTER (ENTRY ONLY)
@@ -77,6 +85,7 @@ ROLE_HANDLERS = {
 }
 
 async def route_by_role(event: TelegramObject, lang: str):
+    # ВАЖНО: tg_id берём ТОЛЬКО из event.from_user (для callback это user, не bot)
     tg_id = event.from_user.id
     role = await get_user_role(tg_id)
 
@@ -86,8 +95,10 @@ async def route_by_role(event: TelegramObject, lang: str):
             await event.answer(f"Role: {role} (menu not implemented)")
         return
 
-    message = event.message if isinstance(event, CallbackQuery) else event
-    await handler(message, lang)
+    # menu() всегда работает с Message
+    msg: Message = event.message if isinstance(event, CallbackQuery) else event
+    await handler(msg, lang)
+
 
 # ===============================
 # REGISTER HANDLERS
@@ -95,11 +106,15 @@ async def route_by_role(event: TelegramObject, lang: str):
 
 dp.include_router(admin_reply.setup(menu))
 
+
 # ===============================
 # GATEWAY ENTRYPOINT
 # ===============================
 
 async def process_update(update_data: dict):
+    """
+    Единственная точка входа для gateway.
+    """
     try:
         update = Update.model_validate(update_data)
     except Exception as e:
