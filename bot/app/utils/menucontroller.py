@@ -5,7 +5,7 @@ from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.exceptions import TelegramBadRequest
 
 
-ZERO = "\u200b"  # обязательный непустой текст
+ZERO = "\u2060"  # обязательный непустой текст
 
 
 class MenuController:
