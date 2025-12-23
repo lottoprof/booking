@@ -1,41 +1,82 @@
-from aiogram import Router, types
-from bot.app.i18n.loader import t, DEFAULT_LANG
-from bot.app.utils.state import user_lang
-from bot.app.auth import get_user_role
-from bot.app.keyboards.admin import (
-    admin_main,
-    admin_settings,
-    admin_schedule,
-    admin_clients,
-)
+# bot/app/handlers/admin_reply.py
 
-router = Router()
+from aiogram.types import Message
+from aiogram.exceptions import TelegramBadRequest
 
-def setup(menu):
-    @router.message()
-    async def admin_reply(message: types.Message):
-        role = await get_user_role(message.from_user.id)
-        if role != "admin":
-            return
 
-        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
-        text = message.text
+class MenuController:
+    """
+    UI-контроллер навигации Telegram-бота.
 
-        if text == t("admin:main:settings", lang):
-            await menu.navigate(message, admin_settings(lang))
+    Принцип работы:
+    - При переходе удаляется сообщение пользователя
+    - Удаляется предыдущее сообщение бота (заголовок меню)
+    - Отправляется новое сообщение с заголовком и клавиатурой
+    - message_id сохраняется для удаления при следующем переходе
+    """
 
-        elif text == t("admin:main:schedule", lang):
-            await menu.navigate(message, admin_schedule(lang))
+    def __init__(self):
+        # chat_id -> message_id последнего меню-сообщения бота
+        self.last_menu_message: dict[int, int] = {}
 
-        elif text == t("admin:main:clients", lang):
-            await menu.navigate(message, admin_clients(lang))
+    async def _clear(self, message: Message):
+        """
+        Очистка чата:
+        1. Удалить сообщение пользователя
+        2. Удалить предыдущее меню бота (если есть)
+        """
+        chat_id = message.chat.id
 
-        elif text in (
-            t("admin:settings:back", lang),
-            t("admin:schedule:back", lang),
-            t("admin:clients:back", lang),
-        ):
-            await menu.navigate(message, admin_main(lang))
+        # удалить сообщение пользователя
+        try:
+            await message.delete()
+        except TelegramBadRequest:
+            pass
 
-    return router
+        # удалить предыдущее меню бота
+        msg_id = self.last_menu_message.pop(chat_id, None)
+        if msg_id:
+            try:
+                await message.bot.delete_message(chat_id, msg_id)
+            except TelegramBadRequest:
+                pass
+
+    async def navigate(self, message: Message, text: str, kb):
+        """
+        Тип A — Reply → Reply
+
+        Смена меню с очисткой чата:
+        - удаляет сообщение пользователя
+        - удаляет предыдущее меню бота
+        - отправляет новое сообщение с заголовком и клавиатурой
+        """
+        await self._clear(message)
+
+        # отправляем новое меню с заголовком
+        msg = await message.answer(text, reply_markup=kb)
+        self.last_menu_message[message.chat.id] = msg.message_id
+
+    async def finish_to_inline(self, message: Message, text: str, inline_kb):
+        """
+        Тип B — Reply → Inline
+
+        Завершение reply-меню и переход к inline-взаимодействию:
+        - удаляет сообщение пользователя
+        - удаляет reply-меню
+        - показывает inline-сообщение (не сохраняем в last_menu)
+        """
+        await self._clear(message)
+        await message.answer(text, reply_markup=inline_kb)
+
+    async def show_without_clear(self, message: Message, text: str, kb):
+        """
+        Тип C — Reply → Reply без очистки
+
+        Традиционный выбор в пошаговых сценариях:
+        - сообщение пользователя НЕ удаляется
+        - предыдущее меню НЕ удаляется
+        - показывается новое меню
+        """
+        msg = await message.answer(text, reply_markup=kb)
+        self.last_menu_message[message.chat.id] = msg.message_id
 

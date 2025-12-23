@@ -1,3 +1,5 @@
+# bot/app/utils/menucontroller.py
+
 from aiogram.types import Message
 from aiogram.exceptions import TelegramBadRequest
 
@@ -77,3 +79,4 @@ class MenuController:
         """
         msg = await message.answer(text, reply_markup=kb)
         self.last_menu_message[message.chat.id] = msg.message_id
+
