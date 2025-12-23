@@ -1,3 +1,4 @@
+# bot/app/utils/menucontroller.py
 from aiogram.types import Message
 from aiogram.exceptions import TelegramBadRequest
 
@@ -5,57 +6,88 @@ from aiogram.exceptions import TelegramBadRequest
 class MenuController:
     """
     UI-контроллер навигации Telegram-бота.
+
+    Управляет:
+    - очисткой чата (удаление сообщений пользователя и предыдущего меню)
+    - сменой reply-клавиатур
+    - переходом Reply → Inline
+
+    Не принимает решений о сценариях — только выполняет технические действия.
     """
 
     def __init__(self):
-        # chat_id -> message_id меню
+        # chat_id -> message_id последнего меню-сообщения бота
         self.last_menu_message: dict[int, int] = {}
 
-    async def clear_user_message(self, message: Message):
+    async def _clear(self, message: Message):
+        """
+        Очистка чата:
+        1. Удалить сообщение пользователя
+        2. Удалить предыдущее меню бота (если есть)
+        """
+        chat_id = message.chat.id
+
+        # удалить сообщение пользователя
         try:
             await message.delete()
         except TelegramBadRequest:
             pass
 
-    async def show_reply_menu(self, message: Message, kb):
-        chat_id = message.chat.id
-        last_id = self.last_menu_message.get(chat_id)
-
-        if last_id:
+        # удалить предыдущее меню бота
+        msg_id = self.last_menu_message.pop(chat_id, None)
+        if msg_id:
             try:
-                await message.bot.edit_message_reply_markup(
-                    chat_id=chat_id,
-                    message_id=last_id,
-                    reply_markup=kb
-                )
-                return
+                await message.bot.delete_message(chat_id, msg_id)
             except TelegramBadRequest:
                 pass
 
-        # первый показ меню (ОДИН раз)
-        msg = await message.answer(" ", reply_markup=kb)
-        self.last_menu_message[chat_id] = msg.message_id
+    async def _show_reply_menu(self, message: Message, kb):
+        """
+        Отправить новое меню с reply-клавиатурой.
+        Использует zero-width space как текст сообщения.
+        """
+        msg = await message.answer(
+            "\u200b",  # zero-width space — валидный непустой текст
+            reply_markup=kb
+        )
+        self.last_menu_message[message.chat.id] = msg.message_id
 
     async def navigate(self, message: Message, kb):
         """
-        Reply → Reply
+        Тип A — Reply → Reply
+
+        Смена меню с очисткой чата:
+        - удаляет сообщение пользователя
+        - удаляет предыдущее меню бота
+        - показывает новое меню
         """
-        await self.clear_user_message(message)
-        await self.show_reply_menu(message, kb)
+        await self._clear(message)
+        await self._show_reply_menu(message, kb)
 
     async def finish_to_inline(self, message: Message, text: str, inline_kb):
         """
-        Reply → Inline
+        Тип B — Reply → Inline
+
+        Завершение reply-меню и переход к inline-взаимодействию:
+        - удаляет сообщение пользователя
+        - удаляет reply-меню
+        - показывает inline-сообщение
         """
-        await self.clear_user_message(message)
-
-        # удалить reply-меню, если было
-        msg_id = self.last_menu_message.pop(message.chat.id, None)
-        if msg_id:
-            try:
-                await message.bot.delete_message(message.chat.id, msg_id)
-            except TelegramBadRequest:
-                pass
-
+        await self._clear(message)
         await message.answer(text, reply_markup=inline_kb)
+
+    async def show_without_clear(self, message: Message, kb):
+        """
+        Тип C — Reply → Reply без очистки
+
+        Традиционный выбор в пошаговых сценариях:
+        - сообщение пользователя НЕ удаляется
+        - предыдущее меню НЕ удаляется
+        - показывается новое меню
+        """
+        msg = await message.answer(
+            "\u200b",
+            reply_markup=kb
+        )
+        self.last_menu_message[message.chat.id] = msg.message_id
 
