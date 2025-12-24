@@ -439,6 +439,13 @@ bot/
 │   └── client_reply.py
 └── main.py
 
+### Итог
+
+✔ main.py — тонкий entrypoint
+✔ Вся UI-логика → MenuController
+✔ Вся навигация → handlers/*_reply.py
+✔ FSM — только в flows/*
+
 ## TODO (Telegram Bot)
 
 - [ ] Вынести reply-handlers администратора в `handlers/admin_reply.py`
