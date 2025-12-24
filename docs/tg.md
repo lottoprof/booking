@@ -149,6 +149,25 @@ Telegram-бот:
 - бот никогда не создаёт администратора самостоятельно
 - бот всегда работает с уже инициализированными пользователями
 
+## 4.1 Аутентификация через gateway
+
+Аутентификация выполняется в gateway, НЕ в боте.
+
+Поток:
+1. Telegram → gateway `/tg/webhook`
+2. gateway: extract_tg_id(update)
+3. gateway: проверка кэша Redis `tg_user:{tg_id}` (TTL 10 мин)
+4. Если нет в кэше → запрос к backend:
+   - GET /users/by_tg/{tg_id}
+   - Если 404 → создать пользователя + роль client
+5. gateway передаёт в bot: TgUserContext(tg_id, user_id, company_id, role)
+6. bot использует role синхронно (без HTTP-запросов)
+
+Бот:
+- НЕ делает запросы к backend для аутентификации
+- получает готовый контекст от gateway
+- удалить bot/app/auth.py
+
 ---
 
 ## 5. Работа с бронированиями

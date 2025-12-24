@@ -44,10 +44,15 @@ Telegram → NGINX → /tg/webhook → gateway → bot (вызов модуля)
 ### 3.2. gateway
 
 * FastAPI-прокси
-* `/tg/webhook` — точка входа Telegram
+* `/gateway/app/utils/telegram.pyk` — точка входа Telegram
 * Проверка `X-Telegram-Bot-Api-Secret-Token`
 * Устанавливает `client_type = internal`
 * Вызывает bot как модуль (через `process_update`)
+
+* Аутентификация TG-пользователей (get_or_create + role)
+* Кэширование user context в Redis (TTL 10 мин)
+* Rate limiting по tg_id (настраивается в middleware/rate_limit.py)
+* Передача TgUserContext в bot
 
 ### 3.3. bot (Telegram)
 
