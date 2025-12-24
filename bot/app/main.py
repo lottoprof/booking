@@ -2,6 +2,8 @@
 
 import logging
 from pathlib import Path
+from typing import Optional
+from dataclasses import dataclass
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
@@ -15,7 +17,6 @@ from bot.app.utils.state import user_lang
 from bot.app.utils.menucontroller import MenuController
 
 from bot.app.handlers import admin_reply
-from bot.app.auth import get_user_role
 
 
 BOT_DIR = Path(__file__).resolve().parent
@@ -29,6 +30,35 @@ dp = Dispatcher()
 menu = MenuController()
 
 load_messages(BOT_DIR / "i18n" / "messages.txt")
+
+
+# ===============================
+# USER CONTEXT (from gateway)
+# ===============================
+
+@dataclass
+class TgUserContext:
+    """Контекст пользователя от gateway."""
+    tg_id: int
+    user_id: Optional[int]
+    role: str
+    is_new: bool
+
+
+# Временное хранилище контекста для текущего update
+# (передаётся из process_update в handlers)
+_current_user_context: dict[int, TgUserContext] = {}
+
+
+def get_user_context(tg_id: int) -> Optional[TgUserContext]:
+    """Получить контекст пользователя для текущего запроса."""
+    return _current_user_context.get(tg_id)
+
+
+def get_user_role(tg_id: int) -> str:
+    """Получить роль пользователя."""
+    ctx = _current_user_context.get(tg_id)
+    return ctx.role if ctx else "client"
 
 
 # ===============================
@@ -96,7 +126,7 @@ ROLE_HANDLERS = {
 
 async def route_by_role(event: TelegramObject, lang: str):
     tg_id = event.from_user.id
-    role = await get_user_role(tg_id)
+    role = get_user_role(tg_id)
 
     handler = ROLE_HANDLERS.get(role)
     if not handler:
@@ -112,16 +142,20 @@ async def route_by_role(event: TelegramObject, lang: str):
 # REGISTER HANDLERS
 # ===============================
 
-dp.include_router(admin_reply.setup(menu))
+dp.include_router(admin_reply.setup(menu, get_user_role))
 
 
 # ===============================
 # GATEWAY ENTRYPOINT
 # ===============================
 
-async def process_update(update_data: dict):
+async def process_update(update_data: dict, user_context=None):
     """
     Единственная точка входа для gateway.
+    
+    Args:
+        update_data: Telegram update dict
+        user_context: TgUserContext от gateway (аутентификация)
     """
     try:
         update = Update.model_validate(update_data)
@@ -129,7 +163,22 @@ async def process_update(update_data: dict):
         logger.warning("Invalid Telegram update: %s", e)
         return
 
+    # Сохраняем контекст пользователя
+    if user_context:
+        _current_user_context[user_context.tg_id] = TgUserContext(
+            tg_id=user_context.tg_id,
+            user_id=user_context.user_id,
+            role=user_context.role,
+            is_new=user_context.is_new
+        )
+        logger.info(f"User context: tg_id={user_context.tg_id}, role={user_context.role}")
+
     try:
         await dp.feed_update(bot, update)
     except Exception:
         logger.exception("Error while processing Telegram update")
+    finally:
+        # Очищаем контекст после обработки
+        if user_context:
+            _current_user_context.pop(user_context.tg_id, None)
+

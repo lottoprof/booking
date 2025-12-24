@@ -3,7 +3,6 @@
 from aiogram import Router, types
 from bot.app.i18n.loader import t, DEFAULT_LANG
 from bot.app.utils.state import user_lang
-from bot.app.auth import get_user_role
 from bot.app.keyboards.admin import (
     admin_main,
     admin_settings,
@@ -14,14 +13,24 @@ from bot.app.keyboards.admin import (
 router = Router()
 
 
-def setup(menu):
+def setup(menu, get_user_role):
+    """
+    Настройка роутера с инъекцией зависимостей.
+    
+    Args:
+        menu: MenuController для управления навигацией
+        get_user_role: функция получения роли пользователя
+    """
+    
     @router.message()
     async def admin_reply(message: types.Message):
-        role = await get_user_role(message.from_user.id)
+        tg_id = message.from_user.id
+        role = get_user_role(tg_id)
+        
         if role != "admin":
             return
 
-        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+        lang = user_lang.get(tg_id, DEFAULT_LANG)
         text = message.text
 
         # --- MAIN → подменю ---
