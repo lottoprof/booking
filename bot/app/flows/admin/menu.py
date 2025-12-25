@@ -1,11 +1,7 @@
 """
 bot/app/flows/admin/menu.py
 
-ЛОГИКА — решает какое меню показать.
-
-Знает о структуре меню админа и правилах переходов.
-Использует MenuController для отправки (не знает КАК отправлять).
-Использует keyboards для получения форм (не знает КАК они устроены).
+Логика навигации админ-меню.
 """
 
 from aiogram.types import Message
@@ -16,49 +12,45 @@ from bot.app.keyboards.admin import (
     admin_schedule,
     admin_clients,
 )
+from bot.app.i18n.loader import t
 
 
 class AdminMenuFlow:
-    """
-    Логика навигации админ-меню.
-    
-    Методы соответствуют пунктам меню.
-    Каждый метод знает КУДА перейти, но не КАК.
-    """
 
     def __init__(self, menu_controller):
         self.mc = menu_controller
 
-    # ------------------------------------------------------------------
-    # Entry point
-    # ------------------------------------------------------------------
-
     async def show_main(self, message: Message, lang: str) -> None:
-        """Показать главное меню админа."""
-        await self.mc.show(message, admin_main(lang))
-
-    # ------------------------------------------------------------------
-    # Main → Submenus
-    # ------------------------------------------------------------------
+        await self.mc.show(
+            message, 
+            admin_main(lang),
+            title=t("admin:main:title", lang)
+        )
 
     async def to_settings(self, message: Message, lang: str) -> None:
-        """Главное меню → Настройки."""
-        await self.mc.show(message, admin_settings(lang))
+        await self.mc.show(
+            message, 
+            admin_settings(lang),
+            title=t("admin:settings:title", lang)
+        )
 
     async def to_schedule(self, message: Message, lang: str) -> None:
-        """Главное меню → Расписание."""
-        await self.mc.show(message, admin_schedule(lang))
+        await self.mc.show(
+            message, 
+            admin_schedule(lang),
+            title=t("admin:schedule:title", lang)
+        )
 
     async def to_clients(self, message: Message, lang: str) -> None:
-        """Главное меню → Клиенты."""
-        await self.mc.show(message, admin_clients(lang))
-
-    # ------------------------------------------------------------------
-    # Back → Main
-    # ------------------------------------------------------------------
+        await self.mc.show(
+            message, 
+            admin_clients(lang),
+            title=t("admin:clients:title", lang)
+        )
 
     async def back_to_main(self, message: Message, lang: str) -> None:
-        """Любое подменю → Главное меню."""
-        await self.mc.show(message, admin_main(lang))
-
-
+        await self.mc.show(
+            message, 
+            admin_main(lang),
+            title=t("admin:main:title", lang)
+        )
