@@ -230,7 +230,7 @@ ttl: отсутствует
 bot/app/
 ├── main.py                    # ТОЛЬКО: dp, bot, process_update, route_by_role
 ├── keyboards/
-│   └── admin.py               # ФОРМА: ReplyKeyboardMarkup структуры
+│   └── admin.py               # ФОРМА: ReplyKeyboardMarkup, только структура кнопок
 ├── flows/
 │   └── admin/
 │       └── menu.py            # ЛОГИКА: какое меню показать, переходы
