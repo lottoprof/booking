@@ -1,26 +1,37 @@
+"""
+bot/app/utils/menucontroller.py
+
+UI-контроллер навигации Telegram-бота.
+
+Контракт v1:
+- Один якорь ReplyKeyboard на чат (хранится в Redis)
+- Type A (Reply→Reply): user message НЕ удаляем, ZWS обязателен
+- Type B (Reply→Inline): user message МОЖНО удалить
+- Type C (Reply→Reply): без очистки, для пошаговых сценариев
+"""
+
 import logging
 import os
 
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardMarkup, InlineKeyboardMarkup
 from aiogram.exceptions import TelegramBadRequest
 
 import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
 
-# Технический текст для устойчивой ReplyKeyboard (Android)
-ZERO_WIDTH_SPACE = "\u200b"
+# Технический текст для ReplyKeyboard
+# ВАЖНО: это НЕ пустая строка, Telegram её принимает
+MENU_PLACEHOLDER = "\u200b"  # Zero-Width Space
 
 
 class MenuController:
     """
     UI-контроллер навигации Telegram-бота.
-
-    Контракт v1 (кратко):
-    - Один якорь ReplyKeyboard на чат
-    - Type A (Reply→Reply): user message НЕ удаляем, ZWS обязателен
-    - Type B (Reply→Inline): user message МОЖНО удалить
-    - Никаких delete "через одно"
+    
+    Хранит message_id последнего меню в Redis для:
+    - персистентности между рестартами
+    - корректной очистки чата
     """
 
     def __init__(self):
@@ -28,11 +39,7 @@ class MenuController:
         if not redis_url:
             raise RuntimeError("REDIS_URL is not set")
 
-        # Один клиент Redis на контроллер
-        self.redis = redis.from_url(
-            redis_url,
-            decode_responses=True,
-        )
+        self.redis = redis.from_url(redis_url, decode_responses=True)
 
     # ------------------------------------------------------------------
     # Redis helpers
@@ -52,91 +59,74 @@ class MenuController:
         await self.redis.delete(self._menu_key(chat_id))
 
     # ------------------------------------------------------------------
-    # Clear helpers
+    # Delete helpers
     # ------------------------------------------------------------------
 
-    async def _clear_user_message(self, message: Message) -> None:
-        """
-        Удаление сообщения пользователя.
-        РАЗРЕШЕНО ТОЛЬКО в Type B.
-        """
+    async def _safe_delete(self, bot, chat_id: int, message_id: int) -> bool:
+        """Безопасное удаление сообщения."""
         try:
-            await message.delete()
-            logger.info(
-                "UI: deleted user message %s in chat %s",
-                message.message_id,
-                message.chat.id,
-            )
+            await bot.delete_message(chat_id, message_id)
+            logger.debug("UI: deleted message %s in chat %s", message_id, chat_id)
+            return True
         except TelegramBadRequest as e:
-            logger.warning(
-                "UI: failed to delete user message %s: %s",
-                message.message_id,
-                e,
-            )
+            logger.debug("UI: cannot delete message %s: %s", message_id, e)
+            return False
+
+    async def _clear_user_message(self, message: Message) -> None:
+        """Удаление сообщения пользователя."""
+        await self._safe_delete(message.bot, message.chat.id, message.message_id)
 
     async def _clear_bot_menu(self, message: Message) -> None:
-        """
-        Удаление якоря ReplyKeyboard (ОДНОГО).
-        """
+        """Удаление предыдущего меню бота (якоря ReplyKeyboard)."""
         chat_id = message.chat.id
         menu_id = await self._get_last_menu_id(chat_id)
 
-        if not menu_id:
-            logger.debug("UI: no bot menu to delete for chat %s", chat_id)
-            return
-
-        try:
-            await message.bot.delete_message(chat_id, menu_id)
-            logger.info(
-                "UI: deleted bot menu %s in chat %s",
-                menu_id,
-                chat_id,
-            )
-        except TelegramBadRequest as e:
-            logger.warning(
-                "UI: failed to delete bot menu %s: %s",
-                menu_id,
-                e,
-            )
-        finally:
+        if menu_id:
+            await self._safe_delete(message.bot, chat_id, menu_id)
             await self._del_last_menu_id(chat_id)
 
     # ------------------------------------------------------------------
     # TYPE A — Reply → Reply (основная навигация)
     # ------------------------------------------------------------------
 
-    async def navigate(self, message: Message, kb) -> None:
+    async def navigate(self, message: Message, kb: ReplyKeyboardMarkup) -> None:
         """
-        Type A — Reply → Reply (устойчивый)
-
-        - сообщение пользователя НЕ удаляется
+        Type A — Reply → Reply
+        
+        - сообщение пользователя НЕ удаляется (Telegram UX)
         - удаляется ТОЛЬКО предыдущее меню бота
-        - новое меню отправляется как ZWS + ReplyKeyboard
+        - новое меню = ZWS + ReplyKeyboard
+        
+        Args:
+            message: входящее сообщение пользователя
+            kb: ReplyKeyboardMarkup для показа
         """
-        # Guard: navigate нельзя вызывать из inline-контекста
-        if message.reply_to_message:
-            logger.warning(
-                "UI: navigate() called with reply_to_message (possible inline misuse)"
-            )
+        chat_id = message.chat.id
+        bot = message.bot
 
-        # 1. удалить предыдущий якорь
+        # 1. Удалить предыдущий якорь
         await self._clear_bot_menu(message)
 
-        # 2. отправить новое меню
-        msg = await message.bot.send_message(
-            chat_id=message.chat.id,
-            text=ZERO_WIDTH_SPACE,
-            reply_markup=kb,
-        )
+        # 2. Отправить новое меню
+        # КРИТИЧНО: text должен быть непустым!
+        try:
+            msg = await bot.send_message(
+                chat_id=chat_id,
+                text=MENU_PLACEHOLDER,  # "\u200b" - не пустая строка
+                reply_markup=kb,
+            )
+        except TelegramBadRequest as e:
+            # Fallback: если ZWS не работает, используем точку
+            logger.warning("UI: ZWS failed, using fallback: %s", e)
+            msg = await bot.send_message(
+                chat_id=chat_id,
+                text=".",
+                reply_markup=kb,
+            )
 
-        # 3. сохранить якорь
-        await self._set_last_menu_id(message.chat.id, msg.message_id)
-
-        logger.info(
-            "UI: saved bot menu %s for chat %s",
-            msg.message_id,
-            message.chat.id,
-        )
+        # 3. Сохранить якорь
+        await self._set_last_menu_id(chat_id, msg.message_id)
+        logger.debug("UI: menu saved, msg_id=%s, chat=%s", msg.message_id, chat_id)
 
     # ------------------------------------------------------------------
     # TYPE B — Reply → Inline (вход в inline-сценарий)
@@ -146,92 +136,101 @@ class MenuController:
         self,
         message: Message,
         text: str,
-        inline_kb,
+        inline_kb: InlineKeyboardMarkup,
         *,
         clear_user: bool = True,
     ) -> None:
         """
         Type B — Reply → Inline
-
+        
         - опционально удаляет сообщение пользователя
         - удаляет reply-меню
         - показывает inline-сообщение
+        
+        Args:
+            message: входящее сообщение
+            text: текст inline-сообщения (ОБЯЗАТЕЛЬНО непустой!)
+            inline_kb: InlineKeyboardMarkup
+            clear_user: удалять ли сообщение пользователя
         """
+        if not text or not text.strip():
+            raise ValueError("text must be non-empty for inline message")
+
         if clear_user:
             await self._clear_user_message(message)
 
         await self._clear_bot_menu(message)
 
         await message.answer(text, reply_markup=inline_kb)
-
-        logger.info(
-            "UI: entered inline mode in chat %s",
-            message.chat.id,
-        )
+        logger.debug("UI: inline mode, chat=%s", message.chat.id)
 
     # ------------------------------------------------------------------
-    # TYPE C — Reply → Reply без очистки (пошаговые сценарии)
+    # TYPE C — Reply → Reply без очистки
     # ------------------------------------------------------------------
 
-    async def show_without_clear(self, message: Message, text: str, kb) -> None:
+    async def show_without_clear(
+        self, 
+        message: Message, 
+        text: str, 
+        kb: ReplyKeyboardMarkup
+    ) -> None:
         """
         Type C — Reply → Reply без очистки
-
-        ⚠ Использовать ТОЛЬКО в пошаговых сценариях.
-        ⚠ Не предназначен для навигации меню.
+        
+        Для пошаговых сценариев (FSM).
+        НЕ использовать для навигации меню!
+        
+        Args:
+            message: входящее сообщение
+            text: текст сообщения (непустой!)
+            kb: ReplyKeyboardMarkup
         """
+        if not text or not text.strip():
+            text = MENU_PLACEHOLDER
+
         msg = await message.answer(text, reply_markup=kb)
         await self._set_last_menu_id(message.chat.id, msg.message_id)
 
-        logger.info(
-            "UI: saved bot menu (type C) %s for chat %s",
-            msg.message_id,
-            message.chat.id,
-        )
-
     # ------------------------------------------------------------------
-    # INLINE — ЗАГЛУШКИ (централизованные точки)
+    # Inline helpers
     # ------------------------------------------------------------------
 
-    async def show_inline(self, message: Message, text: str, inline_kb) -> None:
-        """
-        Inline — показ inline-сообщения.
-
-        - ReplyKeyboard не используется
-        - Redis-якорь не трогается
-        """
+    async def show_inline(
+        self, 
+        message: Message, 
+        text: str, 
+        inline_kb: InlineKeyboardMarkup
+    ) -> None:
+        """Показ inline-сообщения (не трогает ReplyKeyboard)."""
+        if not text or not text.strip():
+            raise ValueError("text must be non-empty")
         await message.answer(text, reply_markup=inline_kb)
 
-        logger.debug("UI: show inline message in chat %s", message.chat.id)
-
-    async def update_inline(self, message: Message, text: str, inline_kb) -> None:
-        """
-        Inline — обновление inline-сообщения (callback).
-        """
+    async def update_inline(
+        self, 
+        message: Message, 
+        text: str, 
+        inline_kb: InlineKeyboardMarkup
+    ) -> None:
+        """Обновление inline-сообщения (для callback_query.message)."""
+        if not text or not text.strip():
+            raise ValueError("text must be non-empty")
         try:
             await message.edit_text(text, reply_markup=inline_kb)
-            logger.debug(
-                "UI: updated inline message %s",
-                message.message_id,
-            )
         except TelegramBadRequest as e:
-            logger.warning(
-                "UI: failed to update inline message %s: %s",
-                message.message_id,
-                e,
-            )
+            logger.debug("UI: cannot edit inline: %s", e)
 
-    async def inline_finish_to_menu(self, message: Message, kb) -> None:
+    async def inline_finish_to_menu(
+        self, 
+        message: Message, 
+        kb: ReplyKeyboardMarkup
+    ) -> None:
         """
-        Inline → Reply (возврат в меню)
-
+        Inline → Reply (возврат из inline в меню)
+        
         - удаляет inline-сообщение
-        - возвращает ReplyKeyboard через Type A
+        - показывает ReplyKeyboard
         """
-        try:
-            await message.delete()
-        except TelegramBadRequest:
-            pass
-
+        await self._safe_delete(message.bot, message.chat.id, message.message_id)
         await self.navigate(message, kb)
 
