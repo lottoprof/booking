@@ -1,189 +1,56 @@
 """
-bot/app/utils/menucontroller.py
+bot/app/flows/admin/menu.py
 
-UI-контроллер навигации Telegram-бота.
-
-Контракт (tg_kbrd.md):
-- В чате ровно ОДИН якорь ReplyKeyboard
-- Сообщение пользователя НЕ удаляется в Type A
-- ReplyKeyboardRemove ЗАПРЕЩЁН между меню
-- Удаляется ТОЛЬКО предыдущий якорь (ДО отправки нового)
+Логика навигации админ-меню.
 """
 
-import logging
-import os
+from aiogram.types import Message
 
-from aiogram.types import Message, ReplyKeyboardMarkup, InlineKeyboardMarkup
-from aiogram.exceptions import TelegramBadRequest
+from bot.app.keyboards.admin import (
+    admin_main,
+    admin_settings,
+    admin_schedule,
+    admin_clients,
+)
+from bot.app.i18n.loader import t
 
-import redis.asyncio as redis
 
-logger = logging.getLogger(__name__)
+class AdminMenuFlow:
 
+    def __init__(self, menu_controller):
+        self.mc = menu_controller
 
-class MenuController:
-    """
-    Транспортный слой для Telegram-клавиатур.
-    Хранит last_menu_message_id в Redis.
-    """
-
-    def __init__(self):
-        redis_url = os.getenv("REDIS_URL")
-        if not redis_url:
-            raise RuntimeError("REDIS_URL is not set")
-        self.redis = redis.from_url(redis_url, decode_responses=True)
-
-    # ------------------------------------------------------------------
-    # Redis
-    # ------------------------------------------------------------------
-
-    def _key(self, chat_id: int) -> str:
-        return f"tg:menu:{chat_id}"
-
-    async def _get_menu_id(self, chat_id: int) -> int | None:
-        val = await self.redis.get(self._key(chat_id))
-        return int(val) if val else None
-
-    async def _set_menu_id(self, chat_id: int, msg_id: int) -> None:
-        await self.redis.set(self._key(chat_id), str(msg_id))
-
-    async def _del_menu_id(self, chat_id: int) -> None:
-        await self.redis.delete(self._key(chat_id))
-
-    # ------------------------------------------------------------------
-    # Delete helpers
-    # ------------------------------------------------------------------
-
-    async def _safe_delete(self, bot, chat_id: int, msg_id: int) -> bool:
-        """Удалить сообщение, игнорируя ошибки."""
-        try:
-            await bot.delete_message(chat_id, msg_id)
-            return True
-        except TelegramBadRequest:
-            return False
-
-    async def _delete_previous_menu(self, message: Message) -> None:
-        """
-        Удалить предыдущий якорь меню.
-        Вызывается ДО отправки нового.
-        """
-        chat_id = message.chat.id
-        old_id = await self._get_menu_id(chat_id)
-        if old_id:
-            await self._safe_delete(message.bot, chat_id, old_id)
-            await self._del_menu_id(chat_id)
-            logger.debug(f"Deleted previous menu {old_id} in chat {chat_id}")
-
-    # ------------------------------------------------------------------
-    # Type A: Reply → Reply (основная навигация)
-    # ------------------------------------------------------------------
-
-    async def show(self, message: Message, kb: ReplyKeyboardMarkup) -> None:
-        """
-        Показать ReplyKeyboard (Type A).
-        
-        Порядок для Android:
-        1. Отправить новое меню (клавиатура сразу появляется)
-        2. Удалить старый emoji бота (клавиатура уже есть)
-        
-        Сообщение пользователя НЕ удаляем — это триггерит IME.
-        """
-        chat_id = message.chat.id
-        bot = message.bot
-        
-        # Запоминаем старый якорь
-        old_menu_id = await self._get_menu_id(chat_id)
-
-        # 1. Отправить новое меню
-        msg = await bot.send_message(
-            chat_id=chat_id,
-            text="📋",
-            reply_markup=kb
+    async def show_main(self, message: Message, lang: str) -> None:
+        await self.mc.show(
+            message, 
+            admin_main(lang),
+            title=t("admin:main:title", lang)
         )
-        
-        # 2. Сохранить новый якорь
-        await self._set_menu_id(chat_id, msg.message_id)
 
-        # 3. Удалить старый emoji (клавиатура уже активна)
-        if old_menu_id:
-            await self._safe_delete(bot, chat_id, old_menu_id)
-        
-        logger.debug(f"Menu: {old_menu_id} -> {msg.message_id}")
-
-    # ------------------------------------------------------------------
-    # Type B: Reply → Inline
-    # ------------------------------------------------------------------
-
-    async def show_inline(
-        self,
-        message: Message,
-        text: str,
-        kb: InlineKeyboardMarkup,
-        *,
-        delete_user_msg: bool = True,
-    ) -> None:
-        """
-        Показать InlineKeyboard (Type B).
-        
-        - Удаляет reply-меню
-        - Опционально удаляет сообщение пользователя
-        - Inline-сообщение НЕ становится якорем
-        """
-        chat_id = message.chat.id
-        bot = message.bot
-
-        # Удалить reply-меню
-        await self._delete_previous_menu(message)
-
-        # Удалить сообщение пользователя (опционально)
-        if delete_user_msg:
-            await self._safe_delete(bot, chat_id, message.message_id)
-
-        # Показать inline (не сохраняем как якорь!)
-        await bot.send_message(chat_id, text=text, reply_markup=kb)
-
-    # ------------------------------------------------------------------
-    # Type C: Reply → Reply с текстом (FSM/wizard)
-    # ------------------------------------------------------------------
-
-    async def show_with_text(
-        self, 
-        message: Message, 
-        text: str, 
-        kb: ReplyKeyboardMarkup
-    ) -> None:
-        """
-        Показать ReplyKeyboard с текстом (Type C).
-        
-        Для FSM-сценариев где нужен вопрос/инструкция.
-        """
-        chat_id = message.chat.id
-
-        await self._delete_previous_menu(message)
-
-        msg = await message.bot.send_message(
-            chat_id=chat_id,
-            text=text,
-            reply_markup=kb
+    async def to_settings(self, message: Message, lang: str) -> None:
+        await self.mc.show(
+            message, 
+            admin_settings(lang),
+            title=t("admin:settings:title", lang)
         )
-        await self._set_menu_id(chat_id, msg.message_id)
 
-    # ------------------------------------------------------------------
-    # Inline → Reply (возврат из inline)
-    # ------------------------------------------------------------------
+    async def to_schedule(self, message: Message, lang: str) -> None:
+        await self.mc.show(
+            message, 
+            admin_schedule(lang),
+            title=t("admin:schedule:title", lang)
+        )
 
-    async def back_from_inline(
-        self, 
-        message: Message, 
-        kb: ReplyKeyboardMarkup
-    ) -> None:
-        """
-        Вернуться из Inline в Reply меню.
-        
-        Вызывается из callback_query.message.
-        """
-        # Удалить inline-сообщение
-        await self._safe_delete(message.bot, message.chat.id, message.message_id)
-        
-        # Показать reply-меню
-        await self.show(message, kb)
+    async def to_clients(self, message: Message, lang: str) -> None:
+        await self.mc.show(
+            message, 
+            admin_clients(lang),
+            title=t("admin:clients:title", lang)
+        )
+
+    async def back_to_main(self, message: Message, lang: str) -> None:
+        await self.mc.show(
+            message, 
+            admin_main(lang),
+            title=t("admin:main:title", lang)
+        )

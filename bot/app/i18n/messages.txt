@@ -6,6 +6,17 @@ en:common:lang:en | "English"
 ru:common:lang:choose | "Выберите язык"
 en:common:lang:choose | "Choose language"
 
+# --- admin menu titles ---
+ru:admin:main:title | "🏠 Главное меню"
+en:admin:main:title | "🏠 Main menu"
+ru:admin:settings:title | "⚙️ Настройки"
+en:admin:settings:title | "⚙️ Settings"
+ru:admin:schedule:title | "📅 Расписание"
+en:admin:schedule:title | "📅 Schedule"
+ru:admin:clients:title | "👥 Клиенты"
+en:admin:clients:title | "👥 Clients"
+
+
 # --- admin main ---
 ru:admin:main:settings | "⚙️ Настройки"
 ru:admin:main:schedule | "📅 Расписание"
