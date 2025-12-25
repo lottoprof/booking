@@ -226,5 +226,18 @@ ttl: отсутствует
 
 ## 10. Статус
 
+```plain
+bot/app/
+├── main.py                    # ТОЛЬКО: dp, bot, process_update, route_by_role
+├── keyboards/
+│   └── admin.py               # ФОРМА: ReplyKeyboardMarkup структуры
+├── flows/
+│   └── admin/
+│       └── menu.py            # ЛОГИКА: какое меню показать, переходы
+├── handlers/
+│   └── admin_reply.py         # РОУТИНГ: text → flow action
+└── utils/
+    └── menucontroller.py      # ТРАНСПОРТ: send/delete, Redis
+```
 Любые изменения возможны **только** через обновление этого документа.
 
