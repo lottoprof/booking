@@ -82,35 +82,22 @@ class MenuController:
         """
         Показать ReplyKeyboard (Type A).
         
-        Порядок критичен для Android:
-        1. СНАЧАЛА отправить новое меню (клавиатура появляется)
-        2. ПОТОМ удалить старое (клавиатура уже есть, IME не появится)
+        Как в рабочем Perl-боте: просто отправляем новое меню.
+        Никаких удалений — is_persistent держит клавиатуру.
         """
         chat_id = message.chat.id
         bot = message.bot
-        
-        # Получаем ID старого меню ДО отправки нового
-        old_menu_id = await self._get_menu_id(chat_id)
-        user_msg_id = message.message_id
 
-        # 1. СНАЧАЛА отправить новое меню
+        # Просто отправить новое меню
         msg = await bot.send_message(
             chat_id=chat_id,
             text="📋",
             reply_markup=kb
         )
         
-        # 2. Сохранить как новый якорь
+        # Сохранить для возможной будущей очистки
         await self._set_menu_id(chat_id, msg.message_id)
-
-        # 3. ПОТОМ удалить старое меню
-        if old_menu_id:
-            await self._safe_delete(bot, chat_id, old_menu_id)
-
-        # 4. Удалить сообщение пользователя
-        await self._safe_delete(bot, chat_id, user_msg_id)
-        
-        logger.debug(f"Menu switch: {old_menu_id} -> {msg.message_id}")
+        logger.debug(f"Sent menu {msg.message_id} in chat {chat_id}")
 
     # ------------------------------------------------------------------
     # Type B: Reply → Inline
@@ -189,4 +176,3 @@ class MenuController:
         
         # Показать reply-меню
         await self.show(message, kb)
-
