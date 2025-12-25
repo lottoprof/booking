@@ -82,30 +82,35 @@ class MenuController:
         """
         Показать ReplyKeyboard (Type A).
         
-        1. Удалить сообщение пользователя (чтобы не триггерить IME)
-        2. Удалить предыдущий якорь меню
-        3. Отправить новое сообщение с клавиатурой
-        4. Сохранить message_id как новый якорь
+        Порядок критичен для Android:
+        1. СНАЧАЛА отправить новое меню (клавиатура появляется)
+        2. ПОТОМ удалить старое (клавиатура уже есть, IME не появится)
         """
         chat_id = message.chat.id
         bot = message.bot
+        
+        # Получаем ID старого меню ДО отправки нового
+        old_menu_id = await self._get_menu_id(chat_id)
+        user_msg_id = message.message_id
 
-        # 1. Удалить сообщение пользователя
-        await self._safe_delete(bot, chat_id, message.message_id)
-
-        # 2. Удалить старый якорь
-        await self._delete_previous_menu(message)
-
-        # 3. Отправить новое меню
+        # 1. СНАЧАЛА отправить новое меню
         msg = await bot.send_message(
             chat_id=chat_id,
             text="📋",
             reply_markup=kb
         )
-
-        # 4. Сохранить как новый якорь
+        
+        # 2. Сохранить как новый якорь
         await self._set_menu_id(chat_id, msg.message_id)
-        logger.debug(f"New menu {msg.message_id} in chat {chat_id}")
+
+        # 3. ПОТОМ удалить старое меню
+        if old_menu_id:
+            await self._safe_delete(bot, chat_id, old_menu_id)
+
+        # 4. Удалить сообщение пользователя
+        await self._safe_delete(bot, chat_id, user_msg_id)
+        
+        logger.debug(f"Menu switch: {old_menu_id} -> {msg.message_id}")
 
     # ------------------------------------------------------------------
     # Type B: Reply → Inline
