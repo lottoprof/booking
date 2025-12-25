@@ -96,10 +96,10 @@ class MenuController:
         # 1. Удалить старый якорь
         await self._delete_previous_menu(message)
 
-        # 2. Отправить новое меню (ZWS — невидимый текст)
+        # 2. Отправить новое меню
         msg = await bot.send_message(
             chat_id=chat_id,
-            text="\u200b",  # Zero-Width Space
+            text="📋",  # Минимальный видимый текст
             reply_markup=kb
         )
 
@@ -184,3 +184,4 @@ class MenuController:
         
         # Показать reply-меню
         await self.show(message, kb)
+

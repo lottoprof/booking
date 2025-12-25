@@ -1,9 +1,7 @@
 """
 bot/app/keyboards/admin.py
 
-ФОРМА — структура и layout клавиатур.
-
-Не знает о логике переходов, только возвращает ReplyKeyboardMarkup.
+Клавиатуры админа с is_persistent=True для стабильности на Android.
 """
 
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
@@ -22,7 +20,8 @@ def admin_main(lang: str) -> ReplyKeyboardMarkup:
                 KeyboardButton(text=t("admin:main:clients", lang)),
             ],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
+        is_persistent=True,  # Держит клавиатуру на Android
     )
 
 
@@ -46,7 +45,8 @@ def admin_settings(lang: str) -> ReplyKeyboardMarkup:
                 KeyboardButton(text=t("admin:settings:back", lang)),
             ],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
+        is_persistent=True,
     )
 
 
@@ -61,7 +61,8 @@ def admin_schedule(lang: str) -> ReplyKeyboardMarkup:
                 KeyboardButton(text=t("admin:schedule:back", lang)),
             ],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
+        is_persistent=True,
     )
 
 
@@ -80,5 +81,7 @@ def admin_clients(lang: str) -> ReplyKeyboardMarkup:
                 KeyboardButton(text=t("admin:clients:back", lang)),
             ],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
+        is_persistent=True,
     )
+
