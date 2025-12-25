@@ -15,6 +15,7 @@ from bot.app.keyboards.common import language_inline
 from bot.app.keyboards.admin import admin_main
 from bot.app.utils.state import user_lang
 from bot.app.utils.menucontroller import MenuController
+from bot.app.flows.admin.menu import AdminMenuFlow
 
 from bot.app.handlers import admin_reply
 
@@ -28,6 +29,7 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 menu = MenuController()
+admin_flow = AdminMenuFlow(menu)
 
 load_messages(BOT_DIR / "i18n" / "messages.txt")
 
@@ -70,7 +72,6 @@ async def start_handler(message: Message):
 
     if not lang:
         kb = language_inline()
-        logger.info(f"language_inline returned: {kb}")
         if kb:
             await message.answer(
                 t("common:lang:choose", DEFAULT_LANG),
@@ -80,7 +81,6 @@ async def start_handler(message: Message):
         lang = DEFAULT_LANG
         user_lang[tg_id] = lang
 
-    logger.info(f"Calling route_by_role with lang={lang}")
     await route_by_role(message, lang)
 
 
@@ -104,24 +104,16 @@ async def language_callback(callback: CallbackQuery):
 # ROLE ROUTER (ENTRY ONLY)
 # ===============================
 
-async def admin_menu(message: Message, lang: str):
+async def admin_entry(message: Message, lang: str):
     """Первичный вход в админ-меню."""
-    logger.info(f"admin_menu: message.chat.id={message.chat.id}, lang={lang}")
-    
-    kb = admin_main(lang)
-    logger.info(f"admin_main keyboard: {kb}")
-    
-    text = t("admin:main:settings", lang)
-    logger.info(f"Menu text: {text}")
-    
-    msg = await message.answer(text, reply_markup=kb)
-    logger.info(f"Sent message: {msg.message_id}")
-    
-    menu.last_menu_message[message.chat.id] = msg.message_id
+    logger.info(f"admin_entry: chat_id={message.chat.id}, lang={lang}")
+    await admin_flow.show_main(message, lang)
 
 
 ROLE_HANDLERS = {
-    "admin": admin_menu,
+    "admin": admin_entry,
+    # "specialist": specialist_entry,
+    # "client": client_entry,
 }
 
 
@@ -139,7 +131,6 @@ async def route_by_role(event: TelegramObject, lang: str):
         return
 
     msg: Message = event.message if isinstance(event, CallbackQuery) else event
-    logger.info(f"Calling handler for role={role}")
     await handler(msg, lang)
 
 
