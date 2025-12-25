@@ -46,7 +46,6 @@ class TgUserContext:
 
 
 # Временное хранилище контекста для текущего update
-# (передаётся из process_update в handlers)
 _current_user_context: dict[int, TgUserContext] = {}
 
 
@@ -108,13 +107,12 @@ async def language_callback(callback: CallbackQuery):
 # ===============================
 
 async def admin_menu(message: Message, lang: str):
-    """Первичный вход в админ-меню — тоже через MenuController."""
-    msg = await message.answer(
-        t("admin:main:settings", lang),
-        reply_markup=admin_main(lang)
-    )
-    # Сохраняем message_id для последующего удаления
-    menu.last_menu_message[message.chat.id] = msg.message_id
+    """
+    Первичный вход в админ-меню.
+    
+    Используем menu.navigate() для чистого показа клавиатуры.
+    """
+    await menu.navigate(message, admin_main(lang))
 
 
 ROLE_HANDLERS = {
