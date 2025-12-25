@@ -35,23 +35,20 @@ def setup(menu, get_user_role):
 
         # --- MAIN → подменю ---
         if text == t("admin:main:settings", lang):
-            await menu.navigate(
+           await menu.navigate(
                 message,
-                t("admin:main:settings", lang),
                 admin_settings(lang)
             )
 
         elif text == t("admin:main:schedule", lang):
             await menu.navigate(
                 message,
-                t("admin:main:schedule", lang),
                 admin_schedule(lang)
             )
 
         elif text == t("admin:main:clients", lang):
             await menu.navigate(
                 message,
-                t("admin:main:clients", lang),
                 admin_clients(lang)
             )
 
@@ -63,7 +60,6 @@ def setup(menu, get_user_role):
         ):
             await menu.navigate(
                 message,
-                t("admin:main:settings", lang),
                 admin_main(lang)
             )
 
