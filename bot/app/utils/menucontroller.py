@@ -1,15 +1,10 @@
 """
 bot/app/utils/menucontroller.py
 
-UI-контроллер навигации Telegram-бота.
+ТРАНСПОРТ — техническая отправка/удаление сообщений.
 
-Контракт:
-- Type A (Reply→Reply): чистая смена клавиатуры без мусора в чате
-- Type B (Reply→Inline): переход к inline-взаимодействию
-- Type C (Reply→Reply): пошаговые сценарии с текстом
-
-Ключевой трюк: отправляем сообщение с клавиатурой, затем СРАЗУ удаляем.
-Клавиатура остаётся, сообщение исчезает.
+Не знает о бизнес-логике, ролях, конкретных меню.
+Только: отправить клавиатуру, удалить сообщение, работа с Redis.
 """
 
 import logging
@@ -24,132 +19,81 @@ logger = logging.getLogger(__name__)
 
 
 class MenuController:
-    """UI-контроллер навигации Telegram-бота."""
+    """
+    Транспортный слой для Telegram-клавиатур.
+    
+    Хранит last_menu_message_id в Redis для персистентности.
+    """
 
     def __init__(self):
         redis_url = os.getenv("REDIS_URL")
         if not redis_url:
             raise RuntimeError("REDIS_URL is not set")
-
         self.redis = redis.from_url(redis_url, decode_responses=True)
 
     # ------------------------------------------------------------------
-    # Redis helpers
+    # Redis
     # ------------------------------------------------------------------
 
-    def _menu_key(self, chat_id: int) -> str:
-        return f"tg:last_menu:{chat_id}"
+    def _key(self, chat_id: int) -> str:
+        return f"tg:menu:{chat_id}"
 
-    async def _get_last_menu_id(self, chat_id: int) -> int | None:
-        value = await self.redis.get(self._menu_key(chat_id))
-        return int(value) if value else None
+    async def _get_menu_id(self, chat_id: int) -> int | None:
+        val = await self.redis.get(self._key(chat_id))
+        return int(val) if val else None
 
-    async def _set_last_menu_id(self, chat_id: int, message_id: int) -> None:
-        await self.redis.set(self._menu_key(chat_id), str(message_id))
+    async def _set_menu_id(self, chat_id: int, msg_id: int) -> None:
+        await self.redis.set(self._key(chat_id), str(msg_id))
 
-    async def _del_last_menu_id(self, chat_id: int) -> None:
-        await self.redis.delete(self._menu_key(chat_id))
+    async def _del_menu_id(self, chat_id: int) -> None:
+        await self.redis.delete(self._key(chat_id))
 
     # ------------------------------------------------------------------
     # Delete helpers
     # ------------------------------------------------------------------
 
-    async def _safe_delete(self, bot, chat_id: int, message_id: int) -> bool:
-        """Безопасное удаление сообщения."""
+    async def _safe_delete(self, bot, chat_id: int, msg_id: int) -> bool:
+        """Удалить сообщение, игнорируя ошибки."""
         try:
-            await bot.delete_message(chat_id, message_id)
+            await bot.delete_message(chat_id, msg_id)
             return True
         except TelegramBadRequest:
             return False
 
-    async def _clear_prev_menu(self, message: Message) -> None:
-        """Удаление предыдущего меню бота из Redis."""
+    async def _clear_previous(self, message: Message) -> None:
+        """Удалить предыдущее меню бота."""
         chat_id = message.chat.id
-        menu_id = await self._get_last_menu_id(chat_id)
-        if menu_id:
-            await self._safe_delete(message.bot, chat_id, menu_id)
-            await self._del_last_menu_id(chat_id)
+        old_id = await self._get_menu_id(chat_id)
+        if old_id:
+            await self._safe_delete(message.bot, chat_id, old_id)
+            await self._del_menu_id(chat_id)
 
     # ------------------------------------------------------------------
-    # TYPE A — Reply → Reply (основная навигация)
+    # PUBLIC API
     # ------------------------------------------------------------------
 
-    async def navigate(self, message: Message, kb: ReplyKeyboardMarkup) -> None:
+    async def show(self, message: Message, kb: ReplyKeyboardMarkup) -> None:
         """
-        Type A — Reply → Reply (чистая смена клавиатуры)
+        Показать ReplyKeyboard (Type A).
         
-        Алгоритм:
-        1. Удаляем предыдущее меню бота (если есть в Redis)
-        2. Отправляем новое сообщение с клавиатурой
-        3. СРАЗУ удаляем это сообщение — клавиатура ОСТАЁТСЯ!
-        4. Сообщение пользователя НЕ трогаем (Telegram UX)
-        
-        Результат: чистый чат, только клавиатура внизу.
+        - Удаляет предыдущее меню
+        - Отправляет новое с точкой
+        - Сразу удаляет сообщение — клавиатура остаётся
         """
         chat_id = message.chat.id
         bot = message.bot
 
-        # 1. Удалить предыдущий якорь
-        await self._clear_prev_menu(message)
+        # 1. Удалить старое
+        await self._clear_previous(message)
 
-        # 2. Отправить сообщение с клавиатурой
-        # Telegram требует непустой текст
-        msg = await bot.send_message(
-            chat_id=chat_id,
-            text=".",  # Любой текст, всё равно удалим
-            reply_markup=kb,
-        )
+        # 2. Отправить новое
+        msg = await bot.send_message(chat_id, text=".", reply_markup=kb)
 
-        # 3. СРАЗУ удаляем сообщение — клавиатура остаётся!
-        deleted = await self._safe_delete(bot, chat_id, msg.message_id)
-        
-        if not deleted:
-            # Если не удалось удалить — сохраняем в Redis для будущей очистки
-            await self._set_last_menu_id(chat_id, msg.message_id)
-            logger.debug("UI: menu msg saved for later cleanup: %s", msg.message_id)
+        # 3. Сразу удалить — клавиатура остаётся!
+        if await self._safe_delete(bot, chat_id, msg.message_id):
+            await self._del_menu_id(chat_id)
         else:
-            # Удалили успешно — очищаем Redis
-            await self._del_last_menu_id(chat_id)
-            logger.debug("UI: clean menu switch in chat %s", chat_id)
-
-    # ------------------------------------------------------------------
-    # TYPE B — Reply → Inline
-    # ------------------------------------------------------------------
-
-    async def finish_to_inline(
-        self,
-        message: Message,
-        text: str,
-        inline_kb: InlineKeyboardMarkup,
-        *,
-        clear_user: bool = True,
-    ) -> None:
-        """
-        Type B — Reply → Inline
-        
-        - удаляет reply-меню
-        - опционально удаляет сообщение пользователя
-        - показывает inline-сообщение с текстом
-        """
-        if not text or not text.strip():
-            raise ValueError("text must be non-empty for inline message")
-
-        chat_id = message.chat.id
-        bot = message.bot
-
-        # Удалить предыдущее меню
-        await self._clear_prev_menu(message)
-
-        # Удалить сообщение пользователя (опционально)
-        if clear_user:
-            await self._safe_delete(bot, chat_id, message.message_id)
-
-        # Показать inline
-        await bot.send_message(chat_id=chat_id, text=text, reply_markup=inline_kb)
-
-    # ------------------------------------------------------------------
-    # TYPE C — Reply → Reply с текстом (пошаговые сценарии)
-    # ------------------------------------------------------------------
+            await self._set_menu_id(chat_id, msg.message_id)
 
     async def show_with_text(
         self, 
@@ -158,65 +102,51 @@ class MenuController:
         kb: ReplyKeyboardMarkup
     ) -> None:
         """
-        Type C — Reply → Reply с видимым текстом
+        Показать ReplyKeyboard с текстом (Type C).
         
-        Для FSM/wizard когда нужно показать вопрос/инструкцию.
-        Сообщение НЕ удаляется сразу.
+        Для FSM-сценариев где нужен вопрос/инструкция.
         """
-        if not text or not text.strip():
-            raise ValueError("text must be non-empty")
-
         chat_id = message.chat.id
 
-        # Удалить предыдущее меню
-        await self._clear_prev_menu(message)
+        await self._clear_previous(message)
 
-        # Отправить с текстом (не удаляем!)
-        msg = await message.bot.send_message(
-            chat_id=chat_id,
-            text=text,
-            reply_markup=kb,
-        )
+        msg = await message.bot.send_message(chat_id, text=text, reply_markup=kb)
+        await self._set_menu_id(chat_id, msg.message_id)
 
-        # Сохраняем для будущей очистки
-        await self._set_last_menu_id(chat_id, msg.message_id)
-
-    # ------------------------------------------------------------------
-    # Inline helpers
-    # ------------------------------------------------------------------
-
-    async def update_inline(
-        self, 
-        message: Message, 
-        text: str, 
-        inline_kb: InlineKeyboardMarkup
+    async def show_inline(
+        self,
+        message: Message,
+        text: str,
+        kb: InlineKeyboardMarkup,
+        *,
+        delete_user_msg: bool = True,
     ) -> None:
-        """Обновление inline-сообщения (для callback_query.message)."""
-        if not text or not text.strip():
-            raise ValueError("text must be non-empty")
-        try:
-            await message.edit_text(text, reply_markup=inline_kb)
-        except TelegramBadRequest:
-            pass
+        """
+        Показать InlineKeyboard (Type B).
+        
+        - Удаляет reply-меню
+        - Опционально удаляет сообщение пользователя
+        """
+        chat_id = message.chat.id
+        bot = message.bot
 
-    async def delete_inline(self, message: Message) -> None:
-        """Удаление inline-сообщения."""
-        await self._safe_delete(message.bot, message.chat.id, message.message_id)
+        await self._clear_previous(message)
 
-    async def inline_to_menu(
+        if delete_user_msg:
+            await self._safe_delete(bot, chat_id, message.message_id)
+
+        await bot.send_message(chat_id, text=text, reply_markup=kb)
+
+    async def back_from_inline(
         self, 
         message: Message, 
         kb: ReplyKeyboardMarkup
     ) -> None:
         """
-        Inline → Reply (возврат из inline в меню)
+        Вернуться из Inline в Reply меню.
         
-        Вызывается из callback_query.message
+        Вызывается из callback_query.message.
         """
-        # Удаляем inline-сообщение
         await self._safe_delete(message.bot, message.chat.id, message.message_id)
-        
-        # Показываем меню (navigate сам всё сделает)
-        await self.navigate(message, kb)
-
+        await self.show(message, kb)
 

@@ -1,4 +1,16 @@
-# bot/app/main.py
+"""
+bot/app/main.py
+
+Точка входа Telegram-бота.
+
+ТОЛЬКО:
+- Инициализация bot, dp
+- process_update для gateway
+- route_by_role для первичного входа
+- Регистрация handlers
+
+НЕ содержит бизнес-логики меню.
+"""
 
 import logging
 from pathlib import Path
@@ -12,12 +24,15 @@ from aiogram.types import Update, Message, CallbackQuery, TelegramObject
 from bot.app.config import BOT_TOKEN
 from bot.app.i18n.loader import load_messages, t, DEFAULT_LANG
 from bot.app.keyboards.common import language_inline
-from bot.app.keyboards.admin import admin_main
 from bot.app.utils.state import user_lang
 from bot.app.utils.menucontroller import MenuController
-
+from bot.app.flows.admin.menu import AdminMenuFlow
 from bot.app.handlers import admin_reply
 
+
+# ------------------------------------------------------------------
+# Setup
+# ------------------------------------------------------------------
 
 BOT_DIR = Path(__file__).resolve().parent
 
@@ -28,13 +43,14 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 menu = MenuController()
+admin_flow = AdminMenuFlow(menu)
 
 load_messages(BOT_DIR / "i18n" / "messages.txt")
 
 
-# ===============================
-# USER CONTEXT (from gateway)
-# ===============================
+# ------------------------------------------------------------------
+# User context (from gateway)
+# ------------------------------------------------------------------
 
 @dataclass
 class TgUserContext:
@@ -45,12 +61,11 @@ class TgUserContext:
     is_new: bool
 
 
-# Временное хранилище контекста для текущего update
 _current_user_context: dict[int, TgUserContext] = {}
 
 
 def get_user_context(tg_id: int) -> Optional[TgUserContext]:
-    """Получить контекст пользователя для текущего запроса."""
+    """Получить контекст пользователя."""
     return _current_user_context.get(tg_id)
 
 
@@ -60,15 +75,17 @@ def get_user_role(tg_id: int) -> str:
     return ctx.role if ctx else "client"
 
 
-# ===============================
-# ENTRYPOINTS
-# ===============================
+# ------------------------------------------------------------------
+# Entry points
+# ------------------------------------------------------------------
 
 @dp.message(Command("start"))
 async def start_handler(message: Message):
+    """Обработка /start."""
     tg_id = message.from_user.id
     lang = user_lang.get(tg_id)
 
+    # Выбор языка если не установлен
     if not lang:
         kb = language_inline()
         if kb:
@@ -85,75 +102,63 @@ async def start_handler(message: Message):
 
 @dp.callback_query(F.data.startswith("lang:"))
 async def language_callback(callback: CallbackQuery):
+    """Обработка выбора языка."""
     tg_id = callback.from_user.id
     lang = callback.data.split(":", 1)[1]
 
     user_lang[tg_id] = lang
 
-    # удаляем сообщение с inline выбором языка
     try:
         await callback.message.delete()
     except Exception:
         pass
 
     await callback.answer()
-
-    # ВАЖНО: передаём callback, а не callback.message
     await route_by_role(callback, lang)
 
 
-# ===============================
-# ROLE ROUTER (ENTRY ONLY)
-# ===============================
-
-async def admin_menu(message: Message, lang: str):
-    """
-    Первичный вход в админ-меню.
-    
-    Используем menu.navigate() для чистого показа клавиатуры.
-    """
-    await menu.navigate(message, admin_main(lang))
-
-
-ROLE_HANDLERS = {
-    "admin": admin_menu,
-    # "specialist": specialist_menu,
-    # "client": client_menu,
-}
-
+# ------------------------------------------------------------------
+# Role router
+# ------------------------------------------------------------------
 
 async def route_by_role(event: TelegramObject, lang: str):
+    """Маршрутизация по роли — только первичный вход."""
     tg_id = event.from_user.id
     role = get_user_role(tg_id)
 
-    handler = ROLE_HANDLERS.get(role)
-    if not handler:
-        if isinstance(event, Message):
-            await event.answer(f"Role: {role} (menu not implemented)")
-        return
+    # Получаем Message из event
+    if isinstance(event, CallbackQuery):
+        message = event.message
+    else:
+        message = event
 
-    msg: Message = event.message if isinstance(event, CallbackQuery) else event
-    await handler(msg, lang)
+    # Роутинг по роли
+    if role == "admin":
+        await admin_flow.show_main(message, lang)
+    elif role == "specialist":
+        # TODO: await specialist_flow.show_main(message, lang)
+        await message.answer(f"Role: specialist (not implemented)")
+    elif role == "client":
+        # TODO: await client_flow.show_main(message, lang)
+        await message.answer(f"Role: client (not implemented)")
+    else:
+        await message.answer(f"Unknown role: {role}")
 
 
-# ===============================
-# REGISTER HANDLERS
-# ===============================
+# ------------------------------------------------------------------
+# Register handlers
+# ------------------------------------------------------------------
 
 dp.include_router(admin_reply.setup(menu, get_user_role))
 
 
-# ===============================
-# GATEWAY ENTRYPOINT
-# ===============================
+# ------------------------------------------------------------------
+# Gateway entrypoint
+# ------------------------------------------------------------------
 
 async def process_update(update_data: dict, user_context=None):
     """
     Единственная точка входа для gateway.
-    
-    Args:
-        update_data: Telegram update dict
-        user_context: TgUserContext от gateway (аутентификация)
     """
     try:
         update = Update.model_validate(update_data)
@@ -161,7 +166,7 @@ async def process_update(update_data: dict, user_context=None):
         logger.warning("Invalid Telegram update: %s", e)
         return
 
-    # Сохраняем контекст пользователя
+    # Сохраняем контекст
     if user_context:
         _current_user_context[user_context.tg_id] = TgUserContext(
             tg_id=user_context.tg_id,
@@ -174,9 +179,8 @@ async def process_update(update_data: dict, user_context=None):
     try:
         await dp.feed_update(bot, update)
     except Exception:
-        logger.exception("Error while processing Telegram update")
+        logger.exception("Error processing Telegram update")
     finally:
-        # Очищаем контекст после обработки
         if user_context:
             _current_user_context.pop(user_context.tg_id, None)
 

@@ -1,8 +1,17 @@
+"""
+bot/app/keyboards/admin.py
+
+ФОРМА — структура и layout клавиатур.
+
+Не знает о логике переходов, только возвращает ReplyKeyboardMarkup.
+"""
+
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from bot.app.i18n.loader import t
 
 
-def admin_main(lang: str):
+def admin_main(lang: str) -> ReplyKeyboardMarkup:
+    """Главное меню админа."""
     return ReplyKeyboardMarkup(
         keyboard=[
             [
@@ -17,7 +26,8 @@ def admin_main(lang: str):
     )
 
 
-def admin_settings(lang: str):
+def admin_settings(lang: str) -> ReplyKeyboardMarkup:
+    """Подменю настроек."""
     return ReplyKeyboardMarkup(
         keyboard=[
             [
@@ -40,7 +50,8 @@ def admin_settings(lang: str):
     )
 
 
-def admin_schedule(lang: str):
+def admin_schedule(lang: str) -> ReplyKeyboardMarkup:
+    """Подменю расписания."""
     return ReplyKeyboardMarkup(
         keyboard=[
             [
@@ -54,7 +65,8 @@ def admin_schedule(lang: str):
     )
 
 
-def admin_clients(lang: str):
+def admin_clients(lang: str) -> ReplyKeyboardMarkup:
+    """Подменю клиентов."""
     return ReplyKeyboardMarkup(
         keyboard=[
             [
@@ -70,4 +82,3 @@ def admin_clients(lang: str):
         ],
         resize_keyboard=True
     )
-
