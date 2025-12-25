@@ -1,10 +1,13 @@
 """
 bot/app/utils/menucontroller.py
 
-ТРАНСПОРТ — техническая отправка/удаление сообщений.
+UI-контроллер навигации Telegram-бота.
 
-Не знает о бизнес-логике, ролях, конкретных меню.
-Только: отправить клавиатуру, удалить сообщение, работа с Redis.
+Контракт (tg_kbrd.md):
+- В чате ровно ОДИН якорь ReplyKeyboard
+- Сообщение пользователя НЕ удаляется в Type A
+- ReplyKeyboardRemove ЗАПРЕЩЁН между меню
+- Удаляется ТОЛЬКО предыдущий якорь (ДО отправки нового)
 """
 
 import logging
@@ -21,8 +24,7 @@ logger = logging.getLogger(__name__)
 class MenuController:
     """
     Транспортный слой для Telegram-клавиатур.
-    
-    Хранит last_menu_message_id в Redis для персистентности.
+    Хранит last_menu_message_id в Redis.
     """
 
     def __init__(self):
@@ -60,58 +62,54 @@ class MenuController:
         except TelegramBadRequest:
             return False
 
-    async def _clear_previous(self, message: Message) -> None:
-        """Удалить предыдущее меню бота."""
+    async def _delete_previous_menu(self, message: Message) -> None:
+        """
+        Удалить предыдущий якорь меню.
+        Вызывается ДО отправки нового.
+        """
         chat_id = message.chat.id
         old_id = await self._get_menu_id(chat_id)
         if old_id:
             await self._safe_delete(message.bot, chat_id, old_id)
             await self._del_menu_id(chat_id)
+            logger.debug(f"Deleted previous menu {old_id} in chat {chat_id}")
 
     # ------------------------------------------------------------------
-    # PUBLIC API
+    # Type A: Reply → Reply (основная навигация)
     # ------------------------------------------------------------------
 
     async def show(self, message: Message, kb: ReplyKeyboardMarkup) -> None:
         """
         Показать ReplyKeyboard (Type A).
         
-        - Удаляет предыдущее меню
-        - Отправляет новое с точкой
-        - Сразу удаляет сообщение — клавиатура остаётся
+        Контракт:
+        1. Удалить предыдущий якорь меню (ДО отправки нового)
+        2. Отправить новое сообщение с клавиатурой
+        3. Сохранить message_id как новый якорь
+        4. Сообщение пользователя НЕ удаляется!
+        
+        Результат: в чате остаётся сообщение бота + клавиатура внизу.
         """
         chat_id = message.chat.id
         bot = message.bot
 
-        # 1. Удалить старое
-        await self._clear_previous(message)
+        # 1. Удалить старый якорь
+        await self._delete_previous_menu(message)
 
-        # 2. Отправить новое
-        msg = await bot.send_message(chat_id, text=".", reply_markup=kb)
+        # 2. Отправить новое меню (ZWS — невидимый текст)
+        msg = await bot.send_message(
+            chat_id=chat_id,
+            text="\u200b",  # Zero-Width Space
+            reply_markup=kb
+        )
 
-        # 3. Сразу удалить — клавиатура остаётся!
-        if await self._safe_delete(bot, chat_id, msg.message_id):
-            await self._del_menu_id(chat_id)
-        else:
-            await self._set_menu_id(chat_id, msg.message_id)
-
-    async def show_with_text(
-        self, 
-        message: Message, 
-        text: str, 
-        kb: ReplyKeyboardMarkup
-    ) -> None:
-        """
-        Показать ReplyKeyboard с текстом (Type C).
-        
-        Для FSM-сценариев где нужен вопрос/инструкция.
-        """
-        chat_id = message.chat.id
-
-        await self._clear_previous(message)
-
-        msg = await message.bot.send_message(chat_id, text=text, reply_markup=kb)
+        # 3. Сохранить как новый якорь
         await self._set_menu_id(chat_id, msg.message_id)
+        logger.debug(f"New menu {msg.message_id} in chat {chat_id}")
+
+    # ------------------------------------------------------------------
+    # Type B: Reply → Inline
+    # ------------------------------------------------------------------
 
     async def show_inline(
         self,
@@ -126,16 +124,50 @@ class MenuController:
         
         - Удаляет reply-меню
         - Опционально удаляет сообщение пользователя
+        - Inline-сообщение НЕ становится якорем
         """
         chat_id = message.chat.id
         bot = message.bot
 
-        await self._clear_previous(message)
+        # Удалить reply-меню
+        await self._delete_previous_menu(message)
 
+        # Удалить сообщение пользователя (опционально)
         if delete_user_msg:
             await self._safe_delete(bot, chat_id, message.message_id)
 
+        # Показать inline (не сохраняем как якорь!)
         await bot.send_message(chat_id, text=text, reply_markup=kb)
+
+    # ------------------------------------------------------------------
+    # Type C: Reply → Reply с текстом (FSM/wizard)
+    # ------------------------------------------------------------------
+
+    async def show_with_text(
+        self, 
+        message: Message, 
+        text: str, 
+        kb: ReplyKeyboardMarkup
+    ) -> None:
+        """
+        Показать ReplyKeyboard с текстом (Type C).
+        
+        Для FSM-сценариев где нужен вопрос/инструкция.
+        """
+        chat_id = message.chat.id
+
+        await self._delete_previous_menu(message)
+
+        msg = await message.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=kb
+        )
+        await self._set_menu_id(chat_id, msg.message_id)
+
+    # ------------------------------------------------------------------
+    # Inline → Reply (возврат из inline)
+    # ------------------------------------------------------------------
 
     async def back_from_inline(
         self, 
@@ -147,6 +179,8 @@ class MenuController:
         
         Вызывается из callback_query.message.
         """
+        # Удалить inline-сообщение
         await self._safe_delete(message.bot, message.chat.id, message.message_id)
+        
+        # Показать reply-меню
         await self.show(message, kb)
-
