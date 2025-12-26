@@ -16,7 +16,6 @@ en:admin:schedule:title | "📅 Schedule"
 ru:admin:clients:title | "👥 Клиенты"
 en:admin:clients:title | "👥 Clients"
 
-
 # --- admin main ---
 ru:admin:main:settings | "⚙️ Настройки"
 ru:admin:main:schedule | "📅 Расписание"
@@ -40,4 +39,66 @@ ru:admin:clients:find     | "🔍 Найти"
 ru:admin:clients:bookings | "📖 Записи"
 ru:admin:clients:wallets  | "💰 Кошельки"
 ru:admin:clients:back     | "⬅️ Назад"
+
+# --- admin / locations menu (Reply) ---
+ru:admin:locations:title | "📍 Локации"
+en:admin:locations:title | "📍 Locations"
+ru:admin:locations:list | "📋 Список"
+en:admin:locations:list | "📋 List"
+ru:admin:locations:create | "➕ Создать"
+en:admin:locations:create | "➕ Create"
+ru:admin:locations:back | "⬅️ Назад"
+en:admin:locations:back | "⬅️ Back"
+
+# --- locations list (Inline) ---
+ru:admin:locations:list_title | "📍 Локации (%d)"
+en:admin:locations:list_title | "📍 Locations (%d)"
+ru:admin:locations:search | "🔍 Поиск"
+en:admin:locations:search | "🔍 Search"
+ru:admin:locations:empty | "Список пуст"
+en:admin:locations:empty | "List is empty"
+ru:admin:locations:item | "📍 %s"
+en:admin:locations:item | "📍 %s"
+
+# --- location view/edit (Inline) ---
+ru:admin:location:view_title | "📍 %s"
+en:admin:location:view_title | "📍 %s"
+ru:admin:location:info | "🏙 Город: %s\n🏠 Адрес: %s"
+en:admin:location:info | "🏙 City: %s\n🏠 Address: %s"
+ru:admin:location:edit | "✏️ Редактировать"
+en:admin:location:edit | "✏️ Edit"
+ru:admin:location:delete | "🗑 Удалить"
+en:admin:location:delete | "🗑 Delete"
+ru:admin:location:back | "⬅️ Назад"
+en:admin:location:back | "⬅️ Back"
+
+# --- location create (Inline) ---
+ru:admin:location:create_title | "➕ Новая локация"
+en:admin:location:create_title | "➕ New location"
+ru:admin:location:enter_name | "Введите название:"
+en:admin:location:enter_name | "Enter name:"
+ru:admin:location:enter_city | "Введите город:"
+en:admin:location:enter_city | "Enter city:"
+ru:admin:location:created | "✅ Локация «%s» создана"
+en:admin:location:created | "✅ Location «%s» created"
+
+# --- location delete (Inline) ---
+ru:admin:location:confirm_delete | "Удалить «%s»?"
+en:admin:location:confirm_delete | "Delete «%s»?"
+ru:admin:location:deleted | "🗑 Удалено"
+en:admin:location:deleted | "🗑 Deleted"
+
+# --- common (Inline) ---
+ru:common:yes | "✅ Да"
+en:common:yes | "✅ Yes"
+ru:common:no | "❌ Нет"
+en:common:no | "❌ No"
+ru:common:cancel | "❌ Отмена"
+en:common:cancel | "❌ Cancel"
+ru:common:back | "⬅️ Назад"
+en:common:back | "⬅️ Back"
+ru:common:prev | "◀️"
+en:common:prev | "◀️"
+ru:common:next | "▶️"
+en:common:next | "▶️"
 

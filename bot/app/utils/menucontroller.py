@@ -127,28 +127,45 @@ class MenuController:
         message: Message,
         text: str,
         kb: InlineKeyboardMarkup,
-        *,
-        delete_user_msg: bool = True,
-    ) -> None:
+    ) -> Message:
         """
         Показать InlineKeyboard (Type B).
         
-        - Удаляет reply-меню
-        - Опционально удаляет сообщение пользователя
-        - Inline-сообщение НЕ становится якорем
+        Порядок (как в Type A — send first!):
+        1. Отправить inline-сообщение
+        2. Удалить старый reply-якорь
+        3. Удалить сообщение пользователя
+        4. Очистить якорь в Redis (inline не является якорем)
+        
+        Returns:
+            Отправленное inline-сообщение (для edit_message)
         """
         chat_id = message.chat.id
         bot = message.bot
+        
+        old_menu_id = await self._get_menu_id(chat_id)
+        user_msg_id = message.message_id
 
-        # Удалить reply-меню
-        await self._delete_previous_menu(message)
+        # 1. Отправить inline-сообщение
+        inline_msg = await bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=kb
+        )
 
-        # Удалить сообщение пользователя (опционально)
-        if delete_user_msg:
-            await self._safe_delete(bot, chat_id, message.message_id)
+        # 2. Удалить старый reply-якорь
+        if old_menu_id:
+            await self._safe_delete(bot, chat_id, old_menu_id)
 
-        # Показать inline (не сохраняем как якорь!)
-        await bot.send_message(chat_id, text=text, reply_markup=kb)
+        # 3. Удалить сообщение пользователя
+        await self._safe_delete(bot, chat_id, user_msg_id)
+
+        # 4. Очистить якорь (inline НЕ является якорем)
+        await self._del_menu_id(chat_id)
+        
+        logger.debug(f"Inline: deleted menu {old_menu_id}, user msg {user_msg_id}")
+        
+        return inline_msg
 
     # ------------------------------------------------------------------
     # Type C: Reply → Reply с текстом (FSM/wizard)
@@ -180,18 +197,58 @@ class MenuController:
     # Inline → Reply (возврат из inline)
     # ------------------------------------------------------------------
 
-    async def back_from_inline(
+    async def back_to_reply(
         self, 
-        message: Message, 
-        kb: ReplyKeyboardMarkup
+        callback_message: Message, 
+        kb: ReplyKeyboardMarkup,
+        title: str = "📋"
     ) -> None:
         """
         Вернуться из Inline в Reply меню.
         
+        Вызывается из callback_query.message (это inline-сообщение).
+        
+        Порядок:
+        1. Отправить reply-меню
+        2. Сохранить якорь
+        3. Удалить inline-сообщение
+        """
+        chat_id = callback_message.chat.id
+        bot = callback_message.bot
+        inline_msg_id = callback_message.message_id
+
+        # 1. Отправить reply-меню
+        msg = await bot.send_message(
+            chat_id=chat_id,
+            text=title,
+            reply_markup=kb
+        )
+        
+        # 2. Сохранить якорь
+        await self._set_menu_id(chat_id, msg.message_id)
+
+        # 3. Удалить inline-сообщение
+        await self._safe_delete(bot, chat_id, inline_msg_id)
+        
+        logger.debug(f"Back to reply: {msg.message_id}, deleted inline {inline_msg_id}")
+
+    # ------------------------------------------------------------------
+    # Inline → Inline (пагинация, обновление)
+    # ------------------------------------------------------------------
+
+    async def edit_inline(
+        self,
+        callback_message: Message,
+        text: str,
+        kb: InlineKeyboardMarkup,
+    ) -> None:
+        """
+        Обновить inline-сообщение (пагинация, изменение данных).
+        
         Вызывается из callback_query.message.
         """
-        # Удалить inline-сообщение
-        await self._safe_delete(message.bot, message.chat.id, message.message_id)
-        
-        # Показать reply-меню
-        await self.show(message, kb)
+        try:
+            await callback_message.edit_text(text=text, reply_markup=kb)
+        except TelegramBadRequest:
+            pass  # Контент не изменился
+
