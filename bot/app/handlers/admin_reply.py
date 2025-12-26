@@ -21,18 +21,18 @@ router = Router()
 def setup(menu_controller, get_user_role):
     """
     Настройка роутера.
-    
+
     Args:
-        menu_controller: MenuController для передачи в flow
-        get_user_role: функция получения роли пользователя
+        menu_controller: MenuController
+        get_user_role: функция получения роли
     """
-    
+
     flow = AdminMenuFlow(menu_controller)
 
     @router.message()
     async def handle_admin_reply(message: Message):
         tg_id = message.from_user.id
-        
+
         # Проверка роли
         if get_user_role(tg_id) != "admin":
             return
@@ -40,10 +40,10 @@ def setup(menu_controller, get_user_role):
         lang = user_lang.get(tg_id, DEFAULT_LANG)
         text = message.text
 
-        # ----------------------------------------------------------
-        # MAIN MENU → Submenus
-        # ----------------------------------------------------------
-        
+        # ==============================================================
+        # MAIN MENU → Level 1
+        # ==============================================================
+
         if text == t("admin:main:settings", lang):
             await flow.to_settings(message, lang)
 
@@ -53,9 +53,9 @@ def setup(menu_controller, get_user_role):
         elif text == t("admin:main:clients", lang):
             await flow.to_clients(message, lang)
 
-        # ----------------------------------------------------------
-        # BACK → Main menu
-        # ----------------------------------------------------------
+        # ==============================================================
+        # Level 1 → BACK to Main
+        # ==============================================================
 
         elif text in (
             t("admin:settings:back", lang),
@@ -64,46 +64,59 @@ def setup(menu_controller, get_user_role):
         ):
             await flow.back_to_main(message, lang)
 
-        # ----------------------------------------------------------
-        # Settings submenu items (TODO: implement flows)
-        # ----------------------------------------------------------
+        # ==============================================================
+        # SETTINGS → Level 2
+        # ==============================================================
 
         elif text == t("admin:settings:locations", lang):
-            pass  # TODO: await flow.to_locations(message, lang)
+            await flow.to_locations(message, lang)
 
         elif text == t("admin:settings:rooms", lang):
-            pass  # TODO: await flow.to_rooms(message, lang)
+            pass  # TODO
 
         elif text == t("admin:settings:services", lang):
-            pass  # TODO: await flow.to_services(message, lang)
+            pass  # TODO
 
         elif text == t("admin:settings:packages", lang):
-            pass  # TODO: await flow.to_packages(message, lang)
+            pass  # TODO
 
         elif text == t("admin:settings:specialists", lang):
-            pass  # TODO: await flow.to_specialists(message, lang)
+            pass  # TODO
 
         elif text == t("admin:settings:spec_services", lang):
-            pass  # TODO: await flow.to_spec_services(message, lang)
+            pass  # TODO
 
-        # ----------------------------------------------------------
-        # Schedule submenu items
-        # ----------------------------------------------------------
+        # ==============================================================
+        # LOCATIONS menu
+        # ==============================================================
+
+        elif text == t("admin:locations:list", lang):
+            pass  # TODO: show_inline список локаций
+
+        elif text == t("admin:locations:create", lang):
+            pass  # TODO: show_inline форма создания
+
+        elif text == t("admin:locations:back", lang):
+            await flow.back_to_settings(message, lang)
+
+        # ==============================================================
+        # SCHEDULE submenu
+        # ==============================================================
 
         elif text == t("admin:schedule:overrides", lang):
-            pass  # TODO: await flow.to_overrides(message, lang)
+            pass  # TODO
 
-        # ----------------------------------------------------------
-        # Clients submenu items
-        # ----------------------------------------------------------
+        # ==============================================================
+        # CLIENTS submenu
+        # ==============================================================
 
         elif text == t("admin:clients:find", lang):
-            pass  # TODO: await flow.to_find_client(message, lang)
+            pass  # TODO
 
         elif text == t("admin:clients:bookings", lang):
-            pass  # TODO: await flow.to_client_bookings(message, lang)
+            pass  # TODO
 
         elif text == t("admin:clients:wallets", lang):
-            pass  # TODO: await flow.to_wallets(message, lang)
+            pass  # TODO
 
     return router
