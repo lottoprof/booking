@@ -87,16 +87,17 @@ class MenuController:
         """
         Показать ReplyKeyboard (Type A).
         
-        Args:
-            message: сообщение от пользователя
-            kb: клавиатура
-            title: заголовок меню (по умолчанию emoji)
+        Порядок критичен для Android:
+        1. Отправить новое меню (клавиатура появляется)
+        2. Сохранить якорь
+        3. Удалить старый якорь бота
+        4. Удалить сообщение пользователя (клавиатура уже есть!)
         """
         chat_id = message.chat.id
         bot = message.bot
         
-        # Запоминаем старый якорь
         old_menu_id = await self._get_menu_id(chat_id)
+        user_msg_id = message.message_id
 
         # 1. Отправить новое меню
         msg = await bot.send_message(
@@ -108,11 +109,14 @@ class MenuController:
         # 2. Сохранить новый якорь
         await self._set_menu_id(chat_id, msg.message_id)
 
-        # 3. Удалить старый якорь (клавиатура уже активна)
+        # 3. Удалить старый якорь бота
         if old_menu_id:
             await self._safe_delete(bot, chat_id, old_menu_id)
+
+        # 4. Удалить сообщение пользователя (ПОСЛЕ — клавиатура уже активна)
+        await self._safe_delete(bot, chat_id, user_msg_id)
         
-        logger.debug(f"Menu: {old_menu_id} -> {msg.message_id}")
+        logger.debug(f"Menu: {old_menu_id} -> {msg.message_id}, deleted user msg {user_msg_id}")
 
     # ------------------------------------------------------------------
     # Type B: Reply → Inline
