@@ -4,6 +4,7 @@ bot/app/flows/admin/locations.py
 FSM создания локации.
 """
 
+import logging
 import json
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
@@ -26,7 +27,7 @@ from bot.app.keyboards.schedule import (
 )
 from bot.app.keyboards.admin import admin_locations
 
-router = Router()
+logger = logging.getLogger(__name__)
 
 
 # ==============================================================
@@ -80,11 +81,14 @@ def build_progress_text(data: dict, lang: str, prompt_key: str) -> str:
 
 
 # ==============================================================
-# Setup
+# Setup — создаём router ВНУТРИ функции
 # ==============================================================
 
 def setup(mc, get_user_role):
     """Setup router with dependencies."""
+    
+    router = Router(name="locations")
+    logger.info("=== locations.setup() called, creating router ===")
 
     # ==========================================================
     # START CREATE
@@ -95,8 +99,13 @@ def setup(mc, get_user_role):
         tg_id = message.from_user.id
         lang = user_lang.get(tg_id, DEFAULT_LANG)
         
+        logger.info(f"start_create called, setting state LocationCreate.name")
+        
         await state.set_state(LocationCreate.name)
         await state.update_data(lang=lang, schedule=default_schedule())
+        
+        current_state = await state.get_state()
+        logger.info(f"State after set: {current_state}")
         
         text = f"{t('admin:location:create_title', lang)}\n\n{t('admin:location:enter_name', lang)}"
         await mc.show_inline(message, text, cancel_inline(lang))
@@ -110,6 +119,7 @@ def setup(mc, get_user_role):
     
     @router.message(LocationCreate.name)
     async def process_name(message: Message, state: FSMContext):
+        logger.info(f"process_name handler called with text: {message.text}")
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
         name = message.text.strip()
         if not name:
@@ -133,6 +143,7 @@ def setup(mc, get_user_role):
     
     @router.message(LocationCreate.city)
     async def process_city(message: Message, state: FSMContext):
+        logger.info(f"process_city handler called")
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
         city = message.text.strip()
         if not city:
@@ -156,6 +167,7 @@ def setup(mc, get_user_role):
     
     @router.message(LocationCreate.street)
     async def process_street(message: Message, state: FSMContext):
+        logger.info(f"process_street handler called")
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
         street = message.text.strip()
         if not street:
@@ -179,6 +191,7 @@ def setup(mc, get_user_role):
     
     @router.message(LocationCreate.house)
     async def process_house(message: Message, state: FSMContext):
+        logger.info(f"process_house handler called")
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
         house = message.text.strip()
         if not house:
@@ -245,7 +258,6 @@ def setup(mc, get_user_role):
                 pass
             return
         
-        # result is dict or None (day off)
         data = await state.get_data()
         day = data.get("editing_day")
         schedule = data.get("schedule", {})
@@ -254,7 +266,6 @@ def setup(mc, get_user_role):
         await state.update_data(schedule=schedule)
         await state.set_state(LocationCreate.schedule)
         
-        # Return to schedule view
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="loc_sched")
         
@@ -314,13 +325,11 @@ def setup(mc, get_user_role):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
         data = await state.get_data()
         
-        # Get company_id
         company = await api.get_company()
         if not company:
             await callback.answer("Error: no company", show_alert=True)
             return
         
-        # Create location
         location = await api.create_location(
             company_id=company["id"],
             name=data["name"],
@@ -336,7 +345,6 @@ def setup(mc, get_user_role):
         
         await state.clear()
         
-        # Success message
         schedule_str = format_schedule_compact(data.get("schedule", {}), lang)
         address = f"{data['city']}, {data.get('street', '')} {data.get('house', '')}".strip()
         
@@ -350,7 +358,6 @@ def setup(mc, get_user_role):
         await callback.message.edit_text(text)
         await callback.answer()
         
-        # Return to locations menu (Reply)
         await mc.back_to_reply(
             callback.message,
             admin_locations(lang),
@@ -375,4 +382,5 @@ def setup(mc, get_user_role):
             title=t("admin:locations:title", lang)
         )
 
+    logger.info(f"=== locations router configured, handlers count: {len(router.message.handlers)} ===")
     return router
