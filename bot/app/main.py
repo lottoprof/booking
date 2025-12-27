@@ -1,5 +1,6 @@
 # bot/app/main.py
 
+import os
 import logging
 from pathlib import Path
 from typing import Optional
@@ -8,6 +9,7 @@ from dataclasses import dataclass
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import Update, Message, CallbackQuery, TelegramObject
+from aiogram.fsm.storage.redis import RedisStorage
 
 from bot.app.config import BOT_TOKEN
 from bot.app.i18n.loader import load_messages, t, DEFAULT_LANG
@@ -25,8 +27,18 @@ BOT_DIR = Path(__file__).resolve().parent
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ===============================
+# REDIS FSM STORAGE
+# ===============================
+
+REDIS_URL = os.getenv("REDIS_URL")
+if not REDIS_URL:
+    raise RuntimeError("REDIS_URL is not set")
+
+storage = RedisStorage.from_url(REDIS_URL)
+
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
+dp = Dispatcher(storage=storage)
 
 menu = MenuController()
 admin_flow = AdminMenuFlow(menu)

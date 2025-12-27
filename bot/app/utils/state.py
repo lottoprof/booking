@@ -1,43 +1,53 @@
 """
-Simple in-memory user state.
+bot/app/utils/state.py
 
-NOTE:
-- state is NOT persistent
-- cleared on bot restart
-- Redis-based state can be added later
+User state с Redis persistence.
 """
 
-from typing import Dict, Optional
+import os
+import redis
+
+REDIS_URL = os.getenv("REDIS_URL")
+if not REDIS_URL:
+    raise RuntimeError("REDIS_URL is not set")
+
+_redis = redis.from_url(REDIS_URL, decode_responses=True)
+
+# TTL для языка — 30 дней
+LANG_TTL = 60 * 60 * 24 * 30
 
 
 # ----------------------------------------
-# User language
+# User language (Redis)
 # ----------------------------------------
 
-# tg_id -> lang_code (ru / en / ...)
-user_lang: Dict[int, str] = {}
-
-
-def get_user_lang(tg_id: int) -> Optional[str]:
-    return user_lang.get(tg_id)
+def get_user_lang(tg_id: int) -> str | None:
+    return _redis.get(f"user:lang:{tg_id}")
 
 
 def set_user_lang(tg_id: int, lang: str) -> None:
-    user_lang[tg_id] = lang
+    _redis.setex(f"user:lang:{tg_id}", LANG_TTL, lang)
 
 
 # ----------------------------------------
-# Generic per-user state (optional)
+# Backward compatibility
 # ----------------------------------------
 
-# tg_id -> state dict
-user_state: Dict[int, dict] = {}
+class UserLangDict:
+    """Dict-like interface для совместимости с user_lang[tg_id]."""
+    
+    def get(self, tg_id: int, default: str | None = None) -> str | None:
+        return get_user_lang(tg_id) or default
+    
+    def __getitem__(self, tg_id: int) -> str | None:
+        return get_user_lang(tg_id)
+    
+    def __setitem__(self, tg_id: int, lang: str) -> None:
+        set_user_lang(tg_id, lang)
+    
+    def __contains__(self, tg_id: int) -> bool:
+        return get_user_lang(tg_id) is not None
 
 
-def get_state(tg_id: int) -> dict:
-    return user_state.setdefault(tg_id, {})
-
-
-def clear_state(tg_id: int) -> None:
-    user_state.pop(tg_id, None)
+user_lang = UserLangDict()
 
