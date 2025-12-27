@@ -10,10 +10,12 @@ bot/app/handlers/admin_reply.py
 
 from aiogram import Router
 from aiogram.types import Message
+from aiogram.fsm.context import FSMContext
 
 from bot.app.i18n.loader import t, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.flows.admin.menu import AdminMenuFlow
+from bot.app.flows.admin import locations as locations_flow
 
 router = Router()
 
@@ -26,14 +28,16 @@ def setup(menu_controller, get_user_role):
         menu_controller: MenuController
         get_user_role: функция получения роли
     """
-
+ 
     flow = AdminMenuFlow(menu_controller)
+    
+    # Setup locations flow
+    loc_router = locations_flow.setup(menu_controller, get_user_role)
 
     @router.message()
-    async def handle_admin_reply(message: Message):
+    async def handle_admin_reply(message: Message, state: FSMContext):
         tg_id = message.from_user.id
-
-        # Проверка роли
+        
         if get_user_role(tg_id) != "admin":
             return
 
@@ -43,7 +47,7 @@ def setup(menu_controller, get_user_role):
         # ==============================================================
         # MAIN MENU → Level 1
         # ==============================================================
-
+        
         if text == t("admin:main:settings", lang):
             await flow.to_settings(message, lang)
 
@@ -91,10 +95,10 @@ def setup(menu_controller, get_user_role):
         # ==============================================================
 
         elif text == t("admin:locations:list", lang):
-            pass  # TODO: show_inline список локаций
+            pass  # TODO: show locations list inline
 
         elif text == t("admin:locations:create", lang):
-            pass  # TODO: show_inline форма создания
+            await loc_router.start_create(message, state)
 
         elif text == t("admin:locations:back", lang):
             await flow.back_to_settings(message, lang)
@@ -118,5 +122,8 @@ def setup(menu_controller, get_user_role):
 
         elif text == t("admin:clients:wallets", lang):
             pass  # TODO
+
+    # Include locations router for FSM handlers
+    router.include_router(loc_router)
 
     return router

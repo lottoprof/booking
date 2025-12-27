@@ -27,4 +27,6 @@ REDIS_URL=redis://127.0.0.1:6379/1
 # Backend
 DOMAIN_API_URL=http://backend:8000
 
-
+# bot API
+GATEWAY_URL=http://gateway:8080
+INTERNAL_TOKEN=123456 #openssl rand -hex 32
