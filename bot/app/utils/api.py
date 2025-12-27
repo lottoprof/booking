@@ -4,8 +4,6 @@ bot/app/utils/api.py
 HTTP-клиент для запросов через GATEWAY.
 
 Бот → Gateway → Backend
-
-Gateway URL берётся из GATEWAY_URL (не DOMAIN_API_URL!)
 """
 
 import os
@@ -25,6 +23,7 @@ class ApiClient:
 
     def __init__(self, base_url: str = GATEWAY_URL):
         self.base_url = base_url.rstrip("/")
+        logger.info(f"ApiClient initialized with base_url: {self.base_url}")
 
     async def _request(
         self,
@@ -41,7 +40,7 @@ class ApiClient:
         if headers:
             _headers.update(headers)
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
             try:
                 resp = await client.request(method, url, headers=_headers, **kwargs)
                 
@@ -49,7 +48,7 @@ class ApiClient:
                     return None
                     
                 if resp.status_code >= 400:
-                    logger.error(f"API error: {method} {path} -> {resp.status_code}")
+                    logger.error(f"API error: {method} {path} -> {resp.status_code} {resp.text}")
                     return None
                     
                 return resp.json()
@@ -63,8 +62,8 @@ class ApiClient:
     # ------------------------------------------------------------------
 
     async def get_company(self) -> Optional[dict]:
-        """GET /company — первая компания."""
-        result = await self._request("GET", "/company")
+        """GET /company/ — первая компания."""
+        result = await self._request("GET", "/company/")
         if result and len(result) > 0:
             return result[0]
         return None
@@ -74,8 +73,8 @@ class ApiClient:
     # ------------------------------------------------------------------
 
     async def get_locations(self) -> list[dict]:
-        """GET /locations — список активных локаций."""
-        result = await self._request("GET", "/locations")
+        """GET /locations/ — список активных локаций."""
+        result = await self._request("GET", "/locations/")
         return result or []
 
     async def get_location(self, location_id: int) -> Optional[dict]:
@@ -89,14 +88,14 @@ class ApiClient:
         city: str,
         **kwargs
     ) -> Optional[dict]:
-        """POST /locations"""
+        """POST /locations/"""
         data = {
             "company_id": company_id,
             "name": name,
             "city": city,
             **kwargs
         }
-        return await self._request("POST", "/locations", json=data)
+        return await self._request("POST", "/locations/", json=data)
 
     async def update_location(self, location_id: int, **kwargs) -> Optional[dict]:
         """PATCH /locations/{id}"""
@@ -110,3 +109,4 @@ class ApiClient:
 
 # Singleton
 api = ApiClient()
+
