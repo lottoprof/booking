@@ -2,8 +2,6 @@
 bot/app/handlers/admin_reply.py
 
 Роутинг Reply-кнопок админа.
-
-ВАЖНО: FSM роутеры включаются ПЕРВЫМИ для приоритета state handlers.
 """
 
 from aiogram import Router
@@ -18,7 +16,8 @@ from bot.app.flows.admin import locations as locations_flow
 import logging
 logger = logging.getLogger(__name__)
 
-router = Router()
+# Главный роутер — будет включать sub-роутеры
+router = Router(name="admin_main")
 
 
 def setup(menu_controller, get_user_role):
@@ -26,23 +25,21 @@ def setup(menu_controller, get_user_role):
     
     flow = AdminMenuFlow(menu_controller)
     
-    # Setup locations flow и включаем ПЕРВЫМ (FSM приоритет!)
+    # Sub-роутер для Reply кнопок (без FSM фильтра)
+    reply_router = Router(name="admin_reply")
+    
+    # FSM роутер для locations
     loc_router = locations_flow.setup(menu_controller, get_user_role)
-    router.include_router(loc_router)
 
-    @router.message()
+    @reply_router.message()
     async def handle_admin_reply(message: Message, state: FSMContext):
         tg_id = message.from_user.id
         
-        # =====================================================
-        # ВАЖНО: если есть активный FSM state — пропускаем!
-        # FSM handler из loc_router должен был обработать.
-        # Если мы тут — значит FSM handler не сработал,
-        # но state есть — не мешаем FSM.
-        # =====================================================
+        # Если есть активный FSM state — не обрабатываем
+        # (FSM handler уже должен был сработать в loc_router)
         current_state = await state.get_state()
         if current_state:
-            logger.info(f"Skipping admin_reply, active FSM state: {current_state}")
+            logger.debug(f"admin_reply skipped, FSM active: {current_state}")
             return
         
         if get_user_role(tg_id) != "admin":
@@ -129,6 +126,12 @@ def setup(menu_controller, get_user_role):
 
         elif text == t("admin:clients:wallets", lang):
             pass  # TODO
+
+    # =====================================================
+    # ПОРЯДОК ВАЖЕН! FSM роутер ПЕРВЫЙ, reply ПОСЛЕДНИЙ
+    # =====================================================
+    router.include_router(loc_router)      # FSM handlers первые
+    router.include_router(reply_router)    # Catch-all последний
 
     return router
 
