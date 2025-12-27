@@ -2,9 +2,6 @@
 bot/app/handlers/admin_reply.py
 
 Роутинг Reply-кнопок админа.
-Не знает о структуре клавиатур.
-Не знает как отправлять сообщения.
-Только: получил текст → вызвал нужный метод flow.
 
 ВАЖНО: FSM роутеры включаются ПЕРВЫМИ для приоритета state handlers.
 """
@@ -17,6 +14,9 @@ from bot.app.i18n.loader import t, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.flows.admin.menu import AdminMenuFlow
 from bot.app.flows.admin import locations as locations_flow
+
+import logging
+logger = logging.getLogger(__name__)
 
 router = Router()
 
@@ -33,6 +33,17 @@ def setup(menu_controller, get_user_role):
     @router.message()
     async def handle_admin_reply(message: Message, state: FSMContext):
         tg_id = message.from_user.id
+        
+        # =====================================================
+        # ВАЖНО: если есть активный FSM state — пропускаем!
+        # FSM handler из loc_router должен был обработать.
+        # Если мы тут — значит FSM handler не сработал,
+        # но state есть — не мешаем FSM.
+        # =====================================================
+        current_state = await state.get_state()
+        if current_state:
+            logger.info(f"Skipping admin_reply, active FSM state: {current_state}")
+            return
         
         if get_user_role(tg_id) != "admin":
             return
@@ -120,3 +131,4 @@ def setup(menu_controller, get_user_role):
             pass  # TODO
 
     return router
+
