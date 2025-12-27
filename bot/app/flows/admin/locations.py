@@ -81,7 +81,7 @@ def build_progress_text(data: dict, lang: str, prompt_key: str) -> str:
 
 
 # ==============================================================
-# Setup — создаём router ВНУТРИ функции
+# Setup
 # ==============================================================
 
 def setup(mc, get_user_role):
@@ -104,14 +104,29 @@ def setup(mc, get_user_role):
         await state.set_state(LocationCreate.name)
         await state.update_data(lang=lang, schedule=default_schedule())
         
-        current_state = await state.get_state()
-        logger.info(f"State after set: {current_state}")
-        
         text = f"{t('admin:location:create_title', lang)}\n\n{t('admin:location:enter_name', lang)}"
         await mc.show_inline(message, text, cancel_inline(lang))
     
     # Expose for admin_reply
     router.start_create = start_create
+
+    # ==========================================================
+    # Helper: send tracked inline
+    # ==========================================================
+
+    async def send_step(message: Message, text: str, kb: InlineKeyboardMarkup):
+        """Отправить inline с трекингом для очистки."""
+        chat_id = message.chat.id
+        bot = message.bot
+        
+        # Удалить сообщение пользователя
+        try:
+            await message.delete()
+        except:
+            pass
+        
+        # Отправить и трекать
+        return await mc.send_inline_in_flow(bot, chat_id, text, kb)
 
     # ==========================================================
     # NAME → CITY
@@ -130,12 +145,7 @@ def setup(mc, get_user_role):
         
         data = await state.get_data()
         text = build_progress_text(data, lang, "admin:location:enter_city")
-        
-        try:
-            await message.delete()
-        except:
-            pass
-        await message.answer(text, reply_markup=cancel_inline(lang))
+        await send_step(message, text, cancel_inline(lang))
 
     # ==========================================================
     # CITY → STREET
@@ -154,12 +164,7 @@ def setup(mc, get_user_role):
         
         data = await state.get_data()
         text = build_progress_text(data, lang, "admin:location:enter_street")
-        
-        try:
-            await message.delete()
-        except:
-            pass
-        await message.answer(text, reply_markup=cancel_inline(lang))
+        await send_step(message, text, cancel_inline(lang))
 
     # ==========================================================
     # STREET → HOUSE
@@ -178,12 +183,7 @@ def setup(mc, get_user_role):
         
         data = await state.get_data()
         text = build_progress_text(data, lang, "admin:location:enter_house")
-        
-        try:
-            await message.delete()
-        except:
-            pass
-        await message.answer(text, reply_markup=cancel_inline(lang))
+        await send_step(message, text, cancel_inline(lang))
 
     # ==========================================================
     # HOUSE → SCHEDULE
@@ -205,12 +205,7 @@ def setup(mc, get_user_role):
         
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="loc_sched")
-        
-        try:
-            await message.delete()
-        except:
-            pass
-        await message.answer(text, reply_markup=kb)
+        await send_step(message, text, kb)
 
     # ==========================================================
     # SCHEDULE: day selected
@@ -251,13 +246,16 @@ def setup(mc, get_user_role):
         result = parse_time_input(text_input)
         
         if result == "error":
-            await message.answer(t("schedule:invalid", lang))
             try:
                 await message.delete()
             except:
                 pass
+            # Отправляем ошибку как отдельное сообщение (не трекаем — временное)
+            err_msg = await message.answer(t("schedule:invalid", lang))
+            # Можно удалить через секунду, но пока оставим
             return
         
+        # result is dict or None (day off)
         data = await state.get_data()
         day = data.get("editing_day")
         schedule = data.get("schedule", {})
@@ -266,14 +264,10 @@ def setup(mc, get_user_role):
         await state.update_data(schedule=schedule)
         await state.set_state(LocationCreate.schedule)
         
+        # Return to schedule view
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="loc_sched")
-        
-        try:
-            await message.delete()
-        except:
-            pass
-        await message.answer(text, reply_markup=kb)
+        await send_step(message, text, kb)
 
     # ==========================================================
     # SCHEDULE_DAY: day off button
@@ -344,20 +338,9 @@ def setup(mc, get_user_role):
             return
         
         await state.clear()
+        await callback.answer(t("admin:location:created", lang) % data["name"])
         
-        schedule_str = format_schedule_compact(data.get("schedule", {}), lang)
-        address = f"{data['city']}, {data.get('street', '')} {data.get('house', '')}".strip()
-        
-        text = (
-            f"{t('admin:location:created', lang) % data['name']}\n\n"
-            f"📍 {data['name']}\n"
-            f"🏙 {address}\n"
-            f"📅 {schedule_str}"
-        )
-        
-        await callback.message.edit_text(text)
-        await callback.answer()
-        
+        # Возврат в Reply меню (удалит все tracked inline)
         await mc.back_to_reply(
             callback.message,
             admin_locations(lang),
@@ -376,6 +359,7 @@ def setup(mc, get_user_role):
         await state.clear()
         await callback.answer()
         
+        # Возврат в Reply меню (удалит все tracked inline)
         await mc.back_to_reply(
             callback.message,
             admin_locations(lang),
@@ -384,3 +368,4 @@ def setup(mc, get_user_role):
 
     logger.info(f"=== locations router configured, handlers count: {len(router.message.handlers)} ===")
     return router
+
