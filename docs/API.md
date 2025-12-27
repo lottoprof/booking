@@ -1,3 +1,27 @@
+```
+Telegram webhook
+    │
+    ▼
+┌─────────────────┐
+│   Gateway:8080  │
+│   /tg/webhook   │──► process_update(bot)
+└────────┬────────┘           │
+         │                    │
+         │    ◄───────────────┘
+         │    Bot делает HTTP запрос
+         ▼    к тому же Gateway
+┌─────────────────┐
+│   Gateway:8080  │
+│   /locations    │  ← X-Internal-Token
+│   policy: allow │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Backend:8000   │
+└─────────────────┘
+```
+
 # 1. Company
 
 ### GET /company  
