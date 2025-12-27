@@ -99,7 +99,7 @@ def setup(menu_controller, get_user_role):
         # ==============================================================
 
         elif text == t("admin:locations:list", lang):
-            pass  # TODO: show locations list inline
+            await loc_router.show_list(message)
 
         elif text == t("admin:locations:create", lang):
             await loc_router.start_create(message, state)
