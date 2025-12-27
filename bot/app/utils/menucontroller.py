@@ -158,7 +158,13 @@ class MenuController:
     ) -> Message:
         """
         Показать InlineKeyboard (Type B).
-        Трекает inline message для последующей очистки.
+        
+        Порядок для предотвращения IME на Android:
+        1. Отправить inline-сообщение
+        2. Трекаем для очистки
+        3. Удалить сообщение пользователя
+        4. Удалить старый reply-якорь (ПОСЛЕДНИМ!)
+        5. Очистить якорь в Redis
         """
         chat_id = message.chat.id
         bot = message.bot
@@ -176,12 +182,13 @@ class MenuController:
         # 2. Трекаем inline для очистки
         await self._add_inline_id(chat_id, inline_msg.message_id)
 
-        # 3. Удалить старый reply-якорь
+        # 3. Удалить сообщение пользователя СНАЧАЛА
+        await self._safe_delete(bot, chat_id, user_msg_id)
+
+        # 4. Удалить старый reply-якорь ПОСЛЕДНИМ
+        # (inline уже на экране, IME не появится)
         if old_menu_id:
             await self._safe_delete(bot, chat_id, old_menu_id)
-
-        # 4. Удалить сообщение пользователя
-        await self._safe_delete(bot, chat_id, user_msg_id)
 
         # 5. Очистить якорь (inline НЕ является якорем)
         await self._del_menu_id(chat_id)

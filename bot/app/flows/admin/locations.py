@@ -538,7 +538,9 @@ def setup(mc, get_user_role):
                 await message.delete()
             except:
                 pass
-            await message.answer(t("schedule:invalid", lang))
+            # Трекаем сообщение об ошибке для очистки
+            err_msg = await message.answer(t("schedule:invalid", lang))
+            await mc._add_inline_id(message.chat.id, err_msg.message_id)
             return
         
         data = await state.get_data()
