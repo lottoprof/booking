@@ -1,11 +1,12 @@
 """
 bot/app/handlers/admin_reply.py
 
-РОУТИНГ — связывает текст кнопки с действием.
-
+Роутинг Reply-кнопок админа.
 Не знает о структуре клавиатур.
 Не знает как отправлять сообщения.
 Только: получил текст → вызвал нужный метод flow.
+
+ВАЖНО: FSM роутеры включаются ПЕРВЫМИ для приоритета state handlers.
 """
 
 from aiogram import Router
@@ -21,18 +22,13 @@ router = Router()
 
 
 def setup(menu_controller, get_user_role):
-    """
-    Настройка роутера.
-
-    Args:
-        menu_controller: MenuController
-        get_user_role: функция получения роли
-    """
- 
+    """Настройка роутера."""
+    
     flow = AdminMenuFlow(menu_controller)
     
-    # Setup locations flow
+    # Setup locations flow и включаем ПЕРВЫМ (FSM приоритет!)
     loc_router = locations_flow.setup(menu_controller, get_user_role)
+    router.include_router(loc_router)
 
     @router.message()
     async def handle_admin_reply(message: Message, state: FSMContext):
@@ -122,8 +118,5 @@ def setup(menu_controller, get_user_role):
 
         elif text == t("admin:clients:wallets", lang):
             pass  # TODO
-
-    # Include locations router for FSM handlers
-    router.include_router(loc_router)
 
     return router
