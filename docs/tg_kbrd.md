@@ -195,3 +195,7 @@ bot/app/
 | 1.0    | 2024-12    | Первоначальный контракт                      |
 | 2.0    | 2024-12-26 | ZWS не работает, is_persistent обязателен, порядок send→delete |
 
+TODO:
+
+show_inline_readonly() — Type B1, не удаляет Reply-якорь
+show_inline_input() — Type B2, удаляет, IME активен
