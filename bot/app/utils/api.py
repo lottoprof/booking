@@ -106,6 +106,46 @@ class ApiClient:
         result = await self._request("DELETE", f"/locations/{location_id}")
         return result is None
 
+    # ------------------------------------------------------------------
+    # Services
+    # ------------------------------------------------------------------
+
+    async def get_services(self) -> list[dict]:
+        """GET /services/ — список активных услуг."""
+        result = await self._request("GET", "/services/")
+        return result or []
+
+    async def get_service(self, service_id: int) -> Optional[dict]:
+        """GET /services/{id}"""
+        return await self._request("GET", f"/services/{service_id}")
+
+    async def create_service(
+        self,
+        company_id: int,
+        name: str,
+        duration_min: int,
+        price: float,
+        **kwargs
+    ) -> Optional[dict]:
+        """POST /services/"""
+        data = {
+            "company_id": company_id,
+            "name": name,
+            "duration_min": duration_min,
+            "price": price,
+            **kwargs
+        }
+        return await self._request("POST", "/services/", json=data)
+
+    async def update_service(self, service_id: int, **kwargs) -> Optional[dict]:
+        """PATCH /services/{id}"""
+        return await self._request("PATCH", f"/services/{service_id}", json=kwargs)
+
+    async def delete_service(self, service_id: int) -> bool:
+        """DELETE /services/{id} — soft-delete."""
+        result = await self._request("DELETE", f"/services/{service_id}")
+        return result is None
+
 
 # Singleton
 api = ApiClient()

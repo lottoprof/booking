@@ -187,4 +187,75 @@ en:common:save | "💾 Save"
 ru:common:error | "❌ Ошибка"
 en:common:error | "❌ Error"
 
+# --- admin / services menu (Reply) ---
+ru:admin:services:title | "🛎 Услуги"
+en:admin:services:title | "🛎 Services"
+ru:admin:services:list | "📋 Список"
+en:admin:services:list | "📋 List"
+ru:admin:services:create | "➕ Создать"
+en:admin:services:create | "➕ Create"
+ru:admin:services:back | "⬅️ Назад"
+en:admin:services:back | "⬅️ Back"
+
+# --- services list (Inline) ---
+ru:admin:services:list_title | "🛎 Услуги (%d)"
+en:admin:services:list_title | "🛎 Services (%d)"
+ru:admin:services:empty | "Список пуст"
+en:admin:services:empty | "List is empty"
+ru:admin:services:item | "🛎 %s"
+en:admin:services:item | "🛎 %s"
+
+# --- service view (Inline) ---
+ru:admin:service:view_title | "🛎 %s"
+en:admin:service:view_title | "🛎 %s"
+ru:admin:service:info | "⏱ %d мин | 💰 %s"
+en:admin:service:info | "⏱ %d min | 💰 %s"
+ru:admin:service:info_break | "⏱ %d мин (+%d перерыв) | 💰 %s"
+en:admin:service:info_break | "⏱ %d min (+%d break) | 💰 %s"
+ru:admin:service:edit | "✏️ Редактировать"
+en:admin:service:edit | "✏️ Edit"
+ru:admin:service:delete | "🗑 Удалить"
+en:admin:service:delete | "🗑 Delete"
+
+# --- service create flow ---
+ru:admin:service:create_title | "➕ Новая услуга"
+en:admin:service:create_title | "➕ New service"
+ru:admin:service:enter_name | "Введите название услуги:"
+en:admin:service:enter_name | "Enter service name:"
+ru:admin:service:enter_description | "Введите описание (или «пропустить»):"
+en:admin:service:enter_description | "Enter description (or «skip»):"
+ru:admin:service:enter_duration | "Введите длительность (минуты):"
+en:admin:service:enter_duration | "Enter duration (minutes):"
+ru:admin:service:enter_break | "Введите перерыв после услуги (минуты, 0 = без перерыва):"
+en:admin:service:enter_break | "Enter break after service (minutes, 0 = no break):"
+ru:admin:service:enter_price | "Введите цену:"
+en:admin:service:enter_price | "Enter price:"
+ru:admin:service:choose_color | "Выберите цвет:"
+en:admin:service:choose_color | "Choose color:"
+ru:admin:service:created | "✅ Услуга «%s» создана"
+en:admin:service:created | "✅ Service «%s» created"
+
+# --- service delete ---
+ru:admin:service:confirm_delete | "Удалить «%s»?"
+en:admin:service:confirm_delete | "Delete «%s»?"
+ru:admin:service:deleted | "🗑 Удалено"
+en:admin:service:deleted | "🗑 Deleted"
+
+# --- service validation errors ---
+ru:admin:service:error_name | "❌ Название слишком короткое"
+en:admin:service:error_name | "❌ Name is too short"
+ru:admin:service:error_duration | "❌ Введите число больше 0"
+en:admin:service:error_duration | "❌ Enter a number greater than 0"
+ru:admin:service:error_break | "❌ Введите число от 0"
+en:admin:service:error_break | "❌ Enter a number from 0"
+ru:admin:service:error_price | "❌ Введите корректную цену"
+en:admin:service:error_price | "❌ Enter a valid price"
+
+# --- color picker ---
+ru:admin:service:color_none | "Без цвета"
+en:admin:service:color_none | "No color"
+
+# --- skip button ---
+ru:common:skip | "⏭ Пропустить"
+en:common:skip | "⏭ Skip"
 

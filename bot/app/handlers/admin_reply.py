@@ -12,6 +12,7 @@ from bot.app.i18n.loader import t, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.flows.admin.menu import AdminMenuFlow
 from bot.app.flows.admin import locations as locations_flow
+from bot.app.flows.admin import services as services_flow
 
 import logging
 logger = logging.getLogger(__name__)
@@ -28,15 +29,15 @@ def setup(menu_controller, get_user_role):
     # Sub-роутер для Reply кнопок (без FSM фильтра)
     reply_router = Router(name="admin_reply")
     
-    # FSM роутер для locations
+    # FSM роутеры
     loc_router = locations_flow.setup(menu_controller, get_user_role)
+    svc_router = services_flow.setup(menu_controller, get_user_role)
 
     @reply_router.message()
     async def handle_admin_reply(message: Message, state: FSMContext):
         tg_id = message.from_user.id
         
         # Если есть активный FSM state — не обрабатываем
-        # (FSM handler уже должен был сработать в loc_router)
         current_state = await state.get_state()
         if current_state:
             logger.debug(f"admin_reply skipped, FSM active: {current_state}")
@@ -83,7 +84,7 @@ def setup(menu_controller, get_user_role):
             pass  # TODO
 
         elif text == t("admin:settings:services", lang):
-            pass  # TODO
+            await flow.to_services(message, lang)
 
         elif text == t("admin:settings:packages", lang):
             pass  # TODO
@@ -108,6 +109,19 @@ def setup(menu_controller, get_user_role):
             await flow.back_to_settings(message, lang)
 
         # ==============================================================
+        # SERVICES menu
+        # ==============================================================
+
+        elif text == t("admin:services:list", lang):
+            await svc_router.show_list(message)
+
+        elif text == t("admin:services:create", lang):
+            await svc_router.start_create(message, state)
+
+        elif text == t("admin:services:back", lang):
+            await flow.back_to_settings(message, lang)
+
+        # ==============================================================
         # SCHEDULE submenu
         # ==============================================================
 
@@ -128,9 +142,10 @@ def setup(menu_controller, get_user_role):
             pass  # TODO
 
     # =====================================================
-    # ПОРЯДОК ВАЖЕН! FSM роутер ПЕРВЫЙ, reply ПОСЛЕДНИЙ
+    # ПОРЯДОК ВАЖЕН! FSM роутеры ПЕРВЫЕ, reply ПОСЛЕДНИЙ
     # =====================================================
-    router.include_router(loc_router)      # FSM handlers первые
+    router.include_router(loc_router)      # FSM handlers
+    router.include_router(svc_router)      # FSM handlers  
     router.include_router(reply_router)    # Catch-all последний
 
     return router

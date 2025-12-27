@@ -13,7 +13,7 @@ from aiogram.types import (
     InlineKeyboardButton,
 )
 from bot.app.i18n.loader import t
-
+import math
 
 # ============================================================
 # REPLY KEYBOARDS (навигация)
@@ -234,3 +234,219 @@ def location_create_inline(lang: str = "ru") -> InlineKeyboardMarkup:
             ),
         ],
     ])
+
+# ============================================================
+# SERVICES - Reply keyboard
+# ============================================================
+
+def admin_services(lang: str) -> ReplyKeyboardMarkup:
+    """Меню услуг."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text=t("admin:services:list", lang)),
+                KeyboardButton(text=t("admin:services:create", lang)),
+            ],
+            [
+                KeyboardButton(text=t("admin:services:back", lang)),
+            ],
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+    )
+
+
+# ============================================================
+# SERVICES - Inline keyboards
+# ============================================================
+
+def services_list_inline(
+    services: list[dict],
+    page: int,
+    lang: str,
+    per_page: int = 5
+) -> InlineKeyboardMarkup:
+    """Список услуг с пагинацией."""
+    total = len(services)
+    total_pages = max(1, math.ceil(total / per_page))
+    page = max(0, min(page, total_pages - 1))
+
+    start = page * per_page
+    end = start + per_page
+    page_items = services[start:end]
+
+    buttons = []
+
+    # Кнопки услуг
+    for svc in page_items:
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"🛎 {svc['name']}",
+                callback_data=f"svc:view:{svc['id']}"
+            )
+        ])
+
+    # Пагинация
+    if total_pages > 1:
+        nav_row = []
+
+        if page > 0:
+            nav_row.append(InlineKeyboardButton(
+                text="◀️",
+                callback_data=f"svc:page:{page - 1}"
+            ))
+        else:
+            nav_row.append(InlineKeyboardButton(
+                text=" ",
+                callback_data="svc:noop"
+            ))
+
+        nav_row.append(InlineKeyboardButton(
+            text=f"{page + 1}/{total_pages}",
+            callback_data="svc:noop"
+        ))
+
+        if page < total_pages - 1:
+            nav_row.append(InlineKeyboardButton(
+                text="▶️",
+                callback_data=f"svc:page:{page + 1}"
+            ))
+        else:
+            nav_row.append(InlineKeyboardButton(
+                text=" ",
+                callback_data="svc:noop"
+            ))
+
+        buttons.append(nav_row)
+
+    # Назад
+    buttons.append([
+        InlineKeyboardButton(
+            text=t("common:back", lang),
+            callback_data="svc:back"
+        )
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def service_view_inline(service: dict, lang: str) -> InlineKeyboardMarkup:
+    """Карточка просмотра услуги."""
+    svc_id = service["id"]
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text=t("admin:service:edit", lang),
+                callback_data=f"svc:edit:{svc_id}"
+            ),
+            InlineKeyboardButton(
+                text=t("admin:service:delete", lang),
+                callback_data=f"svc:delete:{svc_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text=t("common:back", lang),
+                callback_data="svc:list:0"
+            )
+        ]
+    ])
+
+
+def service_delete_confirm_inline(svc_id: int, lang: str) -> InlineKeyboardMarkup:
+    """Подтверждение удаления."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text=t("common:yes", lang),
+                callback_data=f"svc:delete_confirm:{svc_id}"
+            ),
+            InlineKeyboardButton(
+                text=t("common:no", lang),
+                callback_data=f"svc:view:{svc_id}"
+            )
+        ]
+    ])
+
+
+def service_cancel_inline(lang: str) -> InlineKeyboardMarkup:
+    """Кнопка отмены при создании."""
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(
+            text=t("common:cancel", lang),
+            callback_data="svc_create:cancel"
+        )
+    ]])
+
+
+def service_skip_inline(lang: str) -> InlineKeyboardMarkup:
+    """Кнопка пропустить + отмена."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text=t("common:skip", lang),
+                callback_data="svc_create:skip"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text=t("common:cancel", lang),
+                callback_data="svc_create:cancel"
+            )
+        ]
+    ])
+
+
+# ============================================================
+# COLOR PICKER
+# ============================================================
+
+SERVICE_COLORS = [
+    ("#FF6B6B", "🔴"),  # красный
+    ("#FF9F43", "🟠"),  # оранжевый
+    ("#FECA57", "🟡"),  # жёлтый
+    ("#48C9B0", "🟢"),  # зелёный
+    ("#5DADE2", "🔵"),  # голубой
+    ("#AF7AC5", "🟣"),  # фиолетовый
+    ("#5D6D7E", "⚫"),  # тёмно-серый
+    ("#F0F3F4", "⚪"),  # белый
+    ("#DC7633", "🟤"),  # коричневый
+]
+
+
+def color_picker_inline(lang: str) -> InlineKeyboardMarkup:
+    """Выбор цвета услуги."""
+    buttons = []
+    row = []
+
+    for color_code, emoji in SERVICE_COLORS:
+        row.append(InlineKeyboardButton(
+            text=emoji,
+            callback_data=f"svc_color:{color_code}"
+        ))
+
+        if len(row) == 3:
+            buttons.append(row)
+            row = []
+
+    if row:
+        buttons.append(row)
+
+    # Без цвета
+    buttons.append([
+        InlineKeyboardButton(
+            text=t("admin:service:color_none", lang),
+            callback_data="svc_color:none"
+        )
+    ])
+
+    # Отмена
+    buttons.append([
+        InlineKeyboardButton(
+            text=t("common:cancel", lang),
+            callback_data="svc_create:cancel"
+        )
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+

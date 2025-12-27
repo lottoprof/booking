@@ -12,6 +12,7 @@ from bot.app.keyboards.admin import (
     admin_schedule,
     admin_clients,
     admin_locations,
+    admin_services,
 )
 from bot.app.i18n.loader import t
 
@@ -80,5 +81,12 @@ class AdminMenuFlow:
             message,
             admin_settings(lang),
             title=t("admin:settings:title", lang)
+        )
+
+    async def to_services(self, message: Message, lang: str) -> None:
+        await self.mc.show(
+            message,
+            admin_services(lang),
+            title=t("admin:services:title", lang)
         )
 
