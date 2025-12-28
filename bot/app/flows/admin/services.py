@@ -120,7 +120,9 @@ def setup(mc, get_user_role):
             text = t("admin:services:list_title", lang) % total
         
         kb = services_list_inline(services, page, lang)
-        await mc.show_inline(message, text, kb)
+        
+        # Type B1: readonly — Reply-якорь сохраняется, IME не появляется
+        await mc.show_inline_readonly(message, text, kb)
 
     router.show_list = show_list
 
@@ -267,7 +269,9 @@ def setup(mc, get_user_role):
         await state.update_data(lang=lang)
         
         text = f"{t('admin:service:create_title', lang)}\n\n{t('admin:service:enter_name', lang)}"
-        await mc.show_inline(message, text, service_cancel_inline(lang))
+        
+        # Type B2: input — Reply-якорь удаляется, IME активен для ввода
+        await mc.show_inline_input(message, text, service_cancel_inline(lang))
 
     router.start_create = start_create
 
