@@ -367,6 +367,42 @@ class MenuController:
             pass
 
     # ------------------------------------------------------------------
+    # Inline → Inline + активация IME (переход к вводу)
+    # ------------------------------------------------------------------
+
+    async def edit_inline_input(
+        self,
+        callback_message: Message,
+        text: str,
+        kb: InlineKeyboardMarkup,
+    ) -> None:
+        """
+        Обновить inline-сообщение И активировать режим ввода.
+        
+        Используется когда пользователь нажал "Редактировать" из карточки.
+        Reply-якорь удаляется — IME появляется.
+        
+        Сценарий:
+        - Список (B1, якорь сохранён) → Карточка (edit_inline) → 
+        - Редактировать (edit_inline_input, якорь удаляется, IME активен)
+        """
+        chat_id = callback_message.chat.id
+        bot = callback_message.bot
+        
+        # 1. Обновить inline-сообщение
+        try:
+            await callback_message.edit_text(text=text, reply_markup=kb)
+        except TelegramBadRequest:
+            pass
+        
+        # 2. Удалить Reply-якорь если есть (активирует IME)
+        old_menu_id = await self._get_menu_id(chat_id)
+        if old_menu_id:
+            await self._safe_delete(bot, chat_id, old_menu_id)
+            await self._del_menu_id(chat_id)
+            logger.debug(f"edit_inline_input: deleted reply anchor, IME activated")
+
+    # ------------------------------------------------------------------
     # FSM: новое inline в процессе flow (уже без Reply-якоря)
     # ------------------------------------------------------------------
 
