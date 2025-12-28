@@ -260,6 +260,33 @@ def admin_services(lang: str) -> ReplyKeyboardMarkup:
 # SERVICES - Inline keyboards
 # ============================================================
 
+def _format_service_item(svc: dict, lang: str) -> str:
+    """
+    Форматирует услугу для отображения в списке.
+    
+    Формат: 🛎  Название | 60+10 мин | 2500₽
+    или:    🛎  Название | 60 мин | 2500₽ (без перерыва)
+    """
+    name = svc.get("name", "?")
+    duration = svc.get("duration_min", 0)
+    break_min = svc.get("break_min", 0)
+    price = svc.get("price", 0)
+
+    # Время: "60+10" или просто "60"
+    if break_min > 0:
+        time_str = f"{duration}+{break_min}"
+    else:
+        time_str = str(duration)
+
+    # Цена: целое число если без копеек
+    if price == int(price):
+        price_str = f"{int(price)}{t('common:currency', lang)}"
+    else:
+        price_str = f"{price:.0f}{t('common:currency', lang)}"
+
+    return f"{t('admin:services:item_icon', lang)} {name} | {time_str}{t('common:min', lang)} | {price_str}"
+
+
 def services_list_inline(
     services: list[dict],
     page: int,
@@ -281,7 +308,7 @@ def services_list_inline(
     for svc in page_items:
         buttons.append([
             InlineKeyboardButton(
-                text=f"🛎 {svc['name']}",
+                text=_format_service_item(svc, lang),
                 callback_data=f"svc:view:{svc['id']}"
             )
         ])
@@ -292,7 +319,7 @@ def services_list_inline(
 
         if page > 0:
             nav_row.append(InlineKeyboardButton(
-                text="◀️",
+                text=t("common:prev", lang),
                 callback_data=f"svc:page:{page - 1}"
             ))
         else:
@@ -308,7 +335,7 @@ def services_list_inline(
 
         if page < total_pages - 1:
             nav_row.append(InlineKeyboardButton(
-                text="▶️",
+                text=t("common:next", lang),
                 callback_data=f"svc:page:{page + 1}"
             ))
         else:
@@ -401,25 +428,19 @@ def service_skip_inline(lang: str) -> InlineKeyboardMarkup:
 # COLOR PICKER
 # ============================================================
 
-SERVICE_COLORS = [
-    ("#FF6B6B", "🔴"),  # красный
-    ("#FF9F43", "🟠"),  # оранжевый
-    ("#FECA57", "🟡"),  # жёлтый
-    ("#48C9B0", "🟢"),  # зелёный
-    ("#5DADE2", "🔵"),  # голубой
-    ("#AF7AC5", "🟣"),  # фиолетовый
-    ("#5D6D7E", "⚫"),  # тёмно-серый
-    ("#F0F3F4", "⚪"),  # белый
-    ("#DC7633", "🟤"),  # коричневый
-]
+def get_color_codes(lang: str) -> list[str]:
+    """Получить список кодов цветов из i18n."""
+    colors_str = t("colors:list", lang)
+    return [c.strip() for c in colors_str.split(",") if c.strip()]
 
 
 def color_picker_inline(lang: str) -> InlineKeyboardMarkup:
-    """Выбор цвета услуги."""
+    """Выбор цвета услуги (создание)."""
     buttons = []
     row = []
 
-    for color_code, emoji in SERVICE_COLORS:
+    for color_code in get_color_codes(lang):
+        emoji = t(f"color:{color_code}", lang)
         row.append(InlineKeyboardButton(
             text=emoji,
             callback_data=f"svc_color:{color_code}"
