@@ -80,7 +80,7 @@ def locations_list_inline(
     for loc in page_items:
         buttons.append([
             InlineKeyboardButton(
-                text=f"📍 {loc['name']}",
+                text=t("admin:locations:item", lang) % loc["name"],
                 callback_data=f"loc:view:{loc['id']}"
             )
         ])
@@ -92,7 +92,7 @@ def locations_list_inline(
         # Кнопка "назад"
         if page > 0:
             nav_row.append(InlineKeyboardButton(
-                text="◀️",
+                text=t("common:prev", lang),
                 callback_data=f"loc:page:{page - 1}"
             ))
         else:
@@ -110,7 +110,7 @@ def locations_list_inline(
         # Кнопка "вперёд"
         if page < total_pages - 1:
             nav_row.append(InlineKeyboardButton(
-                text="▶️",
+                text=t("common:next", lang),
                 callback_data=f"loc:page:{page + 1}"
             ))
         else:
@@ -197,7 +197,7 @@ def build_progress_text(data: dict, lang: str, prompt_key: str) -> str:
 
 def build_location_view_text(loc: dict, lang: str) -> str:
     """Текст карточки локации."""
-    lines = [f"📍 {loc['name']}", ""]
+    lines = [t("admin:location:view_title", lang) % loc["name"], ""]
     
     # Адрес
     addr_parts = []
@@ -247,7 +247,7 @@ def setup(mc, get_user_role):
         total = len(locations)
         
         if total == 0:
-            text = f"📍 {t('admin:locations:empty', lang)}"
+            text = t("admin:locations:empty", lang)
         else:
             text = t("admin:locations:list_title", lang) % total
         
@@ -269,7 +269,7 @@ def setup(mc, get_user_role):
         total = len(locations)
         
         if total == 0:
-            text = f"📍 {t('admin:locations:empty', lang)}"
+            text = t("admin:locations:empty", lang)
         else:
             text = t("admin:locations:list_title", lang) % total
         
@@ -286,7 +286,7 @@ def setup(mc, get_user_role):
         total = len(locations)
         
         if total == 0:
-            text = f"📍 {t('admin:locations:empty', lang)}"
+            text = t("admin:locations:empty", lang)
         else:
             text = t("admin:locations:list_title", lang) % total
         
@@ -323,7 +323,7 @@ def setup(mc, get_user_role):
         
         location = await api.get_location(loc_id)
         if not location:
-            await callback.answer("Location not found", show_alert=True)
+            await callback.answer(t("common:error", lang), show_alert=True)
             return
         
         text = build_location_view_text(location, lang)
@@ -343,7 +343,7 @@ def setup(mc, get_user_role):
         
         location = await api.get_location(loc_id)
         if not location:
-            await callback.answer("Location not found", show_alert=True)
+            await callback.answer(t("common:error", lang), show_alert=True)
             return
         
         text = t("admin:location:confirm_delete", lang) % location["name"]
@@ -361,7 +361,7 @@ def setup(mc, get_user_role):
         if success:
             await callback.answer(t("admin:location:deleted", lang))
         else:
-            await callback.answer("Error deleting", show_alert=True)
+            await callback.answer(t("common:error", lang), show_alert=True)
             return
         
         # Вернуться к списку
@@ -369,7 +369,7 @@ def setup(mc, get_user_role):
         total = len(locations)
         
         if total == 0:
-            text = f"📍 {t('admin:locations:empty', lang)}"
+            text = t("admin:locations:empty", lang)
         else:
             text = t("admin:locations:list_title", lang) % total
         
@@ -428,7 +428,14 @@ def setup(mc, get_user_role):
         logger.info(f"process_name handler called with text: {message.text}")
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
         name = message.text.strip()
-        if not name:
+        
+        if len(name) < 2:
+            err_msg = await message.answer(t("admin:location:error_name", lang))
+            await mc._add_inline_id(message.chat.id, err_msg.message_id)
+            try:
+                await message.delete()
+            except:
+                pass
             return
         
         await state.update_data(name=name)
@@ -446,7 +453,14 @@ def setup(mc, get_user_role):
     async def process_city(message: Message, state: FSMContext):
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
         city = message.text.strip()
-        if not city:
+        
+        if len(city) < 2:
+            err_msg = await message.answer(t("admin:location:error_city", lang))
+            await mc._add_inline_id(message.chat.id, err_msg.message_id)
+            try:
+                await message.delete()
+            except:
+                pass
             return
         
         await state.update_data(city=city)
@@ -607,7 +621,7 @@ def setup(mc, get_user_role):
         
         company = await api.get_company()
         if not company:
-            await callback.answer("Error: no company", show_alert=True)
+            await callback.answer(t("common:error", lang), show_alert=True)
             return
         
         location = await api.create_location(
@@ -620,7 +634,7 @@ def setup(mc, get_user_role):
         )
         
         if not location:
-            await callback.answer("Error creating location", show_alert=True)
+            await callback.answer(t("common:error", lang), show_alert=True)
             return
         
         await state.clear()
