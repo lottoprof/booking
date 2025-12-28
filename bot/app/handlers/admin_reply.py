@@ -25,6 +25,7 @@ def setup(menu_controller, get_user_role):
     """Настройка роутера."""
     
     flow = AdminMenuFlow(menu_controller)
+    mc = menu_controller
     
     # Sub-роутер для Reply кнопок (без FSM фильтра)
     reply_router = Router(name="admin_reply")
@@ -33,9 +34,44 @@ def setup(menu_controller, get_user_role):
     loc_router = locations_flow.setup(menu_controller, get_user_role)
     svc_router = services_flow.setup(menu_controller, get_user_role)
 
+    # ==========================================================
+    # CONTEXT HANDLERS: menu_context → {action → handler}
+    # 
+    # Ключи i18n: admin:{context}:{action}
+    # Пример: admin:locations:list, admin:services:create
+    #
+    # handler(msg, state) — для обычных действий
+    # handler(msg, state, lang) — для back (нужен lang)
+    # ==========================================================
+    
+    context_handlers = {
+        "locations": {
+            "list": lambda msg, st: loc_router.show_list(msg),
+            "create": lambda msg, st: loc_router.start_create(msg, st),
+            "back": lambda msg, st, lang: flow.back_to_settings(msg, lang),
+        },
+        "services": {
+            "list": lambda msg, st: svc_router.show_list(msg),
+            "create": lambda msg, st: svc_router.start_create(msg, st),
+            "back": lambda msg, st, lang: flow.back_to_settings(msg, lang),
+        },
+        "schedule": {
+            # "overrides": lambda msg, st: ...,  # TODO
+            "back": lambda msg, st, lang: flow.back_to_main(msg, lang),
+        },
+        "clients": {
+            # "find": lambda msg, st: ...,       # TODO
+            # "bookings": lambda msg, st: ...,   # TODO
+            # "wallets": lambda msg, st: ...,    # TODO
+            "back": lambda msg, st, lang: flow.back_to_main(msg, lang),
+        },
+        # TODO: rooms, specialists, packages...
+    }
+
     @reply_router.message()
     async def handle_admin_reply(message: Message, state: FSMContext):
         tg_id = message.from_user.id
+        chat_id = message.chat.id
         
         # Если есть активный FSM state — не обрабатываем
         current_state = await state.get_state()
@@ -48,6 +84,26 @@ def setup(menu_controller, get_user_role):
 
         lang = user_lang.get(tg_id, DEFAULT_LANG)
         text = message.text
+        
+        # Получаем текущий контекст меню
+        menu_ctx = await mc.get_menu_context(chat_id)
+
+        # ==============================================================
+        # CONTEXT-AWARE: проверяем по текущему контексту
+        # ==============================================================
+        
+        if menu_ctx and menu_ctx in context_handlers:
+            handlers = context_handlers[menu_ctx]
+            
+            for action, handler in handlers.items():
+                key = f"admin:{menu_ctx}:{action}"
+                
+                if text == t(key, lang):
+                    if action == "back":
+                        await handler(message, state, lang)
+                    else:
+                        await handler(message, state)
+                    return
 
         # ==============================================================
         # MAIN MENU → Level 1
@@ -95,58 +151,12 @@ def setup(menu_controller, get_user_role):
         elif text == t("admin:settings:spec_services", lang):
             pass  # TODO
 
-        # ==============================================================
-        # LOCATIONS menu
-        # ==============================================================
-
-        elif text == t("admin:locations:list", lang):
-            await loc_router.show_list(message)
-
-        elif text == t("admin:locations:create", lang):
-            await loc_router.start_create(message, state)
-
-        elif text == t("admin:locations:back", lang):
-            await flow.back_to_settings(message, lang)
-
-        # ==============================================================
-        # SERVICES menu
-        # ==============================================================
-
-        elif text == t("admin:services:list", lang):
-            await svc_router.show_list(message)
-
-        elif text == t("admin:services:create", lang):
-            await svc_router.start_create(message, state)
-
-        elif text == t("admin:services:back", lang):
-            await flow.back_to_settings(message, lang)
-
-        # ==============================================================
-        # SCHEDULE submenu
-        # ==============================================================
-
-        elif text == t("admin:schedule:overrides", lang):
-            pass  # TODO
-
-        # ==============================================================
-        # CLIENTS submenu
-        # ==============================================================
-
-        elif text == t("admin:clients:find", lang):
-            pass  # TODO
-
-        elif text == t("admin:clients:bookings", lang):
-            pass  # TODO
-
-        elif text == t("admin:clients:wallets", lang):
-            pass  # TODO
-
     # =====================================================
     # ПОРЯДОК ВАЖЕН! FSM роутеры ПЕРВЫЕ, reply ПОСЛЕДНИЙ
     # =====================================================
-    router.include_router(loc_router)      # FSM handlers
-    router.include_router(svc_router)      # FSM handlers  
-    router.include_router(reply_router)    # Catch-all последний
+    router.include_router(loc_router)
+    router.include_router(svc_router)
+    router.include_router(reply_router) # Catch-all последний
+
 
     return router
-

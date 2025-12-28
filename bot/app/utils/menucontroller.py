@@ -27,6 +27,7 @@ class MenuController:
     Транспортный слой для Telegram-клавиатур.
     Хранит last_menu_message_id в Redis.
     Отслеживает inline-сообщения для очистки.
+    Хранит current_menu для контекста навигации.
     """
 
     def __init__(self):
@@ -44,6 +45,25 @@ class MenuController:
 
     def _inline_key(self, chat_id: int) -> str:
         return f"tg:inline:{chat_id}"
+
+    def _current_menu_key(self, chat_id: int) -> str:
+        return f"tg:current_menu:{chat_id}"
+
+    # ------------------------------------------------------------------
+    # Redis: current menu context
+    # ------------------------------------------------------------------
+
+    async def set_menu_context(self, chat_id: int, menu_name: str) -> None:
+        """Установить текущий контекст меню."""
+        await self.redis.set(self._current_menu_key(chat_id), menu_name)
+
+    async def get_menu_context(self, chat_id: int) -> str | None:
+        """Получить текущий контекст меню."""
+        return await self.redis.get(self._current_menu_key(chat_id))
+
+    async def clear_menu_context(self, chat_id: int) -> None:
+        """Очистить контекст меню."""
+        await self.redis.delete(self._current_menu_key(chat_id))
 
     # ------------------------------------------------------------------
     # Redis: menu anchor
@@ -114,10 +134,15 @@ class MenuController:
         self, 
         message: Message, 
         kb: ReplyKeyboardMarkup,
-        title: str = "📋"
+        title: str = "📋",
+        menu_context: str | None = None
     ) -> None:
         """
         Показать ReplyKeyboard (Type A).
+        
+        Args:
+            menu_context: имя меню для контекста (locations, services, etc.)
+                         если None — контекст очищается
         """
         chat_id = message.chat.id
         bot = message.bot
@@ -135,11 +160,17 @@ class MenuController:
         # 2. Сохранить новый якорь
         await self._set_menu_id(chat_id, msg.message_id)
 
-        # 3. Удалить старый якорь бота
+        # 3. Установить/очистить контекст меню
+        if menu_context:
+            await self.set_menu_context(chat_id, menu_context)
+        else:
+            await self.clear_menu_context(chat_id)
+
+        # 4. Удалить старый якорь бота
         if old_menu_id:
             await self._safe_delete(bot, chat_id, old_menu_id)
 
-        # 4. Удалить сообщение пользователя
+        # 5. Удалить сообщение пользователя
         await self._safe_delete(bot, chat_id, user_msg_id)
 
     # Alias для совместимости
@@ -165,6 +196,8 @@ class MenuController:
         3. Удалить сообщение пользователя
         4. Удалить старый reply-якорь (ПОСЛЕДНИМ!)
         5. Очистить якорь в Redis
+        
+        Контекст меню НЕ очищается — inline работает в рамках текущего меню.
         """
         chat_id = message.chat.id
         bot = message.bot
@@ -203,11 +236,16 @@ class MenuController:
         self, 
         callback_message: Message, 
         kb: ReplyKeyboardMarkup,
-        title: str = "📋"
+        title: str = "📋",
+        menu_context: str | None = None
     ) -> None:
         """
         Вернуться из Inline в Reply меню.
         Удаляет ВСЕ tracked inline-сообщения.
+        
+        Args:
+            menu_context: если указан — устанавливает контекст,
+                         если None — сохраняет текущий контекст
         """
         chat_id = callback_message.chat.id
         bot = callback_message.bot
@@ -222,7 +260,11 @@ class MenuController:
         # 2. Сохранить якорь
         await self._set_menu_id(chat_id, msg.message_id)
 
-        # 3. Удалить ВСЕ tracked inline-сообщения
+        # 3. Обновить контекст если указан
+        if menu_context is not None:
+            await self.set_menu_context(chat_id, menu_context)
+
+        # 4. Удалить ВСЕ tracked inline-сообщения
         deleted = await self._delete_all_inline(bot, chat_id)
         logger.debug(f"Back to reply: deleted {deleted} inline messages")
 

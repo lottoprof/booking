@@ -30,14 +30,16 @@ class AdminMenuFlow:
         await self.mc.show(
             message, 
             admin_main(lang),
-            title=t("admin:main:title", lang)
+            title=t("admin:main:title", lang),
+            menu_context=None  # очищаем контекст
         )
 
     async def back_to_main(self, message: Message, lang: str) -> None:
         await self.mc.show(
             message, 
             admin_main(lang),
-            title=t("admin:main:title", lang)
+            title=t("admin:main:title", lang),
+            menu_context=None
         )
 
     # ------------------------------------------------------------------
@@ -48,21 +50,24 @@ class AdminMenuFlow:
         await self.mc.show(
             message, 
             admin_settings(lang),
-            title=t("admin:settings:title", lang)
+            title=t("admin:settings:title", lang),
+            menu_context=None  # settings — промежуточный уровень
         )
 
     async def to_schedule(self, message: Message, lang: str) -> None:
         await self.mc.show(
             message, 
             admin_schedule(lang),
-            title=t("admin:schedule:title", lang)
+            title=t("admin:schedule:title", lang),
+            menu_context="schedule"
         )
 
     async def to_clients(self, message: Message, lang: str) -> None:
         await self.mc.show(
             message, 
             admin_clients(lang),
-            title=t("admin:clients:title", lang)
+            title=t("admin:clients:title", lang),
+            menu_context="clients"
         )
 
     # ------------------------------------------------------------------
@@ -73,20 +78,23 @@ class AdminMenuFlow:
         await self.mc.show(
             message,
             admin_locations(lang),
-            title=t("admin:locations:title", lang)
-        )
-
-    async def back_to_settings(self, message: Message, lang: str) -> None:
-        await self.mc.show(
-            message,
-            admin_settings(lang),
-            title=t("admin:settings:title", lang)
+            title=t("admin:locations:title", lang),
+            menu_context="locations"
         )
 
     async def to_services(self, message: Message, lang: str) -> None:
         await self.mc.show(
             message,
             admin_services(lang),
-            title=t("admin:services:title", lang)
+            title=t("admin:services:title", lang),
+            menu_context="services"
+        )
+
+    async def back_to_settings(self, message: Message, lang: str) -> None:
+        await self.mc.show(
+            message,
+            admin_settings(lang),
+            title=t("admin:settings:title", lang),
+            menu_context=None  # очищаем при возврате
         )
 
