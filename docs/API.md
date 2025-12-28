@@ -43,11 +43,12 @@ Telegram webhook
 — только активные
 
 ### GET /locations/{id}  
+
 ### POST /locations  
 
 ### PATCH /locations/{id}  
 Допустимые поля:  
-`is_active`, `name`, `work_schedule`, `notes`
+`is_active`, `name`, `city`, `street`, `house`, `work_schedule`, `notes`
 
 ### DELETE /locations/{id}
 

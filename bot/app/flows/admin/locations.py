@@ -871,11 +871,14 @@ def setup(mc, get_user_role):
         
         if "name" in changes:
             patch_data["name"] = changes["name"]
+        if "city" in changes:
+            patch_data["city"] = changes["city"]
+        if "street" in changes:
+            patch_data["street"] = changes["street"]
+        if "house" in changes:
+            patch_data["house"] = changes["house"]
         if "work_schedule" in changes:
             patch_data["work_schedule"] = json.dumps(changes["work_schedule"])
-        
-        # Примечание: city, street, house не в LocationUpdate schema
-        # Если нужно — надо расширить schema в backend
         
         if patch_data:
             result = await api.update_location(loc_id, **patch_data)

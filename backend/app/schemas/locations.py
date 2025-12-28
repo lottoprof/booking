@@ -27,6 +27,9 @@ class LocationCreate(BaseModel):
 class LocationUpdate(BaseModel):
     is_active: Optional[bool] = None
     name: Optional[str] = None
+    city: Optional[str] = None
+    street: Optional[str] = None
+    house: Optional[str] = None
     work_schedule: Optional[str] = None
     notes: Optional[str] = None
 
