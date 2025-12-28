@@ -88,6 +88,55 @@ en:admin:location:confirm_delete | "Delete «%s»?"
 ru:admin:location:deleted | "🗑 Удалено"
 en:admin:location:deleted | "🗑 Deleted"
 
+# --- location create flow ---
+ru:admin:location:enter_name | "Введите название локации:"
+en:admin:location:enter_name | "Enter location name:"
+ru:admin:location:enter_city | "Введите город:"
+en:admin:location:enter_city | "Enter city:"
+ru:admin:location:enter_street | "Введите улицу:"
+en:admin:location:enter_street | "Enter street:"
+ru:admin:location:enter_house | "Введите номер дома:"
+en:admin:location:enter_house | "Enter house number:"
+ru:schedule:off | "вых"
+en:schedule:off | "off"
+
+ru:admin:location:error_name | "❌ Название слишком короткое"
+en:admin:location:error_name | "❌ Name is too short"
+ru:admin:location:error_city | "❌ Название города слишком короткое"
+en:admin:location:error_city | "❌ City name is too short"
+
+# --- schedule editor ---
+ru:admin:location:schedule_title | "📅 График работы"
+en:admin:location:schedule_title | "📅 Work schedule"
+ru:admin:location:schedule_current | "Сейчас: %s"
+en:admin:location:schedule_current | "Current: %s"
+ru:admin:location:schedule_hint | "Введите время (например: 09:30-19:30)\nили «выходной»:"
+en:admin:location:schedule_hint | "Enter time (e.g.: 09:30-19:30)\nor «off»:"
+ru:admin:location:schedule_error | "❌ Неверный формат. Пример: 09:30-19:30"
+en:admin:location:schedule_error | "❌ Invalid format. Example: 09:30-19:30"
+
+# --- confirm ---
+ru:admin:location:confirm_title | "📍 Проверьте данные"
+en:admin:location:confirm_title | "📍 Review data"
+
+# --- location edit ---
+ru:admin:location:edit_title | "✏️ Редактирование"
+en:admin:location:edit_title | "✏️ Editing"
+ru:admin:location:edit_name | "✏️ Название"
+en:admin:location:edit_name | "✏️ Name"
+ru:admin:location:edit_city | "✏️ Город"
+en:admin:location:edit_city | "✏️ City"
+ru:admin:location:edit_addr | "✏️ Адрес"
+en:admin:location:edit_addr | "✏️ Address"
+ru:admin:location:edit_sched | "📅 График"
+en:admin:location:edit_sched | "📅 Schedule"
+ru:admin:location:enter_addr | "Введите адрес (улица, дом):"
+en:admin:location:enter_addr | "Enter address (street, house):"
+ru:admin:location:saved | "✅ Сохранено"
+en:admin:location:saved | "✅ Saved"
+ru:admin:location:no_changes | "Нет изменений"
+en:admin:location:no_changes | "No changes"
+
 # --- common (Inline) ---
 ru:common:yes | "✅ Да"
 en:common:yes | "✅ Yes"
@@ -149,37 +198,6 @@ ru:day:sat:full | "Суббота"
 en:day:sat:full | "Saturday"
 ru:day:sun:full | "Воскресенье"
 en:day:sun:full | "Sunday"
-
-# --- location create flow ---
-ru:admin:location:enter_name | "Введите название локации:"
-en:admin:location:enter_name | "Enter location name:"
-ru:admin:location:enter_city | "Введите город:"
-en:admin:location:enter_city | "Enter city:"
-ru:admin:location:enter_street | "Введите улицу:"
-en:admin:location:enter_street | "Enter street:"
-ru:admin:location:enter_house | "Введите номер дома:"
-en:admin:location:enter_house | "Enter house number:"
-ru:schedule:off | "вых"
-en:schedule:off | "off"
-
-ru:admin:location:error_name | "❌ Название слишком короткое"
-en:admin:location:error_name | "❌ Name is too short"
-ru:admin:location:error_city | "❌ Название города слишком короткое"
-en:admin:location:error_city | "❌ City name is too short"
-
-# --- schedule editor ---
-ru:admin:location:schedule_title | "📅 График работы"
-en:admin:location:schedule_title | "📅 Work schedule"
-ru:admin:location:schedule_current | "Сейчас: %s"
-en:admin:location:schedule_current | "Current: %s"
-ru:admin:location:schedule_hint | "Введите время (например: 09:30-19:30)\nили «выходной»:"
-en:admin:location:schedule_hint | "Enter time (e.g.: 09:30-19:30)\nor «off»:"
-ru:admin:location:schedule_error | "❌ Неверный формат. Пример: 09:30-19:30"
-en:admin:location:schedule_error | "❌ Invalid format. Example: 09:30-19:30"
-
-# --- confirm ---
-ru:admin:location:confirm_title | "📍 Проверьте данные"
-en:admin:location:confirm_title | "📍 Review data"
 
 # --- common additions ---
 ru:common:save | "💾 Сохранить"
