@@ -3,16 +3,18 @@ bot/app/utils/menucontroller.py
 
 UI-контроллер навигации Telegram-бота.
 
-Контракт (tg_kbrd.md):
+Контракт (tg_kbrd.md v2.1):
 - В чате ровно ОДИН якорь ReplyKeyboard
-- Сообщение пользователя НЕ удаляется в Type A
 - ReplyKeyboardRemove ЗАПРЕЩЁН между меню
-- Удаляется ТОЛЬКО предыдущий якорь (ДО отправки нового)
+- Порядок: send → delete
+
+Type B разделён на:
+- B1 (show_inline_readonly) — для списков/выбора, Reply-якорь СОХРАНЯЕТСЯ
+- B2 (show_inline_input) — для форм/ввода, Reply-якорь УДАЛЯЕТСЯ, IME активен
 """
 
 import logging
 import os
-import json
 
 from aiogram.types import Message, ReplyKeyboardMarkup, InlineKeyboardMarkup
 from aiogram.exceptions import TelegramBadRequest
@@ -25,9 +27,11 @@ logger = logging.getLogger(__name__)
 class MenuController:
     """
     Транспортный слой для Telegram-клавиатур.
-    Хранит last_menu_message_id в Redis.
-    Отслеживает inline-сообщения для очистки.
-    Хранит current_menu для контекста навигации.
+    
+    Хранит в Redis:
+    - last_menu_message_id (якорь Reply-клавиатуры)
+    - inline messages для очистки
+    - current_menu контекст
     """
 
     def __init__(self):
@@ -140,6 +144,12 @@ class MenuController:
         """
         Показать ReplyKeyboard (Type A).
         
+        Алгоритм:
+        1. Отправить новое меню (клавиатура появляется)
+        2. Сохранить якорь в Redis
+        3. Удалить старый якорь
+        4. Удалить сообщение пользователя
+        
         Args:
             menu_context: имя меню для контекста (locations, services, etc.)
                          если None — контекст очищается
@@ -178,26 +188,76 @@ class MenuController:
         await self.show(message, kb)
 
     # ------------------------------------------------------------------
-    # Type B: Reply → Inline
+    # Type B1: Reply → Inline (readonly — списки, выбор)
     # ------------------------------------------------------------------
 
-    async def show_inline(
+    async def show_inline_readonly(
         self,
         message: Message,
         text: str,
         kb: InlineKeyboardMarkup,
     ) -> Message:
         """
-        Показать InlineKeyboard (Type B).
+        Показать InlineKeyboard для ВЫБОРА (Type B1).
         
-        Порядок для предотвращения IME на Android:
+        Reply-якорь СОХРАНЯЕТСЯ — IME не появляется.
+        Используется для:
+        - Списки с пагинацией
+        - Выбор из вариантов
+        - Просмотр данных
+        
+        Алгоритм:
         1. Отправить inline-сообщение
-        2. Трекаем для очистки
+        2. Трекать для очистки
         3. Удалить сообщение пользователя
-        4. Удалить старый reply-якорь (ПОСЛЕДНИМ!)
-        5. Очистить якорь в Redis
+        4. Reply-якорь НЕ удаляется!
+        """
+        chat_id = message.chat.id
+        bot = message.bot
+        user_msg_id = message.message_id
+
+        # 1. Отправить inline-сообщение
+        inline_msg = await bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=kb
+        )
+
+        # 2. Трекаем inline для очистки
+        await self._add_inline_id(chat_id, inline_msg.message_id)
+
+        # 3. Удалить сообщение пользователя
+        await self._safe_delete(bot, chat_id, user_msg_id)
+
+        # Reply-якорь НЕ удаляется — клавиатура остаётся активной
         
-        Контекст меню НЕ очищается — inline работает в рамках текущего меню.
+        return inline_msg
+
+    # ------------------------------------------------------------------
+    # Type B2: Reply → Inline (input — формы, ввод данных)
+    # ------------------------------------------------------------------
+
+    async def show_inline_input(
+        self,
+        message: Message,
+        text: str,
+        kb: InlineKeyboardMarkup,
+    ) -> Message:
+        """
+        Показать InlineKeyboard для ВВОДА (Type B2).
+        
+        Reply-якорь УДАЛЯЕТСЯ — IME активен для ввода текста.
+        Используется для:
+        - Формы создания/редактирования
+        - Ввод текстовых данных
+        - FSM wizard steps
+        
+        Алгоритм:
+        1. Отправить inline-сообщение
+        2. Трекать для очистки
+        3. Удалить сообщение пользователя
+        4. Удалить Reply-якорь (ПОСЛЕДНИМ!)
+        5. Очистить якорь в Redis
         """
         chat_id = message.chat.id
         bot = message.bot
@@ -219,7 +279,7 @@ class MenuController:
         await self._safe_delete(bot, chat_id, user_msg_id)
 
         # 4. Удалить старый reply-якорь ПОСЛЕДНИМ
-        # (inline уже на экране, IME не появится)
+        # (inline уже на экране, IME появится для ввода)
         if old_menu_id:
             await self._safe_delete(bot, chat_id, old_menu_id)
 
@@ -227,6 +287,28 @@ class MenuController:
         await self._del_menu_id(chat_id)
         
         return inline_msg
+
+    # ------------------------------------------------------------------
+    # Backward compatibility: show_inline → show_inline_input
+    # ------------------------------------------------------------------
+
+    async def show_inline(
+        self,
+        message: Message,
+        text: str,
+        kb: InlineKeyboardMarkup,
+    ) -> Message:
+        """
+        DEPRECATED: Используйте show_inline_readonly() или show_inline_input().
+        
+        Сохранено для обратной совместимости.
+        По умолчанию ведёт себя как show_inline_input (старое поведение).
+        """
+        logger.warning(
+            "show_inline() is deprecated. "
+            "Use show_inline_readonly() for lists or show_inline_input() for forms."
+        )
+        return await self.show_inline_input(message, text, kb)
 
     # ------------------------------------------------------------------
     # Inline → Reply (возврат из inline)
@@ -278,14 +360,14 @@ class MenuController:
         text: str,
         kb: InlineKeyboardMarkup,
     ) -> None:
-        """Обновить inline-сообщение."""
+        """Обновить inline-сообщение (пагинация, смена состояния)."""
         try:
             await callback_message.edit_text(text=text, reply_markup=kb)
         except TelegramBadRequest:
             pass
 
     # ------------------------------------------------------------------
-    # FSM: новое inline в процессе flow
+    # FSM: новое inline в процессе flow (уже без Reply-якоря)
     # ------------------------------------------------------------------
 
     async def send_inline_in_flow(
@@ -297,6 +379,8 @@ class MenuController:
     ) -> Message:
         """
         Отправить новое inline-сообщение в процессе FSM.
+        
+        Используется когда Reply-якорь уже удалён (после show_inline_input).
         Трекает для последующей очистки.
         Не удаляет предыдущие сообщения.
         """
