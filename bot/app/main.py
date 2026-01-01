@@ -77,11 +77,14 @@ def get_user_role(tg_id: int) -> str:
 
 @dp.message(Command("start"))
 async def start_handler(message: Message):
+    """Обработка команды /start."""
     tg_id = message.from_user.id
+    chat_id = message.chat.id
     lang = user_lang.get(tg_id)
     
-    logger.info(f"start_handler: tg_id={tg_id}, lang={lang}")
+    logger.info(f"start_handler: tg_id={tg_id}, chat_id={chat_id}, lang={lang}")
 
+    # Если язык не выбран — показываем выбор языка
     if not lang:
         kb = language_inline()
         if kb:
@@ -90,27 +93,72 @@ async def start_handler(message: Message):
                 reply_markup=kb
             )
             return
+        # Если языков меньше 2 — используем дефолтный
         lang = DEFAULT_LANG
         user_lang[tg_id] = lang
     
-    await menu.reset(message.chat.id)
+    # Сброс навигационного состояния
+    await menu.reset(chat_id)
+    
+    # Показать меню по роли (Message доступен)
     await route_by_role(message, lang)
 
 
 @dp.callback_query(F.data.startswith("lang:"))
 async def language_callback(callback: CallbackQuery):
+    """Обработка выбора языка (из inline-кнопок)."""
     tg_id = callback.from_user.id
+    chat_id = callback.message.chat.id  # Сохраняем ДО удаления
     lang = callback.data.split(":", 1)[1]
+    
+    logger.info(f"language_callback: tg_id={tg_id}, chat_id={chat_id}, lang={lang}")
 
+    # Сохраняем язык
     user_lang[tg_id] = lang
 
+    # Удаляем сообщение с выбором языка
     try:
         await callback.message.delete()
     except Exception:
         pass
 
     await callback.answer()
-    await route_by_role(callback, lang)
+    
+    # Сброс навигационного состояния
+    await menu.reset(chat_id)
+    
+    # Показать меню по роли (используем show_for_chat, т.к. Message удалён)
+    role = get_user_role(tg_id)
+    logger.info(f"language_callback: showing menu for role={role}")
+    
+    await show_menu_for_role(role, chat_id, lang)
+
+
+# ===============================
+# ROLE MENU DISPLAY
+# ===============================
+
+async def show_menu_for_role(role: str, chat_id: int, lang: str) -> None:
+    """
+    Показать меню для роли напрямую (без Message объекта).
+    Используется после language_callback.
+    """
+    if role == "admin":
+        await menu.show_for_chat(
+            bot=bot,
+            chat_id=chat_id,
+            kb=admin_main(lang),
+            title=t("admin:main:title", lang),
+            menu_context=None
+        )
+    elif role == "specialist":
+        # TODO: specialist menu
+        await bot.send_message(chat_id, f"Role: specialist (menu not implemented)")
+    elif role == "client":
+        # TODO: client menu
+        await bot.send_message(chat_id, f"Role: client (menu not implemented)")
+    else:
+        await bot.send_message(chat_id, f"Role: {role} (unknown)")
 
 
 # ===============================
@@ -131,6 +179,16 @@ ROLE_HANDLERS = {
 
 
 async def route_by_role(event: TelegramObject, lang: str):
+    """
+    Маршрутизация по роли.
+    
+    Используется ТОЛЬКО когда есть валидный Message объект.
+    Для CallbackQuery используйте show_menu_for_role() напрямую.
+    """
+    if not isinstance(event, Message):
+        logger.warning(f"route_by_role called with non-Message: {type(event)}")
+        return
+        
     tg_id = event.from_user.id
     role = get_user_role(tg_id)
     
@@ -139,12 +197,10 @@ async def route_by_role(event: TelegramObject, lang: str):
     handler = ROLE_HANDLERS.get(role)
     if not handler:
         logger.warning(f"No handler for role: {role}")
-        if isinstance(event, Message):
-            await event.answer(f"Role: {role} (menu not implemented)")
+        await event.answer(f"Role: {role} (menu not implemented)")
         return
 
-    msg: Message = event.message if isinstance(event, CallbackQuery) else event
-    await handler(msg, lang)
+    await handler(event, lang)
 
 
 # ===============================
@@ -159,6 +215,7 @@ dp.include_router(admin_reply.setup(menu, get_user_role))
 # ===============================
 
 async def process_update(update_data: dict, user_context=None):
+    """Точка входа для обработки Telegram update от gateway."""
     try:
         update = Update.model_validate(update_data)
     except Exception as e:

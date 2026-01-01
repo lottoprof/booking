@@ -16,6 +16,7 @@ Type B разделён на:
 import logging
 import os
 
+from aiogram import Bot
 from aiogram.types import Message, ReplyKeyboardMarkup, InlineKeyboardMarkup
 from aiogram.exceptions import TelegramBadRequest
 
@@ -108,18 +109,19 @@ class MenuController:
         """
         Полный сброс навигационного состояния чата.
         Используется ТОЛЬКО для /start.
+        
+        НЕ удаляет физические сообщения — только очищает Redis.
         """
         await self._del_menu_id(chat_id)
         await self._clear_inline_ids(chat_id)
         await self.clear_menu_context(chat_id)
-
-        logger.info(f"MenuController.reset(): chat_id={chat_id}")
+        logger.debug(f"MenuController.reset(): chat_id={chat_id}")
 
     # ------------------------------------------------------------------
     # Delete helpers
     # ------------------------------------------------------------------
 
-    async def _safe_delete(self, bot, chat_id: int, msg_id: int) -> bool:
+    async def _safe_delete(self, bot: Bot, chat_id: int, msg_id: int) -> bool:
         """Удалить сообщение, игнорируя ошибки."""
         try:
             await bot.delete_message(chat_id, msg_id)
@@ -127,15 +129,14 @@ class MenuController:
         except TelegramBadRequest:
             return False
 
-    async def _delete_previous_menu(self, message: Message) -> None:
+    async def _delete_previous_menu(self, bot: Bot, chat_id: int) -> None:
         """Удалить предыдущий якорь меню."""
-        chat_id = message.chat.id
         old_id = await self._get_menu_id(chat_id)
         if old_id:
-            await self._safe_delete(message.bot, chat_id, old_id)
+            await self._safe_delete(bot, chat_id, old_id)
             await self._del_menu_id(chat_id)
 
-    async def _delete_all_inline(self, bot, chat_id: int) -> int:
+    async def _delete_all_inline(self, bot: Bot, chat_id: int) -> int:
         """Удалить все tracked inline сообщения. Возвращает кол-во удалённых."""
         inline_ids = await self._get_inline_ids(chat_id)
         deleted = 0
@@ -197,6 +198,41 @@ class MenuController:
 
         # 5. Удалить сообщение пользователя
         await self._safe_delete(bot, chat_id, user_msg_id)
+
+    async def show_for_chat(
+        self,
+        bot: Bot,
+        chat_id: int,
+        kb: ReplyKeyboardMarkup,
+        title: str = "📋",
+        menu_context: str | None = None
+    ) -> Message:
+        """
+        Показать ReplyKeyboard без Message объекта.
+        
+        Используется когда нет валидного Message:
+        - После language_callback (сообщение удалено)
+        - Для программной отправки меню
+        
+        НЕ удаляет предыдущие сообщения (используйте reset() заранее).
+        """
+        # 1. Отправить новое меню
+        msg = await bot.send_message(
+            chat_id=chat_id,
+            text=title,
+            reply_markup=kb
+        )
+        
+        # 2. Сохранить новый якорь
+        await self._set_menu_id(chat_id, msg.message_id)
+
+        # 3. Установить/очистить контекст меню
+        if menu_context:
+            await self.set_menu_context(chat_id, menu_context)
+        else:
+            await self.clear_menu_context(chat_id)
+
+        return msg
 
     # Alias для совместимости
     async def navigate(self, message: Message, kb: ReplyKeyboardMarkup) -> None:
@@ -423,7 +459,7 @@ class MenuController:
 
     async def send_inline_in_flow(
         self,
-        bot,
+        bot: Bot,
         chat_id: int,
         text: str,
         kb: InlineKeyboardMarkup,
