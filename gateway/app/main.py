@@ -16,6 +16,9 @@ from app.utils.telegram import (
     extract_tg_id,
 )
 
+# ВАЖНО: импорт на уровне модуля, НЕ внутри handler
+from bot.app.main import process_update
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Booking API Gateway")
@@ -60,9 +63,8 @@ async def telegram_webhook(
         except Exception as e:
             logger.exception(f"TG auth failed: {e}")
 
-    # 5. Передаём в bot
+    # 5. Передаём в bot (process_update уже импортирован)
     try:
-        from bot.app.main import process_update
         await process_update(update, user_context)
     except Exception:
         logger.exception("Telegram update processing failed")
