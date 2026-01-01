@@ -14,8 +14,11 @@ def language_inline():
     for lang in langs:
         key = f"common:lang:{lang}"
 
-        # если нет подписи языка — кнопку не показываем
-        label = t(key, lang=None)
+        # Используем ЭТОТ ЖЕ язык для получения названия
+        # ru:common:lang:ru → "Русский"
+        # en:common:lang:en → "English"
+        label = t(key, lang=lang)
+        
         if label == key:
             continue
 
