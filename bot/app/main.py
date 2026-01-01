@@ -218,6 +218,7 @@ async def process_update(update_data: dict, user_context=None):
     """Точка входа для обработки Telegram update от gateway."""
     try:
         update = Update.model_validate(update_data)
+        logger.info(f"Update parsed: message={update.message is not None}, text={update.message.text if update.message else None}")
     except Exception as e:
         logger.warning("Invalid Telegram update: %s", e)
         return
