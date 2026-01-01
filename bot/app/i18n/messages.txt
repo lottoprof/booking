@@ -18,27 +18,43 @@ en:admin:clients:title | "👥 Clients"
 
 # --- admin main ---
 ru:admin:main:settings | "⚙️ Настройки"
+en:admin:main:settings | "⚙️ Settings"
 ru:admin:main:schedule | "📅 Расписание"
+en:admin:main:schedule | "📅 Schedule"
 ru:admin:main:clients  | "👥 Клиенты"
+en:admin:main:clients  | "👥 Clients"
 
 # --- admin / settings ---
 ru:admin:settings:locations        | "📍 Локации"
+en:admin:settings:locations        | "📍 Locations"
 ru:admin:settings:rooms            | "🚪 Комнаты"
+en:admin:settings:rooms            | "🚪 Rooms"
 ru:admin:settings:services         | "🛎 Услуги"
+en:admin:settings:services         | "🛎 Services"
 ru:admin:settings:packages         | "📦 Пакеты услуг"
+en:admin:settings:packages         | "📦 Packages"
 ru:admin:settings:specialists      | "👤 Специалисты"
+en:admin:settings:specialists      | "👤 Specialists"
 ru:admin:settings:spec_services    | "🔗 Специалист → Услуги"
+en:admin:settings:spec_services    | "🔗 Specialist → Services"
 ru:admin:settings:back             | "⬅️ Назад"
+en:admin:settings:back             | "⬅️ Back"
 
 # --- admin / schedule ---
-ru:admin:schedule:overrides | "📅 Overrides"
+ru:admin:schedule:overrides | "📅 Изменить"
+en:admin:schedule:overrides | "📅 Overrides"
 ru:admin:schedule:back      | "⬅️ Назад"
+en:admin:schedule:back      | "⬅️ Back"
 
 # --- admin / clients ---
 ru:admin:clients:find     | "🔍 Найти"
+en:admin:clients:find     | "🔍 Find"
 ru:admin:clients:bookings | "📖 Записи"
+en:admin:clients:bookings | "📖 Bookings"
 ru:admin:clients:wallets  | "💰 Кошельки"
+en:admin:clients:wallets  | "💰 Wallets"
 ru:admin:clients:back     | "⬅️ Назад"
+en:admin:clients:back     | "⬅️ Back"
 
 # --- admin / locations menu (Reply) ---
 ru:admin:locations:title | "📍 Локации"
@@ -324,4 +340,3 @@ ru:color:#F0F3F4 | "⚪"
 en:color:#F0F3F4 | "⚪"
 ru:color:#DC7633 | "🟤"
 en:color:#DC7633 | "🟤"
-
