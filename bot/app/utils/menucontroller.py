@@ -336,6 +336,56 @@ class MenuController:
             await self._del_menu_id(chat_id)
 
     # ------------------------------------------------------------------
+    # Show for chat (without Message object)
+    # ------------------------------------------------------------------
+
+    async def show_for_chat(
+        self,
+        bot,
+        chat_id: int,
+        kb: ReplyKeyboardMarkup,
+        title: str = "📋",
+        menu_context: str | None = None
+    ) -> None:
+        """
+        Показать ReplyKeyboard по chat_id (без объекта Message).
+        Используется после callback когда оригинальный Message удалён.
+        """
+        logger.info(f"[SHOW_FOR_CHAT] Starting: chat_id={chat_id}, title={title}")
+        
+        try:
+            old_menu_id = await self._get_menu_id(chat_id)
+            logger.info(f"[SHOW_FOR_CHAT] old_menu_id={old_menu_id}")
+
+            # 1. Отправить новое меню
+            msg = await bot.send_message(
+                chat_id=chat_id,
+                text=title,
+                reply_markup=kb
+            )
+            logger.info(f"[SHOW_FOR_CHAT] Menu sent, new_msg_id={msg.message_id}")
+            
+            # 2. Сохранить новый якорь
+            await self._set_menu_id(chat_id, msg.message_id)
+
+            # 3. Установить/очистить контекст меню
+            if menu_context:
+                await self.set_menu_context(chat_id, menu_context)
+            else:
+                await self.clear_menu_context(chat_id)
+
+            # 4. Удалить старый якорь бота
+            if old_menu_id:
+                await self._safe_delete(bot, chat_id, old_menu_id)
+                logger.info(f"[SHOW_FOR_CHAT] Deleted old menu")
+            
+            logger.info(f"[SHOW_FOR_CHAT] Complete for chat_id={chat_id}")
+            
+        except Exception as e:
+            logger.exception(f"[SHOW_FOR_CHAT] ERROR: {e}")
+            raise
+
+    # ------------------------------------------------------------------
     # FSM flow
     # ------------------------------------------------------------------
 
@@ -353,3 +403,4 @@ class MenuController:
         )
         await self._add_inline_id(chat_id, inline_msg.message_id)
         return inline_msg
+
