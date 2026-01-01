@@ -40,9 +40,8 @@ async def telegram_webhook(
     # 2. Парсим update
     try:
         update = await request.json()
+        logger.info(f"Update keys: {list(update.keys())}")
     except Exception:
-        logger.info(f"Update keys: {list(update.keys())}, message: {update.get("message", {}).get("text", "NO TEXT")}")
-        logger.info(f"Webhook update: {list(update.keys())}")
         return {"ok": True}
 
     # 3. Rate limit по tg_id
