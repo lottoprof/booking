@@ -41,6 +41,7 @@ async def telegram_webhook(
     try:
         update = await request.json()
     except Exception:
+        logger.info(f"Update keys: {list(update.keys())}, message: {update.get("message", {}).get("text", "NO TEXT")}")
         logger.info(f"Webhook update: {list(update.keys())}")
         return {"ok": True}
 
