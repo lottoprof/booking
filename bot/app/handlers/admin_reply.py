@@ -72,6 +72,9 @@ def setup(menu_controller, get_user_role):
     async def handle_admin_reply(message: Message, state: FSMContext):
         tg_id = message.from_user.id
         chat_id = message.chat.id
+        text = message.text
+        
+        logger.info(f"[ADMIN_REPLY] Received: tg_id={tg_id}, text='{text}'")
         
         # Если есть активный FSM state — не обрабатываем
         current_state = await state.get_state()
@@ -79,14 +82,17 @@ def setup(menu_controller, get_user_role):
             logger.debug(f"admin_reply skipped, FSM active: {current_state}")
             return
         
-        if get_user_role(tg_id) != "admin":
+        role = get_user_role(tg_id)
+        if role != "admin":
+            logger.info(f"[ADMIN_REPLY] Skipped, role={role}")
             return
 
         lang = user_lang.get(tg_id, DEFAULT_LANG)
-        text = message.text
+        logger.info(f"[ADMIN_REPLY] Processing: lang={lang}")
         
         # Получаем текущий контекст меню
         menu_ctx = await mc.get_menu_context(chat_id)
+        logger.info(f"[ADMIN_REPLY] menu_ctx={menu_ctx}")
 
         # ==============================================================
         # CONTEXT-AWARE: проверяем по текущему контексту
@@ -109,7 +115,11 @@ def setup(menu_controller, get_user_role):
         # MAIN MENU → Level 1
         # ==============================================================
         
+        expected_settings = t("admin:main:settings", lang)
+        logger.info(f"[ADMIN_REPLY] Comparing: text='{text}' vs expected='{expected_settings}'")
+        
         if text == t("admin:main:settings", lang):
+            logger.info(f"[ADMIN_REPLY] Match! Going to settings")
             await flow.to_settings(message, lang)
 
         elif text == t("admin:main:schedule", lang):
