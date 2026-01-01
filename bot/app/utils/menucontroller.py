@@ -101,6 +101,21 @@ class MenuController:
         await self.redis.delete(self._inline_key(chat_id))
 
     # ------------------------------------------------------------------
+    # Global reset (for /start)
+    # ------------------------------------------------------------------
+
+    async def reset(self, chat_id: int) -> None:
+        """
+        Полный сброс навигационного состояния чата.
+        Используется ТОЛЬКО для /start.
+        """
+        await self._del_menu_id(chat_id)
+        await self._clear_inline_ids(chat_id)
+        await self.clear_menu_context(chat_id)
+
+        logger.info(f"MenuController.reset(): chat_id={chat_id}")
+
+    # ------------------------------------------------------------------
     # Delete helpers
     # ------------------------------------------------------------------
 

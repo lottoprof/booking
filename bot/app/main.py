@@ -92,7 +92,8 @@ async def start_handler(message: Message):
             return
         lang = DEFAULT_LANG
         user_lang[tg_id] = lang
-
+    
+    await menu.reset(message.chat.id)
     await route_by_role(message, lang)
 
 
