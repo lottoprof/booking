@@ -10,6 +10,7 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
 from aiogram.types import Update, Message, CallbackQuery, TelegramObject
 from aiogram.fsm.storage.redis import RedisStorage
+from aiogram.fsm.context import FSMContext
 
 from bot.app.config import BOT_TOKEN
 from bot.app.i18n.loader import load_messages, t, DEFAULT_LANG
@@ -76,7 +77,7 @@ def get_user_role(tg_id: int) -> str:
 # ===============================
 
 @dp.message(Command("start"))
-async def start_handler(message: Message):
+async def start_handler(message: Message, state: FSMContext):
     """Обработка команды /start."""
     tg_id = message.from_user.id
     chat_id = message.chat.id
@@ -84,6 +85,9 @@ async def start_handler(message: Message):
     
     logger.info(f"start_handler: tg_id={tg_id}, chat_id={chat_id}, lang={lang}")
 
+    # Сброс FSM state (очистка застрявших состояний)
+    await state.clear()
+    
     # Если язык не выбран — показываем выбор языка
     if not lang:
         kb = language_inline()
