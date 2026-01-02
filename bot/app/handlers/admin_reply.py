@@ -79,7 +79,7 @@ def setup(menu_controller, get_user_role):
         # Если есть активный FSM state — не обрабатываем
         current_state = await state.get_state()
         if current_state:
-            logger.debug(f"admin_reply skipped, FSM active: {current_state}")
+            logger.info(f"[ADMIN_REPLY] Skipped, FSM active: {current_state}")
             return
         
         role = get_user_role(tg_id)
