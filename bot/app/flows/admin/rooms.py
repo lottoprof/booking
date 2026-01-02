@@ -18,9 +18,10 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKe
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.utils.api import api
+from bot.app.keyboards.admin import admin_rooms
 
 # EDIT entry point
 from .rooms_edit import start_room_edit, setup as setup_edit
@@ -569,12 +570,28 @@ def setup(mc, get_user_role):
             return
 
         await state.set_state(RoomCreate.location)
-        await state.update_data(lang=lang, selected_services=set())
+        await state.update_data(lang=lang, selected_services=[])
 
         text = f"{t('admin:room:create_title', lang)}\n\n{t('admin:room:select_location', lang)}"
         await mc.show_inline_input(message, text, locations_select_inline(locations, lang))
 
     router.start_create = start_create
+
+    # ---- Reply "Back" button во время FSM (escape hatch)
+    @router.message(F.text.in_(t_all("admin:rooms:back")), RoomCreate.location)
+    @router.message(F.text.in_(t_all("admin:rooms:back")), RoomCreate.name)
+    @router.message(F.text.in_(t_all("admin:rooms:back")), RoomCreate.notes)
+    @router.message(F.text.in_(t_all("admin:rooms:back")), RoomCreate.services)
+    async def fsm_back_escape(message: Message, state: FSMContext):
+        """Escape hatch: Reply Back во время FSM → отмена и возврат в меню."""
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+        await state.clear()
+        await mc.show(
+            message,
+            admin_rooms(lang),
+            title=t("admin:rooms:title", lang),
+            menu_context="rooms",
+        )
 
     async def send_step(message: Message, text: str, kb: InlineKeyboardMarkup):
         try:
@@ -634,7 +651,7 @@ def setup(mc, get_user_role):
 
         services = await api.get_services()
         data = await state.get_data()
-        selected = data.get("selected_services", set())
+        selected = set(data.get("selected_services", []))
 
         text = build_progress_text(data, lang, "admin:room:select_services")
         kb = services_multiselect_inline(services, selected, lang)
@@ -651,7 +668,7 @@ def setup(mc, get_user_role):
 
         services = await api.get_services()
         data = await state.get_data()
-        selected = data.get("selected_services", set())
+        selected = set(data.get("selected_services", []))
 
         text = build_progress_text(data, lang, "admin:room:select_services")
         kb = services_multiselect_inline(services, selected, lang)
@@ -665,14 +682,14 @@ def setup(mc, get_user_role):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
         data = await state.get_data()
-        selected = data.get("selected_services", set())
+        selected = set(data.get("selected_services", []))
 
         if svc_id in selected:
             selected.discard(svc_id)
         else:
             selected.add(svc_id)
 
-        await state.update_data(selected_services=selected)
+        await state.update_data(selected_services=list(selected))
 
         services = await api.get_services()
         text = build_progress_text(data, lang, "admin:room:select_services")
@@ -688,7 +705,7 @@ def setup(mc, get_user_role):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
         data = await state.get_data()
-        selected = data.get("selected_services", set())
+        selected = set(data.get("selected_services", []))
 
         services = await api.get_services()
         text = build_progress_text(data, lang, "admin:room:select_services")
@@ -707,7 +724,7 @@ def setup(mc, get_user_role):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
         data = await state.get_data()
 
-        selected = data.get("selected_services", set())
+        selected = set(data.get("selected_services", []))
         if not selected:
             await callback.answer(t("admin:room:error_no_services_selected", lang), show_alert=True)
             return

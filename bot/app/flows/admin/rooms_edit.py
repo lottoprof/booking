@@ -22,9 +22,10 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKe
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.utils.api import api
+from bot.app.keyboards.admin import admin_rooms
 
 logger = logging.getLogger(__name__)
 PAGE_SIZE = 5
@@ -310,6 +311,25 @@ def setup(mc, get_user_role):
     logger.info("=== rooms_edit.setup() called ===")
 
     # ==========================================================
+    # Reply "Back" escape hatch for EDIT FSM
+    # ==========================================================
+
+    @router.message(F.text.in_(t_all("admin:rooms:back")), RoomEdit.name)
+    @router.message(F.text.in_(t_all("admin:rooms:back")), RoomEdit.notes)
+    @router.message(F.text.in_(t_all("admin:rooms:back")), RoomEdit.order)
+    @router.message(F.text.in_(t_all("admin:rooms:back")), RoomEdit.services)
+    async def edit_fsm_back_escape(message: Message, state: FSMContext):
+        """Escape hatch: Reply Back во время Edit FSM → отмена и возврат."""
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+        await state.clear()
+        await mc.show(
+            message,
+            admin_rooms(lang),
+            title=t("admin:rooms:title", lang),
+            menu_context="rooms",
+        )
+
+    # ==========================================================
     # EDIT: name
     # ==========================================================
 
@@ -466,7 +486,7 @@ def setup(mc, get_user_role):
         service_rooms = await api.get_service_rooms_by_room(room_id)
         active_ids = {sr["service_id"] for sr in service_rooms if sr.get("is_active", True)}
 
-        await state.update_data(edit_services=active_ids)
+        await state.update_data(edit_services=list(active_ids))
 
         services = await api.get_services()
         text = t("admin:room:services_title", lang)
@@ -483,14 +503,14 @@ def setup(mc, get_user_role):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
         data = await state.get_data()
-        active_ids = data.get("edit_services", set())
+        active_ids = set(data.get("edit_services", []))
 
         if svc_id in active_ids:
             active_ids.discard(svc_id)
         else:
             active_ids.add(svc_id)
 
-        await state.update_data(edit_services=active_ids)
+        await state.update_data(edit_services=list(active_ids))
 
         services = await api.get_services()
         text = t("admin:room:services_title", lang)
@@ -507,7 +527,7 @@ def setup(mc, get_user_role):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
         data = await state.get_data()
-        active_ids = data.get("edit_services", set())
+        active_ids = set(data.get("edit_services", []))
 
         services = await api.get_services()
         text = t("admin:room:services_title", lang)
@@ -522,7 +542,7 @@ def setup(mc, get_user_role):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
         data = await state.get_data()
-        new_active_ids = data.get("edit_services", set())
+        new_active_ids = set(data.get("edit_services", []))
 
         if not new_active_ids:
             await callback.answer(t("admin:room:error_no_services_selected", lang), show_alert=True)
