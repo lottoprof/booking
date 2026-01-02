@@ -132,25 +132,26 @@ def _cache_key(tg_id: int) -> str:
 
 def _get_cached_user(tg_id: int) -> Optional[dict]:
     """Получает данные пользователя из кэша."""
+    key = _cache_key(tg_id)
     try:
-        data = redis_client.get(_cache_key(tg_id))
+        data = redis_client.get(key)
+        logger.info(f"[CACHE] GET {key} -> {'HIT' if data else 'MISS'}")
         if data:
             return json.loads(data)
     except Exception as e:
-        logger.warning(f"Cache read error: {e}")
+        logger.warning(f"[CACHE] GET error: {e}")
     return None
 
 
 def _set_cached_user(tg_id: int, user_data: dict):
     """Сохраняет данные пользователя в кэш."""
+    key = _cache_key(tg_id)
     try:
-        redis_client.setex(
-            _cache_key(tg_id),
-            USER_CACHE_TTL,
-            json.dumps(user_data)
-        )
+        value = json.dumps(user_data)
+        result = redis_client.setex(key, USER_CACHE_TTL, value)
+        logger.info(f"[CACHE] SET {key} -> {result}, TTL={USER_CACHE_TTL}")
     except Exception as e:
-        logger.warning(f"Cache write error: {e}")
+        logger.error(f"[CACHE] SET error: {e}")
 
 
 # ============================================================
@@ -302,9 +303,12 @@ async def authenticate_tg_user(update: dict) -> Optional[TgUserContext]:
         logger.warning("No tg_id in update")
         return None
     
+    logger.info(f"[AUTH] authenticate_tg_user called for tg_id={tg_id}")
+    
     # 1. Проверяем кэш
     cached = _get_cached_user(tg_id)
     if cached:
+        logger.info(f"[AUTH] Cache hit for tg_id={tg_id}, role={cached.get('role')}")
         return TgUserContext(
             tg_id=tg_id,
             user_id=cached["user_id"],
@@ -313,19 +317,25 @@ async def authenticate_tg_user(update: dict) -> Optional[TgUserContext]:
             is_new=False,
         )
     
+    logger.info(f"[AUTH] Cache miss, fetching from backend...")
+    
     # 2. Запрос к backend
     user_info = extract_user_info(update)
     user_data = await _fetch_user_from_backend(tg_id, user_info)
     
     if not user_data:
+        logger.error(f"[AUTH] Backend fetch failed for tg_id={tg_id}")
         return None
     
     # 3. Кэшируем
-    _set_cached_user(tg_id, {
+    cache_data = {
         "user_id": user_data["user_id"],
         "company_id": user_data["company_id"],
         "role": user_data["role"],
-    })
+    }
+    _set_cached_user(tg_id, cache_data)
+    
+    logger.info(f"[AUTH] User authenticated: tg_id={tg_id}, role={user_data['role']}, cached=True")
     
     return TgUserContext(
         tg_id=tg_id,
