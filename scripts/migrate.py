@@ -1,16 +1,25 @@
 import sqlite3
 import glob
 import os
+import sys
 
-DB_PATH = os.path.join("data", "sqlite", "booking.db")
-MIGRATIONS_DIR = os.path.join("backend", "migrations")
+# ---- project root ----
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.normpath(os.path.join(SCRIPT_DIR, ".."))
 
-def apply_migrations():
+DB_PATH = os.path.join(PROJECT_ROOT, "data", "sqlite", "booking.db")
+DEFAULT_MIGRATIONS_DIR = os.path.join(PROJECT_ROOT, "backend", "migrations")
+
+def apply_migrations(migrations_path=None):
+    print(f"Project root: {PROJECT_ROOT}")
     print(f"Using DB: {DB_PATH}")
+
+    # гарантируем каталог БД
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # Таблица версий миграций
     cur.execute("""
         CREATE TABLE IF NOT EXISTS schema_migrations (
             version INTEGER PRIMARY KEY,
@@ -18,13 +27,19 @@ def apply_migrations():
         );
     """)
 
-    # Текущая версия
     cur.execute("SELECT COALESCE(MAX(version), 0) FROM schema_migrations;")
     current_version = cur.fetchone()[0]
     print(f"Current schema version: {current_version}")
 
-    # Ищем миграции
-    files = sorted(glob.glob(os.path.join(MIGRATIONS_DIR, "*.sql")))
+    # ---- выбираем миграции ----
+    if migrations_path:
+        path = os.path.abspath(migrations_path)
+        if os.path.isdir(path):
+            files = sorted(glob.glob(os.path.join(path, "*.sql")))
+        else:
+            files = [path]
+    else:
+        files = sorted(glob.glob(os.path.join(DEFAULT_MIGRATIONS_DIR, "*.sql")))
 
     for path in files:
         filename = os.path.basename(path)
@@ -37,7 +52,10 @@ def apply_migrations():
                 sql = f.read()
 
             cur.executescript(sql)
-            cur.execute("INSERT INTO schema_migrations(version) VALUES (?)", (version,))
+            cur.execute(
+                "INSERT INTO schema_migrations(version) VALUES (?)",
+                (version,)
+            )
             conn.commit()
 
             print(f"✔ Applied {filename}")
@@ -46,5 +64,6 @@ def apply_migrations():
     print("All migrations applied.")
 
 if __name__ == "__main__":
-    apply_migrations()
+    arg = sys.argv[1] if len(sys.argv) > 1 else None
+    apply_migrations(arg)
 
