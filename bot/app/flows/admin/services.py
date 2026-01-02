@@ -1,4 +1,5 @@
 """
+bot/app/flows/admin/services.py
 FSM создания услуги + список / просмотр / удаление.
 EDIT вынесен в services_edit.py (делегирование).
 
@@ -170,7 +171,8 @@ def setup(mc, get_user_role):
         await mc.back_to_reply(
             callback.message,
             admin_services(lang),
-            title=t("admin:services:title", lang)
+            title=t("admin:services:title", lang),
+            menu_context="services", 
         )
         await callback.answer()
 
@@ -442,6 +444,7 @@ def setup(mc, get_user_role):
             callback.message,
             admin_services(lang),
             title=t("admin:services:title", lang),
+            menu_context="services",
         )
 
     # ---- cancel create
@@ -454,6 +457,7 @@ def setup(mc, get_user_role):
             callback.message,
             admin_services(lang),
             title=t("admin:services:title", lang),
+            menu_context="services", 
         )
 
     # подключаем EDIT router
@@ -461,4 +465,3 @@ def setup(mc, get_user_role):
 
     logger.info("=== services router configured ===")
     return router
-
