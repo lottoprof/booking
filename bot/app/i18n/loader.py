@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Dict, Set
+from typing import Dict, Set, List
 
 MESSAGES: Dict[str, Dict[str, str]] = {}
 AVAILABLE_LANGS: Set[str] = set()
@@ -55,6 +55,22 @@ def t(key: str, lang: str | None = None, *args) -> str:
     return text
 
 
+def t_all(key: str) -> List[str]:
+    """
+    Возвращает список всех переводов ключа для всех доступных языков.
+    
+    Использование в фильтрах:
+        @router.message(F.text.in_(t_all("admin:rooms:back")))
+    
+    включает все языки 
+    """
+    translations = []
+    for lang in AVAILABLE_LANGS:
+        text = MESSAGES.get(lang, {}).get(key)
+        if text and text not in translations:
+            translations.append(text)
+    return translations
+
+
 def get_available_langs() -> list[str]:
     return sorted(AVAILABLE_LANGS)
-
