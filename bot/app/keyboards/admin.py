@@ -114,6 +114,23 @@ def admin_locations(lang: str) -> ReplyKeyboardMarkup:
     )
 
 
+def admin_rooms(lang: str) -> ReplyKeyboardMarkup:
+    """Меню комнат."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text=t("admin:rooms:list", lang)),
+                KeyboardButton(text=t("admin:rooms:create", lang)),
+            ],
+            [
+                KeyboardButton(text=t("admin:rooms:back", lang)),
+            ],
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+    )
+
+
 # ============================================================
 # INLINE KEYBOARDS (работа с данными)
 # ============================================================
@@ -470,4 +487,3 @@ def color_picker_inline(lang: str) -> InlineKeyboardMarkup:
     ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
-

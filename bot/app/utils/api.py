@@ -146,6 +146,79 @@ class ApiClient:
         result = await self._request("DELETE", f"/services/{service_id}")
         return result is None
 
+    # ------------------------------------------------------------------
+    # Rooms
+    # ------------------------------------------------------------------
+
+    async def get_rooms(self) -> list[dict]:
+        """GET /rooms/ — список активных комнат."""
+        result = await self._request("GET", "/rooms/")
+        return result or []
+
+    async def get_room(self, room_id: int) -> Optional[dict]:
+        """GET /rooms/{id}"""
+        return await self._request("GET", f"/rooms/{room_id}")
+
+    async def create_room(
+        self,
+        location_id: int,
+        name: str,
+        **kwargs
+    ) -> Optional[dict]:
+        """POST /rooms/"""
+        data = {
+            "location_id": location_id,
+            "name": name,
+            **kwargs
+        }
+        return await self._request("POST", "/rooms/", json=data)
+
+    async def update_room(self, room_id: int, **kwargs) -> Optional[dict]:
+        """PATCH /rooms/{id}"""
+        return await self._request("PATCH", f"/rooms/{room_id}", json=kwargs)
+
+    async def delete_room(self, room_id: int) -> bool:
+        """DELETE /rooms/{id} — soft-delete."""
+        result = await self._request("DELETE", f"/rooms/{room_id}")
+        return result is None
+
+    # ------------------------------------------------------------------
+    # Service Rooms (связь комната ↔ услуга)
+    # ------------------------------------------------------------------
+
+    async def get_service_rooms(self) -> list[dict]:
+        """GET /service_rooms/ — все связи."""
+        result = await self._request("GET", "/service_rooms/")
+        return result or []
+
+    async def get_service_rooms_by_room(self, room_id: int) -> list[dict]:
+        """Получить услуги комнаты (фильтрация на клиенте)."""
+        all_sr = await self.get_service_rooms()
+        return [sr for sr in all_sr if sr["room_id"] == room_id]
+
+    async def create_service_room(
+        self,
+        room_id: int,
+        service_id: int,
+        **kwargs
+    ) -> Optional[dict]:
+        """POST /service_rooms/"""
+        data = {
+            "room_id": room_id,
+            "service_id": service_id,
+            **kwargs
+        }
+        return await self._request("POST", "/service_rooms/", json=data)
+
+    async def update_service_room(self, sr_id: int, **kwargs) -> Optional[dict]:
+        """PATCH /service_rooms/{id}"""
+        return await self._request("PATCH", f"/service_rooms/{sr_id}", json=kwargs)
+
+    async def delete_service_room(self, sr_id: int) -> bool:
+        """DELETE /service_rooms/{id} — soft-delete."""
+        result = await self._request("DELETE", f"/service_rooms/{sr_id}")
+        return result is None
+
 
 # Singleton
 api = ApiClient()

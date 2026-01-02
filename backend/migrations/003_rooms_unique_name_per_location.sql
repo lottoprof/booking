@@ -1,4 +1,4 @@
--- 003_rooms_unique_name_per_location.sql
+-- 004_rooms_unique_name_per_location.sql
 -- Уникальность названия комнаты в рамках локации
 
 -- 1. Проверка на дубликаты (для ручной проверки перед применением)
@@ -14,5 +14,4 @@ ON rooms (location_id, name);
 
 -- 3. Фиксируем версию миграции
 INSERT INTO schema_migrations (version)
-VALUES (3);
-
+VALUES (4);
