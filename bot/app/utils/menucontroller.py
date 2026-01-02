@@ -287,19 +287,35 @@ class MenuController:
 
         logger.info(f"[BACK_TO_REPLY] Starting: chat_id={chat_id}")
 
+        # 1. Получить старый Reply-якорь (если есть)
+        old_menu_id = await self._get_menu_id(chat_id)
+        logger.info(f"[BACK_TO_REPLY] old_menu_id={old_menu_id}")
+
+        # 2. Отправить новое Reply меню
         msg = await bot.send_message(
             chat_id=chat_id,
             text=title,
             reply_markup=kb
         )
+        logger.info(f"[BACK_TO_REPLY] Sent new menu, msg_id={msg.message_id}")
         
+        # 3. Сохранить новый якорь
         await self._set_menu_id(chat_id, msg.message_id)
 
+        # 4. Установить контекст меню
         if menu_context is not None:
             await self.set_menu_context(chat_id, menu_context)
 
-        deleted = await self._delete_all_inline(bot, chat_id)
-        logger.info(f"[BACK_TO_REPLY] Complete, deleted {deleted} inline messages")
+        # 5. Удалить ВСЕ inline сообщения
+        deleted_inline = await self._delete_all_inline(bot, chat_id)
+        logger.info(f"[BACK_TO_REPLY] Deleted {deleted_inline} inline messages")
+
+        # 6. Удалить СТАРЫЙ Reply-якорь (КРИТИЧНО!)
+        if old_menu_id:
+            await self._safe_delete(bot, chat_id, old_menu_id)
+            logger.info(f"[BACK_TO_REPLY] Deleted old reply anchor {old_menu_id}")
+
+        logger.info(f"[BACK_TO_REPLY] Complete")
 
     # ------------------------------------------------------------------
     # Inline → Inline
@@ -403,4 +419,3 @@ class MenuController:
         )
         await self._add_inline_id(chat_id, inline_msg.message_id)
         return inline_msg
-
