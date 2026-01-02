@@ -209,6 +209,12 @@ class MenuController:
 
         logger.info(f"[SHOW_INLINE_RO] Starting: chat_id={chat_id}")
 
+        # 1. Удалить предыдущие inline (если повторный вызов)
+        deleted_old = await self._delete_all_inline(bot, chat_id)
+        if deleted_old:
+            logger.info(f"[SHOW_INLINE_RO] Deleted {deleted_old} old inline messages")
+
+        # 2. Отправить новое inline сообщение
         inline_msg = await bot.send_message(
             chat_id=chat_id,
             text=text,
@@ -216,7 +222,10 @@ class MenuController:
         )
         logger.info(f"[SHOW_INLINE_RO] Sent inline, msg_id={inline_msg.message_id}")
 
+        # 3. Трекать новое inline
         await self._add_inline_id(chat_id, inline_msg.message_id)
+        
+        # 4. Удалить сообщение пользователя
         await self._safe_delete(bot, chat_id, user_msg_id)
         
         logger.info(f"[SHOW_INLINE_RO] Complete")
@@ -240,6 +249,12 @@ class MenuController:
 
         logger.info(f"[SHOW_INLINE_INPUT] Starting: chat_id={chat_id}")
 
+        # 1. Удалить предыдущие inline (если повторный вызов)
+        deleted_old = await self._delete_all_inline(bot, chat_id)
+        if deleted_old:
+            logger.info(f"[SHOW_INLINE_INPUT] Deleted {deleted_old} old inline messages")
+
+        # 2. Отправить новое inline сообщение
         inline_msg = await bot.send_message(
             chat_id=chat_id,
             text=text,
@@ -247,9 +262,13 @@ class MenuController:
         )
         logger.info(f"[SHOW_INLINE_INPUT] Sent inline, msg_id={inline_msg.message_id}")
 
+        # 3. Трекать новое inline
         await self._add_inline_id(chat_id, inline_msg.message_id)
+        
+        # 4. Удалить сообщение пользователя
         await self._safe_delete(bot, chat_id, user_msg_id)
 
+        # 5. Удалить Reply-якорь (активирует IME)
         if old_menu_id:
             await self._safe_delete(bot, chat_id, old_menu_id)
 
