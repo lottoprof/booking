@@ -285,7 +285,8 @@ def setup(mc, get_user_role):
         await mc.back_to_reply(
             callback.message,
             admin_locations(lang),
-            title=t("admin:locations:title", lang)
+            title=t("admin:locations:title", lang),
+            menu_context="locations" 
         )
         await callback.answer()
 
@@ -624,7 +625,8 @@ def setup(mc, get_user_role):
         await mc.back_to_reply(
             callback.message,
             admin_locations(lang),
-            title=t("admin:locations:title", lang)
+            title=t("admin:locations:title", lang),
+            menu_context="locations" 
         )
 
     # ==========================================================
@@ -642,7 +644,8 @@ def setup(mc, get_user_role):
         await mc.back_to_reply(
             callback.message,
             admin_locations(lang),
-            title=t("admin:locations:title", lang)
+            title=t("admin:locations:title", lang),
+            menu_context="locations"
         )
 
     # ==========================================================
@@ -654,4 +657,3 @@ def setup(mc, get_user_role):
 
     logger.info(f"=== locations router configured ===")
     return router
-
