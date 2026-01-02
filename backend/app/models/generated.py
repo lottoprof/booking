@@ -196,21 +196,22 @@ class PushSubscriptions(Base):
 
     user = relationship('Users', back_populates='push_subscriptions')
 
-
 class Rooms(Base):
     __tablename__ = 'rooms'
+    __table_args__ = (
+        UniqueConstraint('location_id', 'name'),
+    )
 
+    id = Column(Integer, primary_key=True)
     location_id = Column(ForeignKey('locations.id', ondelete='CASCADE'), nullable=False)
     name = Column(Text, nullable=False)
-    is_active = Column(Integer, nullable=False, server_default=text('1'))
-    id = Column(Integer, primary_key=True)
     display_order = Column(Integer)
     notes = Column(Text)
+    is_active = Column(Integer, nullable=False, server_default=text('1'))
 
     location = relationship('Locations', back_populates='rooms')
     bookings = relationship('Bookings', back_populates='room')
     service_rooms = relationship('ServiceRooms', back_populates='room')
-
 
 class Specialists(Base):
     __tablename__ = 'specialists'

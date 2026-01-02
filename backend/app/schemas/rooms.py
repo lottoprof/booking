@@ -1,12 +1,10 @@
-# backend/app/schemas/rooms.py
-
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RoomCreate(BaseModel):
     location_id: int
-    name: str
+    name: str = Field(min_length=1)
     display_order: Optional[int] = None
     notes: Optional[str] = None
 
@@ -14,8 +12,8 @@ class RoomCreate(BaseModel):
 
 
 class RoomUpdate(BaseModel):
-    is_active: Optional[bool] = None
-    name: Optional[str] = None
+    is_active: Optional[int] = None   # 0 / 1
+    name: Optional[str] = Field(default=None, min_length=1)
     display_order: Optional[int] = None
     notes: Optional[str] = None
 
@@ -28,7 +26,7 @@ class RoomRead(BaseModel):
     name: str
     display_order: Optional[int] = None
     notes: Optional[str] = None
-    is_active: bool
+    is_active: int
 
     model_config = {"from_attributes": True}
 
