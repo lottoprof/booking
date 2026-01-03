@@ -504,10 +504,10 @@ bot/
 |------|-----------|
 | `rooms.py` | LIST/VIEW/DELETE/CREATE + multi-select услуг |
 | `rooms_edit.py` | FSM редактирования (name, notes, order, services) |
-| `api.py` | Методы rooms + service_rooms |
-| `admin_reply.py` | Роутинг + context_handlers["rooms"] |
-| `menu.py` | to_rooms() навигация |
-| `admin.py` | admin_rooms() Reply keyboard |
+| `api.py` | Методы  |
+| `admin_reply.py` | Роутинг + context_handlers |
+| `menu.py` |  навигация |
+| `admin.py` |  Reply keyboard |
 
 
 
