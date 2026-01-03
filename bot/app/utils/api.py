@@ -219,7 +219,103 @@ class ApiClient:
         result = await self._request("DELETE", f"/service_rooms/{sr_id}")
         return result is None
 
+    # ------------------------------------------------------------------
+    # Users
+    # ------------------------------------------------------------------
+
+    async def get_users(self, phone: str = None) -> list[dict]:
+        """GET /users/ — список активных пользователей."""
+        path = "/users/"
+        if phone:
+            path = f"/users/?phone={phone}"
+        result = await self._request("GET", path)
+        return result or []
+
+    async def get_user(self, user_id: int) -> Optional[dict]:
+        """GET /users/{id}"""
+        return await self._request("GET", f"/users/{user_id}")
+
+    # ------------------------------------------------------------------
+    # Specialists
+    # ------------------------------------------------------------------
+
+    async def get_specialists(self) -> list[dict]:
+        """GET /specialists/ — список активных специалистов."""
+        result = await self._request("GET", "/specialists/")
+        return result or []
+
+    async def get_specialist(self, specialist_id: int) -> Optional[dict]:
+        """GET /specialists/{id}"""
+        return await self._request("GET", f"/specialists/{specialist_id}")
+
+    async def create_specialist(
+        self,
+        user_id: int,
+        **kwargs
+    ) -> Optional[dict]:
+        """POST /specialists/"""
+        data = {
+            "user_id": user_id,
+            **kwargs
+        }
+        return await self._request("POST", "/specialists/", json=data)
+
+    async def update_specialist(self, specialist_id: int, **kwargs) -> Optional[dict]:
+        """PATCH /specialists/{id}"""
+        return await self._request("PATCH", f"/specialists/{specialist_id}", json=kwargs)
+
+    async def delete_specialist(self, specialist_id: int) -> bool:
+        """DELETE /specialists/{id} — soft-delete."""
+        result = await self._request("DELETE", f"/specialists/{specialist_id}")
+        return result is None
+
+    # ------------------------------------------------------------------
+    # Specialist Services (связь специалист ↔ услуга)
+    # ------------------------------------------------------------------
+
+    async def get_specialist_services(self, specialist_id: int) -> list[dict]:
+        """GET /specialists/{id}/services — услуги специалиста."""
+        result = await self._request("GET", f"/specialists/{specialist_id}/services")
+        return result or []
+
+    async def add_specialist_service(
+        self,
+        specialist_id: int,
+        service_id: int,
+        **kwargs
+    ) -> Optional[dict]:
+        """POST /specialists/{id}/services"""
+        data = {
+            "service_id": service_id,
+            **kwargs
+        }
+        return await self._request("POST", f"/specialists/{specialist_id}/services", json=data)
+
+    async def update_specialist_service(
+        self,
+        specialist_id: int,
+        service_id: int,
+        **kwargs
+    ) -> Optional[dict]:
+        """PATCH /specialists/{id}/services/{service_id}"""
+        return await self._request(
+            "PATCH",
+            f"/specialists/{specialist_id}/services/{service_id}",
+            json=kwargs
+        )
+
+    async def delete_specialist_service(
+        self,
+        specialist_id: int,
+        service_id: int
+    ) -> bool:
+        """DELETE /specialists/{id}/services/{service_id} — soft-delete."""
+        result = await self._request(
+            "DELETE",
+            f"/specialists/{specialist_id}/services/{service_id}"
+        )
+        return result is None
+
 
 # Singleton
 api = ApiClient()
-

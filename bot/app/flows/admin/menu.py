@@ -14,6 +14,7 @@ from bot.app.keyboards.admin import (
     admin_locations,
     admin_services,
     admin_rooms,
+    admin_specialists,
 )
 from bot.app.i18n.loader import t
 
@@ -99,6 +100,14 @@ class AdminMenuFlow:
             menu_context="rooms"
         )
 
+    async def to_specialists(self, message: Message, lang: str) -> None:
+        await self.mc.show(
+            message,
+            admin_specialists(lang),
+            title=t("admin:specialists:title", lang),
+            menu_context="specialists"
+        )
+
     async def back_to_settings(self, message: Message, lang: str) -> None:
         await self.mc.show(
             message,
@@ -106,3 +115,4 @@ class AdminMenuFlow:
             title=t("admin:settings:title", lang),
             menu_context=None  # очищаем при возврате
         )
+

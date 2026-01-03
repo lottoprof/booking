@@ -50,7 +50,6 @@ def admin_settings(lang: str) -> ReplyKeyboardMarkup:
             ],
             [
                 KeyboardButton(text=t("admin:settings:specialists", lang)),
-                KeyboardButton(text=t("admin:settings:spec_services", lang)),
             ],
             [
                 KeyboardButton(text=t("admin:settings:back", lang)),
@@ -273,6 +272,23 @@ def admin_services(lang: str) -> ReplyKeyboardMarkup:
     )
 
 
+def admin_specialists(lang: str) -> ReplyKeyboardMarkup:
+    """Меню специалистов."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text=t("admin:specialists:list", lang)),
+                KeyboardButton(text=t("admin:specialists:create", lang)),
+            ],
+            [
+                KeyboardButton(text=t("admin:specialists:back", lang)),
+            ],
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+    )
+
+
 # ============================================================
 # SERVICES - Inline keyboards
 # ============================================================
@@ -487,3 +503,4 @@ def color_picker_inline(lang: str) -> InlineKeyboardMarkup:
     ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
