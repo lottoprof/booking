@@ -114,10 +114,7 @@ async def start_handler(message: Message, state: FSMContext):
     # Показываем выбор языка
     kb = language_inline()
     if kb:
-        await message.answer(
-            t("common:lang:choose", DEFAULT_LANG),
-            reply_markup=kb
-        )
+        await message.answer("🌐", reply_markup=kb)
         return
     
     # Если языков меньше 2 — используем дефолтный
