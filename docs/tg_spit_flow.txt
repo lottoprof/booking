@@ -1,0 +1,545 @@
+# EDIT-FSM
+
+Документ фиксирует **согласованные архитектурные решения** по выносу и дальнейшему использованию
+механизма редактирования (EDIT) в админ-части Telegram-бота системы записи.
+
+---
+
+## 1. Общая схема
+
+```
+admin_reply.py
+└─ services.py / rooms.py / ...
+   ├─ show_list
+   ├─ view_*
+   ├─ delete
+   ├─ start_create        (FSM Create, Redis)
+   └─ *:edit:{id}
+       ↓ delegate
+   *_edit.py
+   ├─ FSM *Edit (Redis)
+   ├─ start_*_edit()
+   ├─ edit handlers
+   ├─ save (PATCH)
+   └─ inline helpers
+```
+
+EDIT вынесен **в отдельный модуль** и вызывается **только** из доменного flow-файла.
+
+---
+
+## 2. Принципиальные решения
+
+### 2.1 FSM и хранение состояния
+
+- **Все FSM работают через Redis**
+  - Create FSM
+  - Edit FSM
+- In-memory FSM **не используется**
+- FSM допускает прерывание, возврат и продолжение
+- **set() не сериализуется в JSON** → хранить как `list[]`, конвертировать при работе
+
+---
+
+### 2.2 Разделение ответственности
+
+| Слой | Ответственность |
+|----|----------------|
+| `admin_reply.py` | Reply-навигация, маршрутизация |
+| `*.py` (services, rooms...) | List / View / Create / Delete + делегирование Edit |
+| `*_edit.py` | **Только редактирование сущности** |
+| `MenuController` | UI-транспорт, якоря, inline, IME |
+| `ApiClient` | CRUD через Gateway |
+
+EDIT-модуль:
+- ❌ не управляет меню (кроме escape hatch)
+- ❌ не знает про `menu_context` (кроме escape hatch)
+- ❌ не содержит навигации List/View
+- ✅ содержит escape hatch для Reply "Back" кнопки
+
+---
+
+## 3. Контракт EDIT-модуля
+
+### 3.1 Публичная точка входа
+
+```python
+async def start_*_edit(
+    *,
+    mc,
+    callback: CallbackQuery,
+    state: FSMContext,
+    item_id: int,
+) -> None
+```
+
+* Единственная публичная функция
+* Ничего не возвращает
+* Работает через side-effects (inline + FSM)
+* Keyword-only аргументы для явности
+
+---
+
+### 3.2 Внутренняя модель данных FSM
+
+```python
+{
+  "edit_*_id": int,      # edit_svc_id, edit_room_id, ...
+  "original": dict,       # исходные данные с API
+  "changes": dict         # накопленные изменения (diff)
+}
+```
+
+* FSM **жёстко привязан** к одному id
+* Попытка редактировать другой id → reinit FSM
+
+---
+
+### 3.3 Setup функция
+
+```python
+def setup(mc, get_user_role) -> Router:
+    """
+    Настраивает и возвращает Router с EDIT handlers.
+    """
+    router = Router(name="*_edit")
+    # ... handlers ...
+    return router
+```
+
+---
+
+## 4. Поведение EDIT
+
+### 4.1 Общие правила
+
+* EDIT = inline-диалог над сущностью
+* EDIT = `PATCH` **только diff** (changes dict)
+* `is_active` **не редактируется через FSM** (это Delete)
+* EDIT работает **только через Inline**
+
+---
+
+### 4.2 Сценарии
+
+| Сценарий | Поведение |
+|----------|-----------|
+| `*:edit:{id}` | Инициализация FSM + показ edit-экрана |
+| Изменение поля | Запись в `changes`, возврат на edit-экран |
+| Save + `changes={}` | Сообщение `no_changes` |
+| Save + diff | `api.update_*()` → показ view-карточки |
+| Cancel (inline) | `state.clear()` + возврат к view-карточке |
+| Reply "Back" (escape) | `state.clear()` + возврат в Reply-меню |
+| Edit A → Edit B | FSM reinit |
+
+---
+
+## 5. Взаимодействие с MenuController
+
+### 5.1 Основной flow (inline)
+
+| Действие | Метод MC |
+|----------|----------|
+| Вход в EDIT | `mc.edit_inline_input(...)` — активирует IME |
+| Обновление экрана | `mc.edit_inline(...)` |
+| Отправка в FSM flow | `mc.send_inline_in_flow(...)` |
+
+### 5.2 Escape hatch (Reply)
+
+При нажатии Reply "Back" во время FSM:
+
+```python
+@router.message(F.text.in_(t_all("admin:*:back")), *Edit.state)
+async def edit_fsm_back_escape(message: Message, state: FSMContext):
+    await state.clear()
+    await mc.show(message, admin_*(lang), menu_context="*")
+```
+
+**Исключение из правила**: escape hatch использует `mc.show()` для возврата в Reply-меню, т.к. пользователь явно хочет выйти.
+
+---
+
+## 6. Escape Hatch Pattern
+
+### 6.1 Проблема
+
+FSM блокирует обработку Reply-кнопок в `admin_reply.py`:
+```python
+if current_state:
+    return  # Skip if FSM active
+```
+
+Пользователь застревает в FSM, не может выйти через Reply "Back".
+
+### 6.2 Решение
+
+Каждый FSM-модуль (create, edit) содержит escape hatch handlers:
+
+```python
+@router.message(F.text.in_(t_all("admin:rooms:back")), RoomEdit.name)
+@router.message(F.text.in_(t_all("admin:rooms:back")), RoomEdit.notes)
+# ... для каждого state
+async def edit_fsm_back_escape(message: Message, state: FSMContext):
+    lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+    await state.clear()
+    await mc.show(message, admin_rooms(lang), menu_context="rooms")
+```
+
+### 6.3 t_all() для фильтров
+
+```python
+# ❌ Хардкод языков — ломается при добавлении нового языка
+F.text.in_([t("key", "ru"), t("key", "en")])
+
+# ✅ Автоматически все языки
+F.text.in_(t_all("key"))
+```
+
+Функция `t_all(key)` в `loader.py` возвращает список переводов для всех доступных языков.
+
+---
+
+## 7. Переиспользование EDIT
+
+### 7.1 Принятое решение
+
+* **Каждая сущность → свой EDIT-модуль**
+  * `services_edit.py`
+  * `rooms_edit.py`
+  * `locations_edit.py` (если нужен)
+  * `packages_edit.py` (если нужен)
+  * и т.д.
+
+### 7.2 Что НЕ делаем
+
+* ❌ общий generic-EDIT
+* ❌ общий FSM на все сущности
+* ❌ динамические поля через конфиги
+
+### 7.3 Что переиспользуется
+
+* Архитектурный паттерн (структура файла)
+* FSM storage rules (Redis, list vs set)
+* Escape hatch pattern
+* `t_all()` для мультиязычных фильтров
+* Мелкие helper-функции при необходимости
+
+---
+
+## 8. Стандартный шаблон EDIT-модуля
+
+```python
+"""
+bot/app/flows/admin/*_edit.py
+
+EDIT-FSM for * (admin).
+"""
+
+class *Edit(StatesGroup):
+    field1 = State()
+    field2 = State()
+    # ...
+
+# Inline keyboards
+def *_edit_inline(...) -> InlineKeyboardMarkup: ...
+def *_edit_field_inline(...) -> InlineKeyboardMarkup: ...
+
+# Text builders
+def build_*_edit_text(...) -> str: ...
+
+# Entry point
+async def start_*_edit(*, mc, callback, state, item_id): ...
+
+# Setup
+def setup(mc, get_user_role) -> Router:
+    router = Router(name="*_edit")
+    
+    # Escape hatch handlers
+    @router.message(F.text.in_(t_all("admin:*:back")), *Edit.field1)
+    # ...
+    
+    # Edit field handlers
+    @router.callback_query(F.data.startswith("*:edit_field1:"))
+    # ...
+    
+    @router.message(*Edit.field1)
+    # ...
+    
+    # Save handler
+    @router.callback_query(F.data.startswith("*:save:"))
+    # ...
+    
+    return router
+```
+
+---
+
+## 9. Известные ограничения
+
+### 9.1 FSM + Redis + JSON
+
+Python `set()` не сериализуется в JSON.
+
+```python
+# ❌ Ошибка
+await state.update_data(selected=set())
+
+# ✅ Правильно
+await state.update_data(selected=list(my_set))
+selected = set(data.get("selected", []))
+```
+
+### 9.2 Router ordering
+
+В `admin_reply.py` FSM-роутеры должны быть **перед** catch-all Reply роутером:
+
+```python
+router.include_router(rooms_router)       # FSM handlers first
+router.include_router(rooms_edit_router)  # FSM handlers
+router.include_router(reply_router)       # Catch-all last
+```
+
+---
+
+## 10. Реализованные модули
+
+| Сущность | Create | Edit | Статус |
+|----------|--------|------|--------|
+| Locations | locations.py | locations.py (inline) | ✅ |
+| Services | services.py | services_edit.py | ✅ |
+| Rooms | rooms.py | rooms_edit.py | ✅ |
+| Specialists | — | — | TODO |
+| Packages | — | — | TODO |
+
+---
+
+# Rooms CRUD — Техническая документация
+
+## Обзор
+
+Реализация полного CRUD для управления комнатами (кабинетами) в админ-панели Telegram-бота. Комнаты привязаны к локациям и связаны с услугами через таблицу `service_rooms`.
+
+## Архитектура
+
+```
+bot/app/
+├── flows/admin/
+│   ├── rooms.py          # LIST, VIEW, DELETE, CREATE FSM
+│   └── rooms_edit.py     # EDIT FSM (отдельный файл)
+├── handlers/
+│   └── admin_reply.py    # Роутинг Reply-кнопок
+├── keyboards/
+│   └── admin.py          # Reply + Inline клавиатуры
+├── i18n/
+│   ├── loader.py         # + t_all() функция
+│   └── messages.txt      # Локализация
+└── utils/
+    ├── api.py            # HTTP-клиент
+    └── menu.py           # Навигация
+```
+
+## Созданные/изменённые файлы
+
+### 1. `rooms.py` — Основной flow
+
+**Ответственность:** LIST, VIEW, DELETE, CREATE
+
+| Компонент | Описание |
+|-----------|----------|
+| `RoomCreate` | FSM states: location → name → notes → services |
+| `rooms_list_inline()` | Список с пагинацией (PAGE_SIZE=5) |
+| `room_view_inline()` | Карточка просмотра |
+| `services_multiselect_inline()` | Мульти-выбор услуг (✅/⬜) |
+| `show_list()` | Entry point для списка |
+| `start_create()` | Entry point для создания |
+
+**Callbacks:**
+- `room:page:N` — пагинация
+- `room:view:ID` — просмотр
+- `room:edit:ID` → делегирует в rooms_edit
+- `room:delete:ID` / `room:delete_confirm:ID` — удаление
+- `room_create:*` — FSM создания
+
+### 2. `rooms_edit.py` — EDIT flow
+
+**Ответственность:** Редактирование полей комнаты
+
+| Компонент | Описание |
+|-----------|----------|
+| `RoomEdit` | FSM states: name, notes, order, services |
+| `start_room_edit()` | Entry point (вызывается из rooms.py) |
+| `room_edit_inline()` | Экран выбора поля для редактирования |
+| `services_edit_multiselect_inline()` | Редактирование привязки услуг |
+
+**Callbacks:**
+- `room:edit_name:ID`, `room:edit_notes:ID`, `room:edit_order:ID`, `room:edit_services:ID`
+- `room:svc_toggle:ROOM_ID:SVC_ID` — toggle услуги
+- `room:svc_page:ROOM_ID:PAGE` — пагинация услуг
+- `room:svc_save:ID` — сохранить услуги
+- `room:save:ID` — применить все изменения
+
+### 3. `api.py` — Добавленные методы
+
+```python
+# Rooms
+get_rooms() -> list[dict]
+get_room(room_id: int) -> dict | None
+create_room(location_id: int, name: str, **kwargs) -> dict | None
+update_room(room_id: int, **kwargs) -> dict | None
+delete_room(room_id: int) -> bool
+
+# Service-Rooms (связь комната↔услуга)
+get_service_rooms() -> list[dict]
+get_service_rooms_by_room(room_id: int) -> list[dict]
+create_service_room(room_id: int, service_id: int, **kwargs) -> dict | None
+update_service_room(sr_id: int, **kwargs) -> dict | None
+delete_service_room(sr_id: int) -> bool
+```
+
+### 4. `admin_reply.py` — Роутинг
+
+```python
+# Добавлено:
+from bot.app.flows.admin import rooms as rooms_flow
+
+room_router = rooms_flow.setup(menu_controller, get_user_role)
+
+context_handlers["rooms"] = {
+    "list": lambda msg, st: room_router.show_list(msg),
+    "create": lambda msg, st: room_router.start_create(msg, st),
+    "back": lambda msg, st, lang: flow.back_to_settings(msg, lang),
+}
+
+# Подключение:
+router.include_router(room_router)
+```
+
+### 5. `menu.py` — Навигация
+
+```python
+# Добавлено:
+from bot.app.keyboards.admin import admin_rooms
+
+async def to_rooms(self, message: Message, lang: str) -> None:
+    await self.mc.show(
+        message,
+        admin_rooms(lang),
+        title=t("admin:rooms:title", lang),
+        menu_context="rooms"
+    )
+```
+
+### 6. `admin.py` — Клавиатуры
+
+```python
+# Добавлено:
+def admin_rooms(lang: str) -> ReplyKeyboardMarkup:
+    """Reply-меню комнат."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text=t("admin:rooms:list", lang)),
+                KeyboardButton(text=t("admin:rooms:create", lang)),
+            ],
+            [
+                KeyboardButton(text=t("admin:rooms:back", lang)),
+            ],
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+    )
+```
+
+### 7. `loader.py` — Новая функция `t_all()`
+
+```python
+def t_all(key: str) -> List[str]:
+    """
+    Возвращает все переводы ключа для всех языков.
+    Использование: F.text.in_(t_all("admin:rooms:back"))
+    """
+    translations = []
+    for lang in AVAILABLE_LANGS:
+        text = MESSAGES.get(lang, {}).get(key)
+        if text and text not in translations:
+            translations.append(text)
+    return translations
+```
+
+### 8. `messages.txt` — Локализация
+
+Добавлены ключи:
+- `admin:rooms:*` — меню, заголовки
+- `admin:room:*` — карточка, создание, редактирование, ошибки
+
+## Решённые проблемы
+
+### 1. FSM + Redis: set() не сериализуется
+
+**Проблема:** `TypeError: Object of type set is not JSON serializable`
+
+**Решение:** Хранить как `list[]`, конвертировать в `set()` при работе:
+```python
+# Сохранение:
+await state.update_data(selected_services=list(selected))
+
+# Чтение:
+selected = set(data.get("selected_services", []))
+```
+
+### 2. FSM блокирует Reply-кнопки
+
+**Проблема:** Пользователь застревает в FSM, Reply "Back" не работает.
+
+**Решение:** Escape hatch handlers с `t_all()`:
+```python
+@router.message(F.text.in_(t_all("admin:rooms:back")), RoomCreate.location)
+@router.message(F.text.in_(t_all("admin:rooms:back")), RoomCreate.name)
+# ...
+async def fsm_back_escape(message: Message, state: FSMContext):
+    await state.clear()
+    await mc.show(message, admin_rooms(lang), ...)
+```
+
+### 3. Хардкод языков в фильтрах
+
+**Проблема:** `F.text.in_([t("key", "ru"), t("key", "en")])` — при добавлении языка нужно править код.
+
+**Решение:** Функция `t_all(key)` автоматически собирает все переводы:
+```python
+F.text.in_(t_all("admin:rooms:back"))  # Работает для любого кол-ва языков
+```
+
+## Бизнес-логика
+
+### Создание комнаты
+
+1. Проверка: есть локации? есть услуги?
+2. Выбор локации (inline)
+3. Ввод названия (FSM text input)
+4. Ввод заметок (опционально, skip)
+5. Выбор услуг (multi-select, минимум 1)
+6. Создание room + service_rooms
+
+### Редактирование
+
+- Diff-based: храним `changes = {}`, применяем при Save
+- Услуги синхронизируются: create / update is_active / deactivate
+- Нельзя сохранить без активных услуг
+
+### Удаление
+
+- Soft-delete через `is_active=0`
+- Подтверждение перед удалением
+
+## UI Flow
+
+```
+Settings → Rooms (Reply)
+    ├── List → [Room 1] [Room 2] ... (Inline, pagination)
+    │           └── View → Edit / Delete
+    │                       ├── Edit → Name / Notes / Order / Services
+    │                       └── Delete → Confirm
+    ├── Create → Location → Name → Notes → Services → Done
+    └── Back → Settings
+```
