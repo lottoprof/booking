@@ -15,6 +15,7 @@ from bot.app.keyboards.admin import (
     admin_services,
     admin_rooms,
     admin_specialists,
+     admin_packages,
 )
 from bot.app.i18n.loader import t
 
@@ -114,5 +115,21 @@ class AdminMenuFlow:
             admin_settings(lang),
             title=t("admin:settings:title", lang),
             menu_context=None  # очищаем при возврате
+        )
+
+    async def to_packages(self, message: Message, lang: str) -> None:
+        await self.mc.show(
+            message,
+            admin_packages(lang),
+            title=t("admin:packages:title", lang),
+            menu_context="packages"
+        )
+
+    async def back_to_packages(self, message: Message, lang: str) -> None:
+        await self.mc.show(
+            message,
+            admin_packages(lang),
+            title=t("admin:packages:title", lang),
+            menu_context="packages"
         )
 

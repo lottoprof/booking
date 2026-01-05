@@ -15,6 +15,8 @@ from bot.app.flows.admin import locations as locations_flow
 from bot.app.flows.admin import services as services_flow
 from bot.app.flows.admin import rooms as rooms_flow
 from bot.app.flows.admin import specialists as specialists_flow
+from bot.app.flows.admin import packages as packages_flow
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -35,6 +37,7 @@ def setup(menu_controller, get_user_role):
     # FSM роутеры
     loc_router = locations_flow.setup(menu_controller, get_user_role)
     svc_router = services_flow.setup(menu_controller, get_user_role)
+    pkg_router, pkg_edit_router = packages_flow.setup(menu_controller, get_user_role)
     room_router = rooms_flow.setup(menu_controller, get_user_role)
     spec_router = specialists_flow.setup(menu_controller, get_user_role)
 
@@ -57,6 +60,11 @@ def setup(menu_controller, get_user_role):
         "services": {
             "list": lambda msg, st: svc_router.show_list(msg),
             "create": lambda msg, st: svc_router.start_create(msg, st),
+            "back": lambda msg, st, lang: flow.back_to_settings(msg, lang),
+        },
+        "packages": {
+            "list": lambda msg, st: pkg_router.show_list(msg),
+            "create": lambda msg, st: pkg_router.start_create(msg, st),
             "back": lambda msg, st, lang: flow.back_to_settings(msg, lang),
         },
         "rooms": {
@@ -166,18 +174,17 @@ def setup(menu_controller, get_user_role):
             await flow.to_services(message, lang)
 
         elif text == t("admin:settings:packages", lang):
-            pass  # TODO
+            await flow.to_packages(message, lang)
 
         elif text == t("admin:settings:specialists", lang):
             await flow.to_specialists(message, lang)
-
-        # spec_services удалён — теперь внутри карточки специалиста
 
     # =====================================================
     # ПОРЯДОК ВАЖЕН! FSM роутеры ПЕРВЫЕ, reply ПОСЛЕДНИЙ
     # =====================================================
     router.include_router(loc_router)
     router.include_router(svc_router)
+    router.include_router(pkg_edit_router)
     router.include_router(room_router)
     router.include_router(spec_router)
     router.include_router(reply_router)  # Catch-all последний

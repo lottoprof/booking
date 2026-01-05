@@ -504,3 +504,23 @@ def color_picker_inline(lang: str) -> InlineKeyboardMarkup:
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
+# ============================================================
+# PACKAGES - Reply keyboard
+# ============================================================
+
+def admin_packages(lang: str) -> ReplyKeyboardMarkup:
+    """Меню пакетов услуг."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text=t("admin:packages:list", lang)),
+                KeyboardButton(text=t("admin:packages:create", lang)),
+            ],
+            [
+                KeyboardButton(text=t("admin:packages:back", lang)),
+            ],
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+    )
+
