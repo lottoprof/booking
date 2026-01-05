@@ -146,29 +146,29 @@ class ApiClient:
         result = await self._request("DELETE", f"/services/{service_id}")
         return result is None
     # ------------------------------------------------------------------
-    # Packages
+    # Packages (Service Packages)
     # ------------------------------------------------------------------
-
+    
     async def get_packages(self) -> list[dict]:
-        """GET /packages/ — список пакетов услуг."""
-        result = await self._request("GET", "/packages/")
+        """GET /service_packages/ — список пакетов услуг."""
+        result = await self._request("GET", "/service_packages/")
         return result or []
-
+    
     async def get_package(self, package_id: int) -> Optional[dict]:
-        """GET /packages/{id}"""
-        return await self._request("GET", f"/packages/{package_id}")
-
+        """GET /service_packages/{id}"""
+        return await self._request("GET", f"/service_packages/{package_id}")
+    
     async def create_package(self, data: dict) -> Optional[dict]:
-        """POST /packages/"""
-        return await self._request("POST", "/packages/", json=data)
-
+        """POST /service_packages/"""
+        return await self._request("POST", "/service_packages/", json=data)
+    
     async def patch_package(self, package_id: int, data: dict) -> Optional[dict]:
-        """PATCH /packages/{id}"""
-        return await self._request("PATCH", f"/packages/{package_id}", json=data)
-
+        """PATCH /service_packages/{id}"""
+        return await self._request("PATCH", f"/service_packages/{package_id}", json=data)
+    
     async def delete_package(self, package_id: int) -> bool:
-        """DELETE /packages/{id} — soft-delete."""
-        result = await self._request("DELETE", f"/packages/{package_id}")
+        """DELETE /service_packages/{id} — soft-delete."""
+        result = await self._request("DELETE", f"/service_packages/{package_id}")
         return result is None
 
     # ------------------------------------------------------------------
