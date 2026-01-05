@@ -579,68 +579,68 @@ def setup(mc, get_user_role):
             pkg_cancel_inline(lang)
         )
 
-@router.message(PackageCreate.price)
-async def create_price(message: Message, state: FSMContext):
-    lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
-    price = _safe_decimal(message.text or "")
-    if price is None:
-        await mc.show_inline_input(message, t("admin:package:error_price", lang), pkg_cancel_inline(lang))
-        return
+    @router.message(PackageCreate.price)
+    async def create_price(message: Message, state: FSMContext):
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+        price = _safe_decimal(message.text or "")
+        if price is None:
+            await mc.show_inline_input(message, t("admin:package:error_price", lang), pkg_cancel_inline(lang))
+            return
 
-    data = await state.get_data()
-    name = data.get("name")
-    description = data.get("description")
-    ids = list(data.get("q_service_ids") or [])
-    quantities = dict(data.get("quantities") or {})
+        data = await state.get_data()
+        name = data.get("name")
+        description = data.get("description")
+        ids = list(data.get("q_service_ids") or [])
+        quantities = dict(data.get("quantities") or {})
 
-    package_items = []
-    for sid in ids:
-        q = int(quantities.get(str(sid), 1))
-        package_items.append({"service_id": int(sid), "quantity": q})
+        package_items = []
+        for sid in ids:
+            q = int(quantities.get(str(sid), 1))
+            package_items.append({"service_id": int(sid), "quantity": q})
 
-    # Получаем company_id
-    company = await api.get_company()
-    if not company:
+        # Получаем company_id
+        company = await api.get_company()
+        if not company:
+            await state.clear()
+            await mc.show(
+                message,
+                admin_packages(lang),
+                title=t("common:error", lang),
+                menu_context="packages",
+            )
+            return
+
+        payload = {
+            "company_id": company["id"],  # ← ДОБАВЛЕНО
+            "name": name,
+            "description": description,
+            "package_items": package_items,
+            "package_price": round(price, 2),
+        }
+
+        created = await api.create_package(payload)
+        
+        if not created:
+            await state.clear()
+            await mc.show(
+                message,
+                admin_packages(lang),
+                title=t("common:error", lang),
+                menu_context="packages",
+            )
+            return
+
         await state.clear()
-        await mc.show(
-            message,
-            admin_packages(lang),
-            title=t("common:error", lang),
-            menu_context="packages",
-        )
-        return
 
-    payload = {
-        "company_id": company["id"],  # ← ДОБАВЛЕНО
-        "name": name,
-        "description": description,
-        "package_items": package_items,
-        "package_price": round(price, 2),
-    }
-
-    created = await api.create_package(payload)
+        # show created view
+        pkg_id = int(created["id"])
+        pkg = await api.get_package(pkg_id)
+        text = t("admin:package:created", lang) % (pkg.get("name") or "?")
+        view_text = await render_package_view(pkg, lang)
+        kb = package_view_inline(pkg_id, lang)
     
-    if not created:
-        await state.clear()
-        await mc.show(
-            message,
-            admin_packages(lang),
-            title=t("common:error", lang),
-            menu_context="packages",
-        )
-        return
-
-    await state.clear()
-
-    # show created view
-    pkg_id = int(created["id"])
-    pkg = await api.get_package(pkg_id)
-    text = t("admin:package:created", lang) % (pkg.get("name") or "?")
-    view_text = await render_package_view(pkg, lang)
-    kb = package_view_inline(pkg_id, lang)
-
-    await mc.show_inline_readonly(message, text + "\n\n" + view_text, kb)
-
+        await mc.show_inline_readonly(message, text + "\n\n" + view_text, kb)
+    
     # ==========================================================
     # EDIT (delegate)
     # ==========================================================
