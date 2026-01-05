@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "meta": {
     "name": "booking-api-gateway-policy",
     "default_action": "deny"
@@ -39,6 +39,7 @@
       "path": [
         "/company",
         "/locations",
+        "/packages",
         "/rooms",
         "/services",
         "/specialists"
@@ -112,10 +113,10 @@
       "path": [
         "/company/*",
         "/locations/*",
+        "/packages",
+        "/packages/*",
         "/rooms/*",
         "/services/*",
-        "/service_packages",
-        "/service_packages/*",
         "/service_rooms",
         "/service_rooms/*",
         "/specialists/*",
@@ -138,4 +139,3 @@
     }
   ]
 }
-
