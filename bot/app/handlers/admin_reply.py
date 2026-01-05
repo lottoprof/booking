@@ -37,7 +37,7 @@ def setup(menu_controller, get_user_role):
     # FSM роутеры
     loc_router = locations_flow.setup(menu_controller, get_user_role)
     svc_router = services_flow.setup(menu_controller, get_user_role)
-    pkg_router, pkg_edit_router = packages_flow.setup(menu_controller, get_user_role)
+    pkg_router = packages_flow.setup(menu_controller, get_user_role)
     room_router = rooms_flow.setup(menu_controller, get_user_role)
     spec_router = specialists_flow.setup(menu_controller, get_user_role)
 
