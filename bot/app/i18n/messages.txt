@@ -7,16 +7,16 @@ ru:common:lang:choose | "Выберите язык"
 en:common:lang:choose | "Choose language"
 
 # --- registration ---
-ru:registration:welcome | 👋 Добро пожаловать! Для регистрации поделитесь номером телефона.
-en:registration:welcome | 👋 Welcome! Please share your phone number to register.
-ru:registration:share_phone | 📱 Поделиться номером
-en:registration:share_phone | 📱 Share phone number
-ru:registration:deactivated | ❌ Аккаунт деактивирован. Обратитесь к администратору.
-en:registration:deactivated | ❌ Account deactivated. Please contact administrator.
-ru:registration:complete | ✅ Регистрация завершена!
-en:registration:complete | ✅ Registration complete!
-ru:registration:error | ❌ Ошибка регистрации. Попробуйте позже.
-en:registration:error | ❌ Registration error. Please try again later.
+ru:registration:welcome | "👋 Добро пожаловать! Для регистрации поделитесь номером телефона."
+en:registration:welcome | "👋 Welcome! Please share your phone number to register."
+ru:registration:share_phone | "📱 Поделиться номером"
+en:registration:share_phone | "📱 Share phone number"
+ru:registration:deactivated | "❌ Аккаунт деактивирован. Обратитесь к администратору."
+en:registration:deactivated | "❌ Account deactivated. Please contact administrator."
+ru:registration:complete | "✅ Регистрация завершена!"
+en:registration:complete | "✅ Registration complete!"
+ru:registration:error | "❌ Ошибка регистрации. Попробуйте позже."
+en:registration:error | "❌ Registration error. Please try again later."
 
 # --- admin menu titles ---
 ru:admin:main:title | "🏠 Главное меню"
