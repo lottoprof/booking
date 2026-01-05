@@ -93,12 +93,17 @@ async def start_handler(message: Message, state: FSMContext):
     """Обработка команды /start."""
     tg_id = message.from_user.id
     chat_id = message.chat.id
-    lang = user_lang.get(tg_id)
     
-    logger.info(f"start_handler: tg_id={tg_id}, chat_id={chat_id}, lang={lang}")
+    logger.info(f"start_handler: tg_id={tg_id}, chat_id={chat_id}")
 
     # Сброс FSM state (очистка застрявших состояний)
     await state.clear()
+    
+    # Сброс языка — пользователь начинает заново
+    user_lang.pop(tg_id, None)
+    
+    # Сброс навигационного состояния
+    await menu.reset(chat_id)
     
     # Проверяем, нужна ли регистрация
     ctx = get_user_context(tg_id)
@@ -106,21 +111,18 @@ async def start_handler(message: Message, state: FSMContext):
     
     logger.info(f"start_handler: is_new={is_new}")
     
-    # Если язык не выбран — показываем выбор языка
-    if not lang:
-        kb = language_inline()
-        if kb:
-            await message.answer(
-                t("common:lang:choose", DEFAULT_LANG),
-                reply_markup=kb
-            )
-            return
-        # Если языков меньше 2 — используем дефолтный
-        lang = DEFAULT_LANG
-        user_lang[tg_id] = lang
+    # Показываем выбор языка
+    kb = language_inline()
+    if kb:
+        await message.answer(
+            t("common:lang:choose", DEFAULT_LANG),
+            reply_markup=kb
+        )
+        return
     
-    # Сброс навигационного состояния
-    await menu.reset(chat_id)
+    # Если языков меньше 2 — используем дефолтный
+    lang = DEFAULT_LANG
+    user_lang[tg_id] = lang
     
     # Если новый пользователь — запускаем регистрацию
     if is_new:
@@ -150,9 +152,6 @@ async def language_callback(callback: CallbackQuery, state: FSMContext):
         pass
 
     await callback.answer()
-    
-    # Сброс навигационного состояния
-    await menu.reset(chat_id)
     
     # Проверяем, нужна ли регистрация
     ctx = get_user_context(tg_id)
