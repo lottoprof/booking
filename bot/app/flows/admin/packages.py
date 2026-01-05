@@ -241,7 +241,6 @@ def setup(mc, get_user_role):
     router = Router(name="packages")
     logger.info("=== packages.setup() called ===")
 
-
     # ==========================================================
     # LIST
     # ==========================================================
@@ -297,10 +296,15 @@ def setup(mc, get_user_role):
         await callback.answer()
 
     @router.callback_query(F.data == "pkg:back")
-    async def back_to_reply(callback: CallbackQuery, state: FSMContext):
+    async def back_to_reply_menu(callback: CallbackQuery, state: FSMContext):
         await state.clear()
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
-        await mc.back_to_reply(callback.message, t("admin:packages:title", lang), admin_packages(lang))
+        await mc.back_to_reply(
+            callback.message,
+            admin_packages(lang),
+            title=t("admin:packages:title", lang),
+            menu_context="packages",
+        )
         await callback.answer()
 
     # ==========================================================
@@ -407,7 +411,12 @@ def setup(mc, get_user_role):
     async def create_cancel(callback: CallbackQuery, state: FSMContext):
         await state.clear()
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
-        await mc.back_to_reply(callback.message, t("admin:packages:title", lang), admin_packages(lang))
+        await mc.back_to_reply(
+            callback.message,
+            admin_packages(lang),
+            title=t("admin:packages:title", lang),
+            menu_context="packages",
+        )
         await callback.answer()
 
     @router.message(PackageCreate.name)
@@ -533,9 +542,14 @@ def setup(mc, get_user_role):
         quantities: dict[str, Any] = dict(data.get("quantities") or {})
 
         if idx < 0 or idx >= len(ids):
-            # safety
+            # safety — вернуться в меню
             await state.clear()
-            await mc.back_to_reply(message, t("common:error", lang), admin_packages(lang))
+            await mc.show(
+                message,
+                admin_packages(lang),
+                title=t("admin:packages:title", lang),
+                menu_context="packages",
+            )
             return
 
         sid = int(ids[idx])
@@ -613,9 +627,9 @@ def setup(mc, get_user_role):
         await start_package_edit(callback, state, pkg_id)
         await callback.answer()
 
-    # подключаем EDIT route
+    # подключаем EDIT router
     router.include_router(setup_edit(mc, get_user_role))
-    
+
     logger.info("=== packages router configured ===")
-    return router  
+    return router
 

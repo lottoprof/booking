@@ -26,6 +26,7 @@ from aiogram.fsm.state import State, StatesGroup
 from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.utils.api import api
+from bot.app.keyboards.admin import admin_packages
 
 logger = logging.getLogger(__name__)
 
@@ -163,10 +164,11 @@ async def start_package_edit(callback: CallbackQuery, state: FSMContext, pkg_id:
 def setup(mc, get_user_role):
     router = Router(name="packages_edit")
     logger.info("=== packages_edit.setup() called ===")
-    
-    from bot.app.keyboards.admin import admin_packages
-    
-    # ---- Reply "Back" escape hatch for EDIT FSM
+
+    # ==========================================================
+    # Reply "Back" escape hatch for EDIT FSM
+    # ==========================================================
+
     @router.message(F.text.in_(t_all("admin:packages:back")), PackageEdit.name)
     @router.message(F.text.in_(t_all("admin:packages:back")), PackageEdit.description)
     @router.message(F.text.in_(t_all("admin:packages:back")), PackageEdit.items)
@@ -182,7 +184,7 @@ def setup(mc, get_user_role):
             title=t("admin:packages:title", lang),
             menu_context="packages",
         )
-    
+
     # ==========================================================
     # EDIT MENU
     # ==========================================================
@@ -469,10 +471,9 @@ def setup(mc, get_user_role):
         await state.update_data(changes={})
 
         # back to view
-        pkg = await api.get_package(pkg_id)
-        # reuse renderer from packages.py by re-fetching there through view handler
         await callback.message.edit_text(t("admin:package:saved", lang), reply_markup=pkg_edit_inline(pkg_id, lang))
         await callback.answer()
 
+    logger.info("=== packages_edit router configured ===")
     return router
 
