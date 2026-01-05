@@ -27,10 +27,10 @@ from aiogram.types import (
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.utils.api import api
-from bot.app.keyboards.admin import admin_packages  # reply keyboard entry (как admin_specialists)
+from bot.app.keyboards.admin import admin_packages
 
 # EDIT entry point
 from .packages_edit import start_package_edit, setup as setup_edit
@@ -241,8 +241,6 @@ def setup(mc, get_user_role):
     router = Router(name="packages")
     logger.info("=== packages.setup() called ===")
 
-    # register edit router
-    edit_router = setup_edit(mc, get_user_role)
 
     # ==========================================================
     # LIST
@@ -387,6 +385,23 @@ def setup(mc, get_user_role):
         )
 
     router.start_create = start_create
+
+    # ---- Reply "Back" button во время FSM (escape hatch)
+    @router.message(F.text.in_(t_all("admin:packages:back")), PackageCreate.name)
+    @router.message(F.text.in_(t_all("admin:packages:back")), PackageCreate.description)
+    @router.message(F.text.in_(t_all("admin:packages:back")), PackageCreate.services)
+    @router.message(F.text.in_(t_all("admin:packages:back")), PackageCreate.quantity)
+    @router.message(F.text.in_(t_all("admin:packages:back")), PackageCreate.price)
+    async def fsm_back_escape(message: Message, state: FSMContext):
+        """Escape hatch: Reply Back во время FSM → отмена и возврат в меню."""
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+        await state.clear()
+        await mc.show(
+            message,
+            admin_packages(lang),
+            title=t("admin:packages:title", lang),
+            menu_context="packages",
+        )
 
     @router.callback_query(F.data == "pkg_create:cancel")
     async def create_cancel(callback: CallbackQuery, state: FSMContext):
@@ -598,5 +613,9 @@ def setup(mc, get_user_role):
         await start_package_edit(callback, state, pkg_id)
         await callback.answer()
 
-    return router, edit_router
+    # подключаем EDIT route
+    router.include_router(setup_edit(mc, get_user_role))
+    
+    logger.info("=== packages router configured ===")
+    return router  
 

@@ -184,7 +184,7 @@ def setup(menu_controller, get_user_role):
     # =====================================================
     router.include_router(loc_router)
     router.include_router(svc_router)
-    router.include_router(pkg_edit_router)
+    router.include_router(pkg_router)
     router.include_router(room_router)
     router.include_router(spec_router)
     router.include_router(reply_router)  # Catch-all последний

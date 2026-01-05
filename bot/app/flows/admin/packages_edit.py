@@ -23,7 +23,7 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKe
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.utils.api import api
 
@@ -163,7 +163,26 @@ async def start_package_edit(callback: CallbackQuery, state: FSMContext, pkg_id:
 def setup(mc, get_user_role):
     router = Router(name="packages_edit")
     logger.info("=== packages_edit.setup() called ===")
-
+    
+    from bot.app.keyboards.admin import admin_packages
+    
+    # ---- Reply "Back" escape hatch for EDIT FSM
+    @router.message(F.text.in_(t_all("admin:packages:back")), PackageEdit.name)
+    @router.message(F.text.in_(t_all("admin:packages:back")), PackageEdit.description)
+    @router.message(F.text.in_(t_all("admin:packages:back")), PackageEdit.items)
+    @router.message(F.text.in_(t_all("admin:packages:back")), PackageEdit.quantity)
+    @router.message(F.text.in_(t_all("admin:packages:back")), PackageEdit.price)
+    async def edit_fsm_back_escape(message: Message, state: FSMContext):
+        """Escape hatch: Reply Back во время Edit FSM."""
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+        await state.clear()
+        await mc.show(
+            message,
+            admin_packages(lang),
+            title=t("admin:packages:title", lang),
+            menu_context="packages",
+        )
+    
     # ==========================================================
     # EDIT MENU
     # ==========================================================
