@@ -17,27 +17,24 @@ def language_inline():
     buttons = []
 
     for lang in langs:
-        key = f"common:lang:{lang}"
-
-        # Используем ЭТОТ ЖЕ язык для получения названия
-        # ru:common:lang:ru → "Русский"
-        # en:common:lang:en → "English"
-        label = t(key, lang=lang)
+        # Текст "Выберите язык" на соответствующем языке
+        label = t("common:lang:choose", lang=lang)
         
-        if label == key:
+        if label == "common:lang:choose":
             continue
 
-        buttons.append(
+        # Каждая кнопка в отдельном ряду
+        buttons.append([
             InlineKeyboardButton(
                 text=label,
                 callback_data=f"lang:{lang}"
             )
-        )
+        ])
 
     if not buttons:
         return None
 
-    return InlineKeyboardMarkup(inline_keyboard=[buttons])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def request_phone_keyboard(lang: str) -> ReplyKeyboardMarkup:
