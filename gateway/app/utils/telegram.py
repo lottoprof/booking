@@ -154,26 +154,14 @@ def _set_cached_user(tg_id: int, user_data: dict):
         logger.error(f"[CACHE] SET error: {e}")
 
 
-# ============================================================
-# BACKEND: get company_id
-# ============================================================
-
-async def _get_company_id() -> Optional[int]:
-    """
-    Получает company_id из БД.
-    Возвращает None если компания не найдена — это ошибка конфигурации.
-    """
-    async with httpx.AsyncClient(timeout=5.0) as client:
-        try:
-            resp = await client.get(f"{DOMAIN_API_URL}/company/")
-            if resp.status_code == 200:
-                companies = resp.json()
-                if companies:
-                    return companies[0]["id"]
-        except Exception as e:
-            logger.error(f"Get company failed: {e}")
-    
-    return None
+def invalidate_user_cache(tg_id: int):
+    """Инвалидирует кэш пользователя. Вызывается после регистрации."""
+    key = _cache_key(tg_id)
+    try:
+        redis_client.delete(key)
+        logger.info(f"[CACHE] DELETE {key}")
+    except Exception as e:
+        logger.error(f"[CACHE] DELETE error: {e}")
 
 
 # ============================================================
@@ -212,17 +200,19 @@ async def _get_user_role(user_id: int) -> str:
 
 
 # ============================================================
-# BACKEND: fetch or create user
+# BACKEND: fetch user (without create)
 # ============================================================
 
-async def _fetch_user_from_backend(tg_id: int, user_info: dict) -> Optional[dict]:
+async def _fetch_user_from_backend(tg_id: int) -> Optional[dict]:
     """
-    Получает или создаёт пользователя в backend.
-    Возвращает dict с user_id, company_id, role, is_new.
-    Возвращает None при ошибке — пользователь НЕ создаётся если БД недоступна.
+    Ищет пользователя по tg_id в backend.
+    
+    Возвращает dict с user_id, company_id, role, is_new=False если найден.
+    Возвращает None если не найден или БД недоступна.
+    
+    НЕ создаёт пользователя — создание происходит в Bot после запроса телефона.
     """
     async with httpx.AsyncClient(timeout=5.0) as client:
-        # 1. Ищем существующего пользователя
         try:
             resp = await client.get(f"{DOMAIN_API_URL}/users/by_tg/{tg_id}")
             if resp.status_code == 200:
@@ -234,50 +224,16 @@ async def _fetch_user_from_backend(tg_id: int, user_info: dict) -> Optional[dict
                     "role": role,
                     "is_new": False,
                 }
+            elif resp.status_code == 404:
+                # Пользователь не найден — это нормально, требуется регистрация
+                logger.info(f"[AUTH] User not found by tg_id={tg_id}, registration required")
+                return None
+            else:
+                logger.error(f"[AUTH] Unexpected status: {resp.status_code}")
+                return None
         except Exception as e:
             logger.error(f"User lookup failed: {e}")
-            return None  # БД недоступна — не продолжаем
-        
-        # 2. Пользователь не найден — создаём нового
-        # Сначала получаем company_id
-        company_id = await _get_company_id()
-        if not company_id:
-            logger.error("Cannot create user: no company in database")
             return None
-        
-        try:
-            create_data = {
-                "company_id": company_id,
-                "first_name": user_info.get("first_name") or "User",
-                "last_name": user_info.get("last_name"),
-                "tg_id": tg_id,
-                "tg_username": user_info.get("tg_username"),
-            }
-            resp = await client.post(f"{DOMAIN_API_URL}/users/", json=create_data)
-            
-            if resp.status_code == 201:
-                user = resp.json()
-                logger.info(f"Created user: tg_id={tg_id}, user_id={user['id']}")
-                
-                # Назначаем роль client
-                await client.post(
-                    f"{DOMAIN_API_URL}/user_roles/",
-                    json={"user_id": user["id"], "role_id": 4}
-                )
-                
-                return {
-                    "user_id": user["id"],
-                    "company_id": company_id,
-                    "role": "client",
-                    "is_new": True,
-                }
-            else:
-                logger.error(f"Create user failed: {resp.status_code} {resp.text}")
-                
-        except Exception as e:
-            logger.error(f"Create user error: {e}")
-        
-        return None
 
 
 # ============================================================
@@ -290,13 +246,14 @@ async def authenticate_tg_user(update: dict) -> Optional[TgUserContext]:
     
     1. Извлекает tg_id из update
     2. Проверяет кэш Redis (TTL 10 мин)
-    3. Если нет — запрос к backend (get or create)
-    4. Кэширует результат
+    3. Если нет в кэше — запрос к backend (только поиск, без создания)
+    4. Кэширует результат если найден
     
-    Возвращает None если:
-    - Нет tg_id в update
-    - БД недоступна
-    - Нет компании в БД (bootstrap не выполнен)
+    Возвращает TgUserContext:
+    - user_id заполнен, is_new=False — пользователь найден
+    - user_id=None, is_new=True — требуется регистрация (запрос телефона)
+    
+    Возвращает None только если нет tg_id в update.
     """
     tg_id = extract_tg_id(update)
     if not tg_id:
@@ -319,29 +276,35 @@ async def authenticate_tg_user(update: dict) -> Optional[TgUserContext]:
     
     logger.info(f"[AUTH] Cache miss, fetching from backend...")
     
-    # 2. Запрос к backend
-    user_info = extract_user_info(update)
-    user_data = await _fetch_user_from_backend(tg_id, user_info)
+    # 2. Запрос к backend (только поиск)
+    user_data = await _fetch_user_from_backend(tg_id)
     
-    if not user_data:
-        logger.error(f"[AUTH] Backend fetch failed for tg_id={tg_id}")
-        return None
+    if user_data:
+        # Пользователь найден — кэшируем
+        cache_data = {
+            "user_id": user_data["user_id"],
+            "company_id": user_data["company_id"],
+            "role": user_data["role"],
+        }
+        _set_cached_user(tg_id, cache_data)
+        
+        logger.info(f"[AUTH] User found: tg_id={tg_id}, role={user_data['role']}")
+        
+        return TgUserContext(
+            tg_id=tg_id,
+            user_id=user_data["user_id"],
+            company_id=user_data["company_id"],
+            role=user_data["role"],
+            is_new=False,
+        )
     
-    # 3. Кэшируем
-    cache_data = {
-        "user_id": user_data["user_id"],
-        "company_id": user_data["company_id"],
-        "role": user_data["role"],
-    }
-    _set_cached_user(tg_id, cache_data)
-    
-    logger.info(f"[AUTH] User authenticated: tg_id={tg_id}, role={user_data['role']}, cached=True")
+    # 3. Пользователь не найден — требуется регистрация
+    logger.info(f"[AUTH] User not found, registration required: tg_id={tg_id}")
     
     return TgUserContext(
         tg_id=tg_id,
-        user_id=user_data["user_id"],
-        company_id=user_data["company_id"],
-        role=user_data["role"],
-        is_new=user_data["is_new"],
+        user_id=None,
+        company_id=None,
+        role="client",  # дефолтная роль для нового
+        is_new=True,
     )
-

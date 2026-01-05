@@ -57,6 +57,37 @@ class ApiClient:
                 logger.error(f"API request failed: {method} {path} -> {e}")
                 return None
 
+    async def _request_with_status(
+        self,
+        method: str,
+        path: str,
+        headers: dict = None,
+        **kwargs
+    ) -> tuple[Optional[dict | list], int]:
+        """HTTP запрос с возвратом статус-кода (для обработки 404)."""
+        url = f"{self.base_url}{path}"
+        
+        _headers = {"X-Internal-Token": os.getenv("INTERNAL_TOKEN", "bot-internal")}
+        if headers:
+            _headers.update(headers)
+        
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+            try:
+                resp = await client.request(method, url, headers=_headers, **kwargs)
+                
+                if resp.status_code == 204:
+                    return None, 204
+                    
+                if resp.status_code >= 400:
+                    logger.info(f"API: {method} {path} -> {resp.status_code}")
+                    return None, resp.status_code
+                    
+                return resp.json(), resp.status_code
+                
+            except Exception as e:
+                logger.error(f"API request failed: {method} {path} -> {e}")
+                return None, 0
+
     # ------------------------------------------------------------------
     # Company
     # ------------------------------------------------------------------
@@ -145,6 +176,7 @@ class ApiClient:
         """DELETE /services/{id} — soft-delete."""
         result = await self._request("DELETE", f"/services/{service_id}")
         return result is None
+
     # ------------------------------------------------------------------
     # Packages (Service Packages)
     # ------------------------------------------------------------------
@@ -259,6 +291,55 @@ class ApiClient:
     async def get_user(self, user_id: int) -> Optional[dict]:
         """GET /users/{id}"""
         return await self._request("GET", f"/users/{user_id}")
+
+    async def get_user_by_phone(self, phone: str) -> tuple[Optional[dict], bool]:
+        """
+        GET /users/by_phone/{phone}
+        
+        Возвращает (user, found):
+        - (user_dict, True) — найден
+        - (None, False) — не найден (404)
+        - (None, True) — ошибка запроса
+        """
+        result, status = await self._request_with_status("GET", f"/users/by_phone/{phone}")
+        if status == 404:
+            return None, False  # не найден
+        if result:
+            return result, True  # найден
+        return None, True  # ошибка (не 404)
+
+    async def create_user(
+        self,
+        company_id: int,
+        phone: str,
+        tg_id: int,
+        **kwargs
+    ) -> Optional[dict]:
+        """POST /users/ — создание нового пользователя."""
+        data = {
+            "company_id": company_id,
+            "phone": phone,
+            "tg_id": tg_id,
+            "first_name": kwargs.get("first_name") or "User",
+            **{k: v for k, v in kwargs.items() if k != "first_name"}
+        }
+        return await self._request("POST", "/users/", json=data)
+
+    async def update_user(self, user_id: int, **kwargs) -> Optional[dict]:
+        """PATCH /users/{id} — обновление пользователя."""
+        return await self._request("PATCH", f"/users/{user_id}", json=kwargs)
+
+    # ------------------------------------------------------------------
+    # User Roles
+    # ------------------------------------------------------------------
+
+    async def create_user_role(self, user_id: int, role_id: int) -> Optional[dict]:
+        """POST /user_roles/ — назначение роли пользователю."""
+        data = {
+            "user_id": user_id,
+            "role_id": role_id,
+        }
+        return await self._request("POST", "/user_roles/", json=data)
 
     # ------------------------------------------------------------------
     # Specialists
