@@ -213,7 +213,15 @@ async def render_package_view(pkg: dict, lang: str) -> str:
     services_map = {int(s["id"]): (s.get("name") or "?") for s in services}
 
     items = pkg.get("package_items") or []
-    # backend может вернуть JSON как строку — не трогаем тут (в v1 ожидаем list)
+    
+    # Если items — строка (JSON), парсим её
+    if isinstance(items, str):
+        try:
+            items = json.loads(items)
+        except Exception:
+            items = []
+    
+    # backend может вернуть dict вместо list
     if isinstance(items, dict):
         items = [items]
 
@@ -223,8 +231,6 @@ async def render_package_view(pkg: dict, lang: str) -> str:
             qty = int(it.get("quantity", 0) or 0)
             svc_name = services_map.get(sid, "?")
             lines.append(t("admin:package:item_row", lang) % (svc_name, qty))
-    else:
-        lines.append("• ?")
 
     lines.append("")
     price = pkg.get("package_price")
@@ -232,7 +238,6 @@ async def render_package_view(pkg: dict, lang: str) -> str:
     lines.append(t("admin:package:price", lang) % price_str)
 
     return "\n".join(lines)
-
 
 # ==============================================================
 # Setup
