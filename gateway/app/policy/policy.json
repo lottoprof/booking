@@ -113,10 +113,10 @@
       "path": [
         "/company/*",
         "/locations/*",
-        "/packages",
-        "/packages/*",
         "/rooms/*",
         "/services/*",
+        "/service_packages",
+        "/service_packages/*",
         "/service_rooms",
         "/service_rooms/*",
         "/specialists/*",
