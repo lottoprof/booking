@@ -16,6 +16,7 @@ Service Packages (admin):
 import logging
 import math
 from typing import Any
+import json
 
 from aiogram import Router, F
 from aiogram.types import (
@@ -593,11 +594,13 @@ def setup(mc, get_user_role):
         ids = list(data.get("q_service_ids") or [])
         quantities = dict(data.get("quantities") or {})
 
+
+
         package_items = []
         for sid in ids:
             q = int(quantities.get(str(sid), 1))
             package_items.append({"service_id": int(sid), "quantity": q})
-
+        
         # Получаем company_id
         company = await api.get_company()
         if not company:
@@ -609,12 +612,12 @@ def setup(mc, get_user_role):
                 menu_context="packages",
             )
             return
-
+        
         payload = {
-            "company_id": company["id"],  # ← ДОБАВЛЕНО
+            "company_id": company["id"],
             "name": name,
             "description": description,
-            "package_items": package_items,
+            "package_items": json.dumps(package_items),  # ← СЕРИАЛИЗУЕМ В JSON STRING
             "package_price": round(price, 2),
         }
 
