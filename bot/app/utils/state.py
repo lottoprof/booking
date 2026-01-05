@@ -29,6 +29,10 @@ def set_user_lang(tg_id: int, lang: str) -> None:
     _redis.setex(f"user:lang:{tg_id}", LANG_TTL, lang)
 
 
+def delete_user_lang(tg_id: int) -> None:
+    _redis.delete(f"user:lang:{tg_id}")
+
+
 # ----------------------------------------
 # Backward compatibility
 # ----------------------------------------
@@ -47,6 +51,17 @@ class UserLangDict:
     
     def __contains__(self, tg_id: int) -> bool:
         return get_user_lang(tg_id) is not None
+    
+    def __delitem__(self, tg_id: int) -> None:
+        delete_user_lang(tg_id)
+    
+    def pop(self, tg_id: int, default: str | None = None) -> str | None:
+        """Удаляет и возвращает значение."""
+        value = get_user_lang(tg_id)
+        if value is not None:
+            delete_user_lang(tg_id)
+            return value
+        return default
 
 
 user_lang = UserLangDict()
