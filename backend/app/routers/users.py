@@ -86,7 +86,7 @@ def get_user_by_tg_id(tg_id: int, db: Session = Depends(get_db)):
 
 @router.get("/by_phone/{phone}", response_model=UserRead)
 def get_user_by_phone(phone: str, db: Session = Depends(get_db)):
-     """
+    """
     Поиск пользователя по телефону.
     Возвращает пользователя независимо от is_active (для проверки деактивации).
     """
