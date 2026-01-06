@@ -320,16 +320,16 @@ class ApiClient:
         **kwargs
     ) -> Optional[dict]:
         """POST /users/ — создание нового пользователя."""
-    # Нормализуем телефон
-    if phone and not phone.startswith('+'):
-        phone = '+' + phone
-
+        # Нормализуем телефон
+        if phone and not phone.startswith('+'):
+            phone = '+' + phone
+    
         data = {
-                "company_id": company_id,
-                "phone": phone,
-                "tg_id": tg_id,
-                "first_name": kwargs.get("first_name") or "User",
-                **{k: v for k, v in kwargs.items() if k != "first_name"}
+            "company_id": company_id,
+            "phone": phone,
+            "tg_id": tg_id,
+            "first_name": kwargs.get("first_name") or "User",
+            **{k: v for k, v in kwargs.items() if k != "first_name"}
         }
         return await self._request("POST", "/users/", json=data)
 
