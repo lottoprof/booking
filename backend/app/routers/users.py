@@ -3,6 +3,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from urllib.parse import unquote
 
 from ..database import get_db
 from ..models.generated import Users as DBUsers
@@ -83,13 +84,15 @@ def get_user_by_tg_id(tg_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return obj
 
-
 @router.get("/by_phone/{phone}", response_model=UserRead)
 def get_user_by_phone(phone: str, db: Session = Depends(get_db)):
-    """
+     """
     Поиск пользователя по телефону.
     Возвращает пользователя независимо от is_active (для проверки деактивации).
     """
+    # URL decode: %2B → +
+    phone = unquote(phone)
+    
     obj = (
         db.query(DBUsers)
         .filter(DBUsers.phone == phone)
@@ -98,4 +101,3 @@ def get_user_by_phone(phone: str, db: Session = Depends(get_db)):
     if not obj:
         raise HTTPException(status_code=404, detail="User not found")
     return obj
-
