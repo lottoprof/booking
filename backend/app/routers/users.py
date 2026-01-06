@@ -24,6 +24,34 @@ def list_users(db: Session = Depends(get_db)):
         .all()
     )
 
+@router.get("/by_tg/{tg_id}", response_model=UserRead)
+def get_user_by_tg_id(tg_id: int, db: Session = Depends(get_db)):
+    obj = (
+        db.query(DBUsers)
+        .filter(DBUsers.tg_id == tg_id, DBUsers.is_active == 1)
+        .first()
+    )
+    if not obj:
+        raise HTTPException(status_code=404, detail="User not found")
+    return obj
+
+@router.get("/by_phone/{phone}", response_model=UserRead)
+def get_user_by_phone(phone: str, db: Session = Depends(get_db)):
+    """
+    Поиск пользователя по телефону.
+    Возвращает пользователя независимо от is_active (для проверки деактивации).
+    """
+    # URL decode: %2B → +
+    phone = unquote(phone)
+    
+    obj = (
+        db.query(DBUsers)
+        .filter(DBUsers.phone == phone)
+        .first()
+    )
+    if not obj:
+        raise HTTPException(status_code=404, detail="User not found")
+    return obj
 
 @router.get("/{id}", response_model=UserRead)
 def get_user(id: int, db: Session = Depends(get_db)):
@@ -31,7 +59,6 @@ def get_user(id: int, db: Session = Depends(get_db)):
     if not obj:
         raise HTTPException(status_code=404, detail="Not found")
     return obj
-
 
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def create_user(
@@ -72,32 +99,3 @@ def delete_user(id: int, db: Session = Depends(get_db)):
     obj.is_active = 0
     db.commit()
 
-
-@router.get("/by_tg/{tg_id}", response_model=UserRead)
-def get_user_by_tg_id(tg_id: int, db: Session = Depends(get_db)):
-    obj = (
-        db.query(DBUsers)
-        .filter(DBUsers.tg_id == tg_id, DBUsers.is_active == 1)
-        .first()
-    )
-    if not obj:
-        raise HTTPException(status_code=404, detail="User not found")
-    return obj
-
-@router.get("/by_phone/{phone}", response_model=UserRead)
-def get_user_by_phone(phone: str, db: Session = Depends(get_db)):
-    """
-    Поиск пользователя по телефону.
-    Возвращает пользователя независимо от is_active (для проверки деактивации).
-    """
-    # URL decode: %2B → +
-    phone = unquote(phone)
-    
-    obj = (
-        db.query(DBUsers)
-        .filter(DBUsers.phone == phone)
-        .first()
-    )
-    if not obj:
-        raise HTTPException(status_code=404, detail="User not found")
-    return obj
