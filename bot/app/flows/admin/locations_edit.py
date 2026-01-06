@@ -194,6 +194,34 @@ def _get_changed_field_names(changes: dict, lang: str) -> list[str]:
 
 
 # ==============================================================
+# ЛОКАЛЬНАЯ КОПИЯ location_view_inline
+# Чтобы избежать циклического импорта из locations.py
+# ==============================================================
+
+def _location_view_inline(location: dict, lang: str) -> InlineKeyboardMarkup:
+    """Карточка просмотра локации (локальная копия)."""
+    loc_id = location["id"]
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text=t("admin:location:edit", lang),
+                callback_data=f"loc:edit:{loc_id}"
+            ),
+            InlineKeyboardButton(
+                text=t("admin:location:delete", lang),
+                callback_data=f"loc:delete:{loc_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text=t("common:back", lang),
+                callback_data="loc:list:0"
+            )
+        ]
+    ])
+
+
+# ==============================================================
 # Entry point (called from locations.py delegate)
 # ==============================================================
 
@@ -604,11 +632,11 @@ def setup(mc, get_user_role):
         await callback.answer(t("admin:location:saved", lang))
         
         # Показать обновлённую карточку
+        # ИСПРАВЛЕНО: используем локальную функцию вместо импорта
         location = await api.get_location(loc_id)
         if location:
-            from .locations import location_view_inline
             text = build_location_view_text(location, lang)
-            kb = location_view_inline(location, lang)
+            kb = _location_view_inline(location, lang)
             await mc.edit_inline(callback.message, text, kb)
 
     logger.info("=== locations_edit router configured ===")
