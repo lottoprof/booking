@@ -301,11 +301,15 @@ class ApiClient:
         - (None, False) — не найден (404)
         - (None, True) — ошибка запроса
         """
+        # Telegram может отдать номер без +
+        if not phone.startswith('+'):
+            phone = '+' + phone
+        
         result, status = await self._request_with_status("GET", f"/users/by_phone/{phone}")
         if status == 404:
-            return None, False  # не найден
+            return None, False
         if result:
-            return result, True  # найден
+            return result, True
         return None, True  # ошибка (не 404)
 
     async def create_user(
