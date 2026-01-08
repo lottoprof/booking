@@ -301,18 +301,6 @@ router.include_router(reply_router)       # Catch-all last
 
 ---
 
-## 10. Реализованные модули
-
-| Сущность | Create | Edit | Статус |
-|----------|--------|------|--------|
-| Locations | locations.py | locations.py (inline) | ✅ |
-| Services | services.py | services_edit.py | ✅ |
-| Rooms | rooms.py | rooms_edit.py | ✅ |
-| Specialists | — | — | TODO |
-| Packages | — | — | TODO |
-
----
-
 # Rooms CRUD — Техническая документация
 
 ## Обзор
