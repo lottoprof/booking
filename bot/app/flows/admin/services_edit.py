@@ -7,8 +7,9 @@ EDIT-FSM for Services (admin).
 Правила:
 - FSM в Redis (через общий aiogram storage)
 - PATCH только diff (changes)
-- Inline-only
+- Inline-only (кроме escape hatch)
 - Не управляет Reply/menu_context (это делает services.py/admin_reply.py)
+- Escape hatch для EDIT FSM states
 """
 
 import logging
@@ -17,7 +18,7 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKe
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.utils.api import api
 from bot.app.keyboards.admin import (
@@ -287,6 +288,36 @@ def setup(mc, get_user_role):
 
     router = Router(name="services_edit")
     logger.info("=== services_edit.setup() called ===")
+
+    # ==========================================================
+    # ESCAPE HATCH: Reply "Back" во время EDIT FSM
+    # ==========================================================
+
+    async def _escape_edit_fsm(message: Message, state: FSMContext):
+        """
+        Escape hatch: Reply-кнопка "Назад" во время FSM редактирования.
+        Очищает состояние и возвращает в меню Services.
+        """
+        # Lazy import to avoid circular dependency
+        from bot.app.keyboards.admin import admin_services
+        
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+        await state.clear()
+        await mc.back_to_reply(
+            message,
+            admin_services(lang),
+            title=t("admin:services:title", lang),
+            menu_context="services",
+        )
+
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.name)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.description)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.duration)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.break_min)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.price)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.color)
+    async def escape_edit_fsm(message: Message, state: FSMContext):
+        await _escape_edit_fsm(message, state)
 
     # ==========================================================
     # EDIT: name

@@ -9,6 +9,7 @@ EDIT вынесен в services_edit.py (делегирование).
 - DELETE
 - CREATE (FSM, Redis)
 - делегирование EDIT
+- Escape hatch для CREATE FSM
 """
 
 import logging
@@ -17,7 +18,7 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.utils.api import api
 from bot.app.keyboards.admin import (
@@ -109,6 +110,30 @@ def build_service_view_text(svc: dict, lang: str) -> str:
 def setup(mc, get_user_role):
     router = Router(name="services")
     logger.info("=== services.setup() called ===")
+
+    # ==========================================================
+    # ESCAPE HATCH: Reply "Back" во время CREATE FSM
+    # ==========================================================
+
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceCreate.name)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceCreate.description)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceCreate.duration)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceCreate.break_min)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceCreate.price)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceCreate.color)
+    async def escape_create_fsm(message: Message, state: FSMContext):
+        """
+        Escape hatch: Reply-кнопка "Назад" во время FSM создания.
+        Очищает состояние и возвращает в меню Services.
+        """
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+        await state.clear()
+        await mc.back_to_reply(
+            message,
+            admin_services(lang),
+            title=t("admin:services:title", lang),
+            menu_context="services",
+        )
 
     # ==========================================================
     # LIST
