@@ -1,19 +1,31 @@
 """
 bot/app/flows/admin/locations.py
 
-LIST + VIEW + DELETE + CREATE для локаций.
-EDIT вынесен в locations_edit.py и подключается через include_router.
+FSM создания локации + список / просмотр / удаление.
+EDIT вынесен в locations_edit.py (делегирование).
+
+Ответственность файла:
+- LIST (inline, пагинация)
+- VIEW
+- DELETE
+- CREATE (FSM, Redis)
+- делегирование EDIT
 """
 
 import logging
 import json
 import math
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import (
+    Message,
+    CallbackQuery,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+)
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.utils.api import api
 from bot.app.utils.schedule_helper import (
@@ -28,21 +40,20 @@ from bot.app.keyboards.schedule import (
 )
 from bot.app.keyboards.admin import admin_locations
 
-# EDIT module
-from bot.app.flows.admin.locations_edit import (
-    start_location_edit,
-    setup as setup_edit,
-    build_location_view_text,
-)
+# EDIT entry point
+from .locations_edit import start_location_edit, setup as setup_edit
 
 logger = logging.getLogger(__name__)
 
-# Пагинация
+# ==============================================================
+# Config
+# ==============================================================
+
 PAGE_SIZE = 5
 
 
 # ==============================================================
-# FSM States (CREATE only)
+# FSM: CREATE
 # ==============================================================
 
 class LocationCreate(StatesGroup):
@@ -55,10 +66,11 @@ class LocationCreate(StatesGroup):
 
 
 # ==============================================================
-# Inline keyboards (LIST/VIEW/DELETE)
+# Inline keyboards
 # ==============================================================
 
-def cancel_inline(lang: str) -> InlineKeyboardMarkup:
+def location_cancel_inline(lang: str) -> InlineKeyboardMarkup:
+    """Кнопка отмены при создании."""
     return InlineKeyboardMarkup(inline_keyboard=[[
         InlineKeyboardButton(
             text=t("common:cancel", lang),
@@ -92,13 +104,13 @@ def locations_list_inline(
             )
         ])
     
-    # Пагинация (если нужна)
+    # Пагинация
     if total_pages > 1:
         nav_row = []
         
         if page > 0:
             nav_row.append(InlineKeyboardButton(
-                text=t("common:prev", lang),
+                text="◀️",
                 callback_data=f"loc:page:{page - 1}"
             ))
         else:
@@ -114,7 +126,7 @@ def locations_list_inline(
         
         if page < total_pages - 1:
             nav_row.append(InlineKeyboardButton(
-                text=t("common:next", lang),
+                text="▶️",
                 callback_data=f"loc:page:{page + 1}"
             ))
         else:
@@ -125,7 +137,7 @@ def locations_list_inline(
         
         buttons.append(nav_row)
     
-    # Кнопка "Назад" в Reply меню
+    # Назад
     buttons.append([
         InlineKeyboardButton(
             text=t("common:back", lang),
@@ -136,9 +148,9 @@ def locations_list_inline(
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def location_view_inline(location: dict, lang: str) -> InlineKeyboardMarkup:
+def location_view_inline(loc: dict, lang: str) -> InlineKeyboardMarkup:
     """Карточка просмотра локации."""
-    loc_id = location["id"]
+    loc_id = loc["id"]
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
@@ -176,11 +188,11 @@ def location_delete_confirm_inline(loc_id: int, lang: str) -> InlineKeyboardMark
 
 
 # ==============================================================
-# Helper: build texts (CREATE)
+# Helpers
 # ==============================================================
 
 def build_progress_text(data: dict, lang: str, prompt_key: str) -> str:
-    """Строит текст с прогрессом заполнения (создание)."""
+    """Текст с прогрессом создания локации."""
     lines = [t("admin:location:create_title", lang), ""]
     
     if data.get("name"):
@@ -195,6 +207,33 @@ def build_progress_text(data: dict, lang: str, prompt_key: str) -> str:
     
     lines.append("")
     lines.append(t(prompt_key, lang))
+    return "\n".join(lines)
+
+
+def build_location_view_text(loc: dict, lang: str) -> str:
+    """Текст карточки локации."""
+    lines = [t("admin:location:view_title", lang) % loc["name"], ""]
+    
+    # Город
+    if loc.get("city"):
+        lines.append(f"🏙 {loc['city']}")
+    
+    # Адрес
+    if loc.get("street"):
+        addr = loc["street"]
+        if loc.get("house"):
+            addr += f", {loc['house']}"
+        lines.append(f"🏠 {addr}")
+    
+    # График
+    if loc.get("work_schedule"):
+        try:
+            schedule = json.loads(loc["work_schedule"]) if isinstance(loc["work_schedule"], str) else loc["work_schedule"]
+            if schedule:
+                schedule_str = format_schedule_compact(schedule, lang)
+                lines.append(f"📅 {schedule_str}")
+        except Exception:
+            pass
     
     return "\n".join(lines)
 
@@ -204,17 +243,14 @@ def build_progress_text(data: dict, lang: str, prompt_key: str) -> str:
 # ==============================================================
 
 def setup(mc, get_user_role):
-    """Setup router with dependencies."""
-    
     router = Router(name="locations")
-    logger.info("=== locations.setup() called, creating router ===")
-
+    logger.info("=== locations.setup() called ===")
+    
     # ==========================================================
-    # LIST: показать список локаций
+    # LIST
     # ==========================================================
-
+    
     async def show_list(message: Message, page: int = 0):
-        """Показать список локаций (вызывается из admin_reply)."""
         tg_id = message.from_user.id
         lang = user_lang.get(tg_id, DEFAULT_LANG)
         
@@ -222,20 +258,15 @@ def setup(mc, get_user_role):
         total = len(locations)
         
         if total == 0:
-            text = t("admin:locations:empty", lang)
+            text = f"📍 {t('admin:locations:empty', lang)}"
         else:
             text = t("admin:locations:list_title", lang) % total
         
         kb = locations_list_inline(locations, page, lang)
-        # Type B1: readonly — Reply-якорь сохраняется
         await mc.show_inline_readonly(message, text, kb)
-
+    
     router.show_list = show_list
-
-    # ==========================================================
-    # LIST: pagination callback
-    # ==========================================================
-
+    
     @router.callback_query(F.data.startswith("loc:page:"))
     async def list_page(callback: CallbackQuery):
         page = int(callback.data.split(":")[2])
@@ -245,39 +276,34 @@ def setup(mc, get_user_role):
         total = len(locations)
         
         if total == 0:
-            text = t("admin:locations:empty", lang)
+            text = f"📍 {t('admin:locations:empty', lang)}"
         else:
             text = t("admin:locations:list_title", lang) % total
         
         kb = locations_list_inline(locations, page, lang)
         await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
-
+    
     @router.callback_query(F.data == "loc:list:0")
     async def list_first_page(callback: CallbackQuery):
-        """Вернуться к первой странице списка."""
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
         
         locations = await api.get_locations()
         total = len(locations)
         
         if total == 0:
-            text = t("admin:locations:empty", lang)
+            text = f"📍 {t('admin:locations:empty', lang)}"
         else:
             text = t("admin:locations:list_title", lang) % total
         
         kb = locations_list_inline(locations, 0, lang)
         await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
-
+    
     @router.callback_query(F.data == "loc:noop")
     async def noop(callback: CallbackQuery):
         await callback.answer()
-
-    # ==========================================================
-    # LIST: back to Reply menu
-    # ==========================================================
-
+    
     @router.callback_query(F.data == "loc:back")
     async def list_back(callback: CallbackQuery, state: FSMContext):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
@@ -286,129 +312,135 @@ def setup(mc, get_user_role):
             callback.message,
             admin_locations(lang),
             title=t("admin:locations:title", lang),
-            menu_context="locations" 
+            menu_context="locations",
         )
         await callback.answer()
-
+    
     # ==========================================================
-    # VIEW: карточка локации
+    # VIEW
     # ==========================================================
-
+    
     @router.callback_query(F.data.startswith("loc:view:"))
     async def view_location(callback: CallbackQuery, state: FSMContext):
         loc_id = int(callback.data.split(":")[2])
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
         
-        # Очищаем FSM при возврате на просмотр
         await state.clear()
         
-        location = await api.get_location(loc_id)
-        if not location:
+        loc = await api.get_location(loc_id)
+        if not loc:
             await callback.answer(t("common:error", lang), show_alert=True)
             return
         
-        text = build_location_view_text(location, lang)
-        kb = location_view_inline(location, lang)
-        
+        text = build_location_view_text(loc, lang)
+        kb = location_view_inline(loc, lang)
         await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
-
+    
     # ==========================================================
-    # DELETE: подтверждение
+    # EDIT (delegation only)
     # ==========================================================
-
+    
+    @router.callback_query(F.data.startswith("loc:edit:"))
+    async def edit_location(callback: CallbackQuery, state: FSMContext):
+        loc_id = int(callback.data.split(":")[2])
+        await start_location_edit(
+            mc=mc,
+            callback=callback,
+            state=state,
+            loc_id=loc_id,
+        )
+    
+    # ==========================================================
+    # DELETE
+    # ==========================================================
+    
     @router.callback_query(F.data.startswith("loc:delete:"))
     async def delete_confirm(callback: CallbackQuery):
         loc_id = int(callback.data.split(":")[2])
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
         
-        location = await api.get_location(loc_id)
-        if not location:
+        loc = await api.get_location(loc_id)
+        if not loc:
             await callback.answer(t("common:error", lang), show_alert=True)
             return
         
-        text = t("admin:location:confirm_delete", lang) % location["name"]
+        text = (
+            t("admin:location:confirm_delete", lang) % loc["name"]
+            + "\n\n"
+            + t("admin:location:delete_warning", lang)
+        )
         kb = location_delete_confirm_inline(loc_id, lang)
-        
         await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
-
+    
     @router.callback_query(F.data.startswith("loc:delete_confirm:"))
     async def delete_execute(callback: CallbackQuery):
         loc_id = int(callback.data.split(":")[2])
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
         
-        success = await api.delete_location(loc_id)
-        if success:
-            await callback.answer(t("admin:location:deleted", lang))
-        else:
+        ok = await api.delete_location(loc_id)
+        if not ok:
             await callback.answer(t("common:error", lang), show_alert=True)
             return
+        
+        await callback.answer(t("admin:location:deleted", lang))
         
         # Вернуться к списку
         locations = await api.get_locations()
         total = len(locations)
         
         if total == 0:
-            text = t("admin:locations:empty", lang)
+            text = f"📍 {t('admin:locations:empty', lang)}"
         else:
             text = t("admin:locations:list_title", lang) % total
         
         kb = locations_list_inline(locations, 0, lang)
         await mc.edit_inline(callback.message, text, kb)
-
+    
     # ==========================================================
-    # EDIT: делегирование в locations_edit.py
-    # ==========================================================
-
-    @router.callback_query(F.data.startswith("loc:edit:"))
-    async def edit_location(callback: CallbackQuery, state: FSMContext):
-        loc_id = int(callback.data.split(":")[2])
-        await start_location_edit(mc=mc, callback=callback, state=state, loc_id=loc_id)
-
-    # ==========================================================
-    # START CREATE
+    # CREATE
     # ==========================================================
     
     async def start_create(message: Message, state: FSMContext):
-        """Entry point — вызывается из admin_reply."""
-        tg_id = message.from_user.id
-        lang = user_lang.get(tg_id, DEFAULT_LANG)
-        
-        logger.info(f"start_create called, setting state LocationCreate.name")
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
         
         await state.set_state(LocationCreate.name)
         await state.update_data(lang=lang, schedule=default_schedule())
         
         text = f"{t('admin:location:create_title', lang)}\n\n{t('admin:location:enter_name', lang)}"
-        # Type B2: input — Reply-якорь удаляется, IME активен
-        await mc.show_inline_input(message, text, cancel_inline(lang))
+        await mc.show_inline_input(message, text, location_cancel_inline(lang))
     
     router.start_create = start_create
-
-    # ==========================================================
-    # Helper: send tracked inline
-    # ==========================================================
-
+    
+    # ---- Reply "Back" button во время FSM (escape hatch)
+    @router.message(F.text.in_(t_all("admin:locations:back")), LocationCreate.name)
+    @router.message(F.text.in_(t_all("admin:locations:back")), LocationCreate.city)
+    @router.message(F.text.in_(t_all("admin:locations:back")), LocationCreate.street)
+    @router.message(F.text.in_(t_all("admin:locations:back")), LocationCreate.house)
+    @router.message(F.text.in_(t_all("admin:locations:back")), LocationCreate.schedule)
+    @router.message(F.text.in_(t_all("admin:locations:back")), LocationCreate.schedule_day)
+    async def fsm_back_escape(message: Message, state: FSMContext):
+        """Escape hatch: Reply Back во время FSM → отмена и возврат в меню."""
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+        await state.clear()
+        await mc.show(
+            message,
+            admin_locations(lang),
+            title=t("admin:locations:title", lang),
+            menu_context="locations",
+        )
+    
     async def send_step(message: Message, text: str, kb: InlineKeyboardMarkup):
-        """Отправить inline с трекингом для очистки."""
-        chat_id = message.chat.id
-        bot = message.bot
-        
         try:
             await message.delete()
-        except:
+        except Exception:
             pass
-        
-        return await mc.send_inline_in_flow(bot, chat_id, text, kb)
-
-    # ==========================================================
-    # NAME → CITY (CREATE)
-    # ==========================================================
+        return await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
     
+    # ---- NAME → CITY
     @router.message(LocationCreate.name)
     async def process_name(message: Message, state: FSMContext):
-        logger.info(f"process_name handler called with text: {message.text}")
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
         name = message.text.strip()
         
@@ -417,7 +449,7 @@ def setup(mc, get_user_role):
             await mc._add_inline_id(message.chat.id, err_msg.message_id)
             try:
                 await message.delete()
-            except:
+            except Exception:
                 pass
             return
         
@@ -426,12 +458,9 @@ def setup(mc, get_user_role):
         
         data = await state.get_data()
         text = build_progress_text(data, lang, "admin:location:enter_city")
-        await send_step(message, text, cancel_inline(lang))
-
-    # ==========================================================
-    # CITY → STREET (CREATE)
-    # ==========================================================
+        await send_step(message, text, location_cancel_inline(lang))
     
+    # ---- CITY → STREET
     @router.message(LocationCreate.city)
     async def process_city(message: Message, state: FSMContext):
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
@@ -442,7 +471,7 @@ def setup(mc, get_user_role):
             await mc._add_inline_id(message.chat.id, err_msg.message_id)
             try:
                 await message.delete()
-            except:
+            except Exception:
                 pass
             return
         
@@ -451,12 +480,9 @@ def setup(mc, get_user_role):
         
         data = await state.get_data()
         text = build_progress_text(data, lang, "admin:location:enter_street")
-        await send_step(message, text, cancel_inline(lang))
-
-    # ==========================================================
-    # STREET → HOUSE (CREATE)
-    # ==========================================================
+        await send_step(message, text, location_cancel_inline(lang))
     
+    # ---- STREET → HOUSE
     @router.message(LocationCreate.street)
     async def process_street(message: Message, state: FSMContext):
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
@@ -469,12 +495,9 @@ def setup(mc, get_user_role):
         
         data = await state.get_data()
         text = build_progress_text(data, lang, "admin:location:enter_house")
-        await send_step(message, text, cancel_inline(lang))
-
-    # ==========================================================
-    # HOUSE → SCHEDULE (CREATE)
-    # ==========================================================
+        await send_step(message, text, location_cancel_inline(lang))
     
+    # ---- HOUSE → SCHEDULE
     @router.message(LocationCreate.house)
     async def process_house(message: Message, state: FSMContext):
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
@@ -491,9 +514,9 @@ def setup(mc, get_user_role):
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="loc_sched")
         await send_step(message, text, kb)
-
+    
     # ==========================================================
-    # SCHEDULE: day selected (CREATE)
+    # SCHEDULE (CREATE)
     # ==========================================================
     
     @router.callback_query(F.data.startswith("loc_sched:day:"))
@@ -518,10 +541,6 @@ def setup(mc, get_user_role):
         kb = schedule_day_edit_inline(day, schedule, lang, prefix="loc_sched")
         await callback.message.edit_text(text, reply_markup=kb)
         await callback.answer()
-
-    # ==========================================================
-    # SCHEDULE_DAY: text input (time) (CREATE)
-    # ==========================================================
     
     @router.message(LocationCreate.schedule_day)
     async def process_schedule_time(message: Message, state: FSMContext):
@@ -533,7 +552,7 @@ def setup(mc, get_user_role):
         if result == "error":
             try:
                 await message.delete()
-            except:
+            except Exception:
                 pass
             err_msg = await message.answer(t("schedule:invalid", lang))
             await mc._add_inline_id(message.chat.id, err_msg.message_id)
@@ -550,10 +569,6 @@ def setup(mc, get_user_role):
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="loc_sched")
         await send_step(message, text, kb)
-
-    # ==========================================================
-    # SCHEDULE_DAY: day off button (CREATE)
-    # ==========================================================
     
     @router.callback_query(F.data.startswith("loc_sched:dayoff:"))
     async def schedule_day_off(callback: CallbackQuery, state: FSMContext):
@@ -572,10 +587,6 @@ def setup(mc, get_user_role):
         
         await callback.message.edit_text(text, reply_markup=kb)
         await callback.answer()
-
-    # ==========================================================
-    # SCHEDULE: back from day edit (CREATE)
-    # ==========================================================
     
     @router.callback_query(F.data == "loc_sched:back")
     async def schedule_back(callback: CallbackQuery, state: FSMContext):
@@ -591,11 +602,8 @@ def setup(mc, get_user_role):
         
         await callback.message.edit_text(text, reply_markup=kb)
         await callback.answer()
-
-    # ==========================================================
-    # SCHEDULE: save → create location (CREATE)
-    # ==========================================================
     
+    # ---- schedule save → CREATE LOCATION
     @router.callback_query(F.data == "loc_sched:save")
     async def schedule_save(callback: CallbackQuery, state: FSMContext):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
@@ -626,34 +634,37 @@ def setup(mc, get_user_role):
             callback.message,
             admin_locations(lang),
             title=t("admin:locations:title", lang),
-            menu_context="locations" 
+            menu_context="locations",
         )
-
-    # ==========================================================
-    # CANCEL: any step (CREATE)
-    # ==========================================================
     
-    @router.callback_query(F.data == "loc_create:cancel")
     @router.callback_query(F.data == "loc_sched:cancel")
-    async def cancel_create(callback: CallbackQuery, state: FSMContext):
+    async def schedule_cancel(callback: CallbackQuery, state: FSMContext):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
-        
         await state.clear()
         await callback.answer()
-        
         await mc.back_to_reply(
             callback.message,
             admin_locations(lang),
             title=t("admin:locations:title", lang),
-            menu_context="locations"
+            menu_context="locations",
         )
-
-    # ==========================================================
-    # Include EDIT router
-    # ==========================================================
     
-    edit_router = setup_edit(mc, get_user_role)
-    router.include_router(edit_router)
-
-    logger.info(f"=== locations router configured ===")
+    # ---- cancel create
+    @router.callback_query(F.data == "loc_create:cancel")
+    async def cancel_create(callback: CallbackQuery, state: FSMContext):
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+        await state.clear()
+        await callback.answer()
+        await mc.back_to_reply(
+            callback.message,
+            admin_locations(lang),
+            title=t("admin:locations:title", lang),
+            menu_context="locations",
+        )
+    
+    # подключаем EDIT router
+    router.include_router(setup_edit(mc, get_user_role))
+    
+    logger.info("=== locations router configured ===")
     return router
+

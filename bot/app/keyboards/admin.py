@@ -3,7 +3,7 @@ bot/app/keyboards/admin.py
 
 Клавиатуры админа.
 - Reply: навигация (is_persistent=True)
-- Inline: работа с данными
+- Inline: работа с данными (кроме locations — они в flows/admin/locations.py)
 """
 
 from aiogram.types import (
@@ -129,127 +129,6 @@ def admin_rooms(lang: str) -> ReplyKeyboardMarkup:
         is_persistent=True,
     )
 
-
-# ============================================================
-# INLINE KEYBOARDS (работа с данными)
-# ============================================================
-
-def locations_list_inline(
-    locations: list[dict],
-    page: int = 0,
-    per_page: int = 5,
-    lang: str = "ru"
-) -> InlineKeyboardMarkup:
-    """
-    Список локаций с пагинацией.
-    
-    callback_data:
-    - loc:view:{id} — просмотр
-    - loc:page:{n}  — страница
-    - loc:search    — поиск
-    - loc:back      — назад в Reply
-    """
-    buttons = []
-    
-    # Фиксированные кнопки сверху
-    buttons.append([
-        InlineKeyboardButton(
-            text=t("admin:locations:search", lang),
-            callback_data="loc:search"
-        ),
-        InlineKeyboardButton(
-            text=t("common:back", lang),
-            callback_data="loc:back"
-        ),
-    ])
-    
-    # Пагинация расчёт
-    total = len(locations)
-    total_pages = (total + per_page - 1) // per_page if total > 0 else 1
-    start = page * per_page
-    end = start + per_page
-    page_items = locations[start:end]
-    
-    # Список локаций
-    for loc in page_items:
-        buttons.append([
-            InlineKeyboardButton(
-                text=t("admin:locations:item", lang, loc["name"]),
-                callback_data=f"loc:view:{loc['id']}"
-            )
-        ])
-    
-    # Кнопки пагинации
-    if total_pages > 1:
-        nav_row = []
-        if page > 0:
-            nav_row.append(
-                InlineKeyboardButton(
-                    text=t("common:prev", lang),
-                    callback_data=f"loc:page:{page - 1}"
-                )
-            )
-        if page < total_pages - 1:
-            nav_row.append(
-                InlineKeyboardButton(
-                    text=t("common:next", lang),
-                    callback_data=f"loc:page:{page + 1}"
-                )
-            )
-        if nav_row:
-            buttons.append(nav_row)
-    
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
-
-
-def location_view_inline(location_id: int, lang: str = "ru") -> InlineKeyboardMarkup:
-    """Просмотр локации."""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text=t("admin:location:edit", lang),
-                callback_data=f"loc:edit:{location_id}"
-            ),
-            InlineKeyboardButton(
-                text=t("admin:location:delete", lang),
-                callback_data=f"loc:del:{location_id}"
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text=t("admin:location:back", lang),
-                callback_data="loc:list"
-            ),
-        ],
-    ])
-
-
-def location_delete_confirm_inline(location_id: int, lang: str = "ru") -> InlineKeyboardMarkup:
-    """Подтверждение удаления."""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text=t("common:yes", lang),
-                callback_data=f"loc:del_yes:{location_id}"
-            ),
-            InlineKeyboardButton(
-                text=t("common:no", lang),
-                callback_data="loc:list"
-            ),
-        ],
-    ])
-
-
-def location_create_inline(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Форма создания — кнопка отмены."""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text=t("common:cancel", lang),
-                callback_data="loc:back"
-            ),
-        ],
-    ])
 
 # ============================================================
 # SERVICES - Reply keyboard
@@ -523,4 +402,3 @@ def admin_packages(lang: str) -> ReplyKeyboardMarkup:
         resize_keyboard=True,
         is_persistent=True,
     )
-

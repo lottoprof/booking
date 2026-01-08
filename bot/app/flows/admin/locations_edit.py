@@ -9,6 +9,10 @@ EDIT-FSM for Locations (admin).
 - PATCH только diff (changes)
 - Inline-only
 - Не управляет Reply/menu_context (это делает locations.py/admin_reply.py)
+
+Особенности:
+- Редактирование графика — отдельный экран с днями недели
+- Адрес редактируется одним полем (улица, дом)
 """
 
 import logging
@@ -18,7 +22,7 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKe
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.utils.api import api
 from bot.app.utils.schedule_helper import (
@@ -88,7 +92,7 @@ def location_edit_inline(loc_id: int, lang: str) -> InlineKeyboardMarkup:
     ])
 
 
-def edit_cancel_inline(loc_id: int, lang: str) -> InlineKeyboardMarkup:
+def location_edit_cancel_inline(loc_id: int, lang: str) -> InlineKeyboardMarkup:
     """Кнопка отмены при редактировании поля."""
     return InlineKeyboardMarkup(inline_keyboard=[[
         InlineKeyboardButton(
@@ -124,13 +128,13 @@ def build_location_view_text(loc: dict, lang: str) -> str:
             if schedule:
                 schedule_str = format_schedule_compact(schedule, lang)
                 lines.append(f"📅 {schedule_str}")
-        except:
+        except Exception:
             pass
     
     return "\n".join(lines)
 
 
-def build_edit_text(loc: dict, changes: dict, lang: str) -> str:
+def build_location_edit_text(loc: dict, changes: dict, lang: str) -> str:
     """
     Текст экрана редактирования.
     Показывает текущие значения + изменения из changes.
@@ -154,7 +158,7 @@ def build_edit_text(loc: dict, changes: dict, lang: str) -> str:
         try:
             ws = loc.get("work_schedule", "{}")
             schedule = json.loads(ws) if isinstance(ws, str) else ws
-        except:
+        except Exception:
             schedule = {}
     
     lines = [t("admin:location:edit_title", lang), ""]
@@ -173,89 +177,74 @@ def build_edit_text(loc: dict, changes: dict, lang: str) -> str:
     
     # Показываем что изменено
     if changes:
-        lines.append("")
-        lines.append("✏️ " + ", ".join(_get_changed_field_names(changes, lang)))
+        changed_names = _get_changed_field_names(changes, lang)
+        if changed_names:
+            lines.append("")
+            lines.append("✏️ " + ", ".join(changed_names))
     
     return "\n".join(lines)
 
 
 def _get_changed_field_names(changes: dict, lang: str) -> list[str]:
     """Возвращает читаемые имена изменённых полей."""
+    field_map = {
+        "name": "admin:location:edit_name",
+        "city": "admin:location:edit_city",
+        "street": "admin:location:edit_addr",
+        "house": "admin:location:edit_addr",
+        "work_schedule": "admin:location:edit_sched",
+    }
+    
     names = []
-    if "name" in changes:
-        names.append(t("admin:location:edit_name", lang).replace("✏️ ", ""))
-    if "city" in changes:
-        names.append(t("admin:location:edit_city", lang).replace("✏️ ", ""))
-    if "street" in changes or "house" in changes:
-        names.append(t("admin:location:edit_addr", lang).replace("✏️ ", ""))
-    if "work_schedule" in changes:
-        names.append(t("admin:location:edit_sched", lang).replace("📅 ", ""))
+    seen = set()
+    for field, key in field_map.items():
+        if field in changes and key not in seen:
+            name = t(key, lang)
+            for emoji in ["✏️ ", "📝 ", "📅 ", "🏠 ", "🏙 "]:
+                name = name.replace(emoji, "")
+            names.append(name)
+            seen.add(key)
+    
     return names
-
-
-# ==============================================================
-# ЛОКАЛЬНАЯ КОПИЯ location_view_inline
-# Чтобы избежать циклического импорта из locations.py
-# ==============================================================
-
-def _location_view_inline(location: dict, lang: str) -> InlineKeyboardMarkup:
-    """Карточка просмотра локации (локальная копия)."""
-    loc_id = location["id"]
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text=t("admin:location:edit", lang),
-                callback_data=f"loc:edit:{loc_id}"
-            ),
-            InlineKeyboardButton(
-                text=t("admin:location:delete", lang),
-                callback_data=f"loc:delete:{loc_id}"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text=t("common:back", lang),
-                callback_data="loc:list:0"
-            )
-        ]
-    ])
 
 
 # ==============================================================
 # Entry point (called from locations.py delegate)
 # ==============================================================
 
-async def start_location_edit(*, mc, callback: CallbackQuery, state: FSMContext, loc_id: int) -> None:
+async def start_location_edit(
+    *,
+    mc,
+    callback: CallbackQuery,
+    state: FSMContext,
+    loc_id: int
+) -> None:
     """
     Entry point редактирования локации.
-
-    ВАЖНО:
-    - обработчик loc:edit:{id} находится в locations.py и просто делегирует сюда.
-    - здесь только инициализация + показ edit-экрана.
     """
     lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
-
-    location = await api.get_location(loc_id)
-    if not location:
+    
+    loc = await api.get_location(loc_id)
+    if not loc:
         await callback.answer(t("common:error", lang), show_alert=True)
         return
-
+    
     data = await state.get_data()
-
+    
     # Если новый вход или другой loc_id — инициализируем заново
     if data.get("edit_loc_id") != loc_id:
         await state.update_data(
             edit_loc_id=loc_id,
-            original=location,
+            original=loc,
             changes={}
         )
         data = await state.get_data()
-
+    
     changes = data.get("changes", {})
-    text = build_edit_text(location, changes, lang)
+    text = build_location_edit_text(loc, changes, lang)
     kb = location_edit_inline(loc_id, lang)
-
-    await mc.edit_inline(callback.message, text, kb)
+    
+    await mc.edit_inline_input(callback.message, text, kb)
     await callback.answer()
 
 
@@ -268,14 +257,37 @@ def setup(mc, get_user_role):
     Setup router with dependencies.
     Возвращает Router с EDIT handlers.
     """
-
+    
     router = Router(name="locations_edit")
     logger.info("=== locations_edit.setup() called ===")
-
+    
+    # Импортируем admin_locations из keyboards
+    from bot.app.keyboards.admin import admin_locations
+    
+    # ==========================================================
+    # Reply "Back" escape hatch for EDIT FSM
+    # ==========================================================
+    
+    @router.message(F.text.in_(t_all("admin:locations:back")), LocationEdit.name)
+    @router.message(F.text.in_(t_all("admin:locations:back")), LocationEdit.city)
+    @router.message(F.text.in_(t_all("admin:locations:back")), LocationEdit.address)
+    @router.message(F.text.in_(t_all("admin:locations:back")), LocationEdit.schedule)
+    @router.message(F.text.in_(t_all("admin:locations:back")), LocationEdit.schedule_day)
+    async def edit_fsm_back_escape(message: Message, state: FSMContext):
+        """Escape hatch: Reply Back во время Edit FSM → отмена и возврат."""
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+        await state.clear()
+        await mc.show(
+            message,
+            admin_locations(lang),
+            title=t("admin:locations:title", lang),
+            menu_context="locations",
+        )
+    
     # ==========================================================
     # EDIT: name
     # ==========================================================
-
+    
     @router.callback_query(F.data.startswith("loc:edit_name:"))
     async def edit_name_start(callback: CallbackQuery, state: FSMContext):
         loc_id = int(callback.data.split(":")[2])
@@ -284,11 +296,11 @@ def setup(mc, get_user_role):
         await state.set_state(LocationEdit.name)
         
         text = t("admin:location:enter_name", lang)
-        kb = edit_cancel_inline(loc_id, lang)
+        kb = location_edit_cancel_inline(loc_id, lang)
         
-        await mc.edit_inline(callback.message, text, kb)
+        await mc.edit_inline_input(callback.message, text, kb)
         await callback.answer()
-
+    
     @router.message(LocationEdit.name)
     async def edit_name_process(message: Message, state: FSMContext):
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
@@ -299,7 +311,7 @@ def setup(mc, get_user_role):
             await mc._add_inline_id(message.chat.id, err_msg.message_id)
             try:
                 await message.delete()
-            except:
+            except Exception:
                 pass
             return
         
@@ -309,24 +321,23 @@ def setup(mc, get_user_role):
         changes["name"] = name
         
         await state.update_data(changes=changes)
-        await state.set_state(None)  # выходим из FSM state
+        await state.set_state(None)
         
-        # Возвращаемся на экран редактирования
-        location = data.get("original", {})
-        text = build_edit_text(location, changes, lang)
+        loc = data.get("original", {})
+        text = build_location_edit_text(loc, changes, lang)
         kb = location_edit_inline(loc_id, lang)
         
         try:
             await message.delete()
-        except:
+        except Exception:
             pass
         
         await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
-
+    
     # ==========================================================
     # EDIT: city
     # ==========================================================
-
+    
     @router.callback_query(F.data.startswith("loc:edit_city:"))
     async def edit_city_start(callback: CallbackQuery, state: FSMContext):
         loc_id = int(callback.data.split(":")[2])
@@ -335,11 +346,11 @@ def setup(mc, get_user_role):
         await state.set_state(LocationEdit.city)
         
         text = t("admin:location:enter_city", lang)
-        kb = edit_cancel_inline(loc_id, lang)
+        kb = location_edit_cancel_inline(loc_id, lang)
         
-        await mc.edit_inline(callback.message, text, kb)
+        await mc.edit_inline_input(callback.message, text, kb)
         await callback.answer()
-
+    
     @router.message(LocationEdit.city)
     async def edit_city_process(message: Message, state: FSMContext):
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
@@ -350,7 +361,7 @@ def setup(mc, get_user_role):
             await mc._add_inline_id(message.chat.id, err_msg.message_id)
             try:
                 await message.delete()
-            except:
+            except Exception:
                 pass
             return
         
@@ -362,21 +373,21 @@ def setup(mc, get_user_role):
         await state.update_data(changes=changes)
         await state.set_state(None)
         
-        location = data.get("original", {})
-        text = build_edit_text(location, changes, lang)
+        loc = data.get("original", {})
+        text = build_location_edit_text(loc, changes, lang)
         kb = location_edit_inline(loc_id, lang)
         
         try:
             await message.delete()
-        except:
+        except Exception:
             pass
         
         await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
-
+    
     # ==========================================================
     # EDIT: address (street + house одним полем)
     # ==========================================================
-
+    
     @router.callback_query(F.data.startswith("loc:edit_addr:"))
     async def edit_addr_start(callback: CallbackQuery, state: FSMContext):
         loc_id = int(callback.data.split(":")[2])
@@ -385,11 +396,11 @@ def setup(mc, get_user_role):
         await state.set_state(LocationEdit.address)
         
         text = t("admin:location:enter_addr", lang)
-        kb = edit_cancel_inline(loc_id, lang)
+        kb = location_edit_cancel_inline(loc_id, lang)
         
-        await mc.edit_inline(callback.message, text, kb)
+        await mc.edit_inline_input(callback.message, text, kb)
         await callback.answer()
-
+    
     @router.message(LocationEdit.address)
     async def edit_addr_process(message: Message, state: FSMContext):
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
@@ -398,7 +409,7 @@ def setup(mc, get_user_role):
         if not addr:
             try:
                 await message.delete()
-            except:
+            except Exception:
                 pass
             return
         
@@ -420,21 +431,21 @@ def setup(mc, get_user_role):
         await state.update_data(changes=changes)
         await state.set_state(None)
         
-        location = data.get("original", {})
-        text = build_edit_text(location, changes, lang)
+        loc = data.get("original", {})
+        text = build_location_edit_text(loc, changes, lang)
         kb = location_edit_inline(loc_id, lang)
         
         try:
             await message.delete()
-        except:
+        except Exception:
             pass
         
         await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
-
+    
     # ==========================================================
     # EDIT: schedule
     # ==========================================================
-
+    
     @router.callback_query(F.data.startswith("loc:edit_sched:"))
     async def edit_sched_start(callback: CallbackQuery, state: FSMContext):
         loc_id = int(callback.data.split(":")[2])
@@ -442,16 +453,16 @@ def setup(mc, get_user_role):
         
         data = await state.get_data()
         changes = data.get("changes", {})
-        location = data.get("original", {})
+        loc = data.get("original", {})
         
         # Берём график из changes или из original
         if "work_schedule" in changes:
             schedule = changes["work_schedule"]
         else:
             try:
-                ws = location.get("work_schedule", "{}")
+                ws = loc.get("work_schedule", "{}")
                 schedule = json.loads(ws) if isinstance(ws, str) else ws
-            except:
+            except Exception:
                 schedule = default_schedule()
         
         await state.set_state(LocationEdit.schedule)
@@ -462,7 +473,7 @@ def setup(mc, get_user_role):
         
         await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
-
+    
     @router.callback_query(F.data.startswith("loc_edit_sched:day:"))
     async def edit_sched_day_selected(callback: CallbackQuery, state: FSMContext):
         day = callback.data.split(":")[2]
@@ -485,7 +496,7 @@ def setup(mc, get_user_role):
         kb = schedule_day_edit_inline(day, schedule, lang, prefix="loc_edit_sched")
         await callback.message.edit_text(text, reply_markup=kb)
         await callback.answer()
-
+    
     @router.message(LocationEdit.schedule_day)
     async def edit_sched_time_process(message: Message, state: FSMContext):
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
@@ -496,7 +507,7 @@ def setup(mc, get_user_role):
         if result == "error":
             try:
                 await message.delete()
-            except:
+            except Exception:
                 pass
             err_msg = await message.answer(t("schedule:invalid", lang))
             await mc._add_inline_id(message.chat.id, err_msg.message_id)
@@ -515,11 +526,11 @@ def setup(mc, get_user_role):
         
         try:
             await message.delete()
-        except:
+        except Exception:
             pass
         
         await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
-
+    
     @router.callback_query(F.data.startswith("loc_edit_sched:dayoff:"))
     async def edit_sched_day_off(callback: CallbackQuery, state: FSMContext):
         day = callback.data.split(":")[2]
@@ -537,7 +548,7 @@ def setup(mc, get_user_role):
         
         await callback.message.edit_text(text, reply_markup=kb)
         await callback.answer()
-
+    
     @router.callback_query(F.data == "loc_edit_sched:back")
     async def edit_sched_back(callback: CallbackQuery, state: FSMContext):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
@@ -552,7 +563,7 @@ def setup(mc, get_user_role):
         
         await callback.message.edit_text(text, reply_markup=kb)
         await callback.answer()
-
+    
     @router.callback_query(F.data == "loc_edit_sched:save")
     async def edit_sched_save(callback: CallbackQuery, state: FSMContext):
         """Сохранить график в changes и вернуться на экран редактирования."""
@@ -567,35 +578,35 @@ def setup(mc, get_user_role):
         await state.update_data(changes=changes)
         await state.set_state(None)
         
-        location = data.get("original", {})
-        text = build_edit_text(location, changes, lang)
+        loc = data.get("original", {})
+        text = build_location_edit_text(loc, changes, lang)
         kb = location_edit_inline(loc_id, lang)
         
         await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
-
+    
     @router.callback_query(F.data == "loc_edit_sched:cancel")
     async def edit_sched_cancel(callback: CallbackQuery, state: FSMContext):
-        """Отменить редактирование графика, вернуться на экран редактирования."""
+        """Отменить редактирование графика."""
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
         
         data = await state.get_data()
         loc_id = data.get("edit_loc_id")
         changes = data.get("changes", {})
-        location = data.get("original", {})
+        loc = data.get("original", {})
         
         await state.set_state(None)
         
-        text = build_edit_text(location, changes, lang)
+        text = build_location_edit_text(loc, changes, lang)
         kb = location_edit_inline(loc_id, lang)
         
         await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
-
+    
     # ==========================================================
-    # SAVE: применить все изменения
+    # SAVE: применить все изменения полей
     # ==========================================================
-
+    
     @router.callback_query(F.data.startswith("loc:save:"))
     async def save_location(callback: CallbackQuery, state: FSMContext):
         loc_id = int(callback.data.split(":")[2])
@@ -632,13 +643,13 @@ def setup(mc, get_user_role):
         await callback.answer(t("admin:location:saved", lang))
         
         # Показать обновлённую карточку
-        # ИСПРАВЛЕНО: используем локальную функцию вместо импорта
-        location = await api.get_location(loc_id)
-        if location:
-            text = build_location_view_text(location, lang)
-            kb = _location_view_inline(location, lang)
+        loc = await api.get_location(loc_id)
+        if loc:
+            from .locations import location_view_inline
+            text = build_location_view_text(loc, lang)
+            kb = location_view_inline(loc, lang)
             await mc.edit_inline(callback.message, text, kb)
-
+    
     logger.info("=== locations_edit router configured ===")
     return router
 
