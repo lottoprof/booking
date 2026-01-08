@@ -35,6 +35,7 @@ from bot.app.keyboards.schedule import (
     schedule_days_inline,
     schedule_day_edit_inline,
 )
+from bot.app.keyboards.admin import admin_locations
 
 logger = logging.getLogger(__name__)
 
@@ -260,9 +261,6 @@ def setup(mc, get_user_role):
     
     router = Router(name="locations_edit")
     logger.info("=== locations_edit.setup() called ===")
-    
-    # Импортируем admin_locations из keyboards
-    from bot.app.keyboards.admin import admin_locations
     
     # ==========================================================
     # Reply "Back" escape hatch for EDIT FSM

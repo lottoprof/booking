@@ -40,6 +40,9 @@ from bot.app.keyboards.schedule import (
 )
 from bot.app.keyboards.admin import admin_locations
 
+# EDIT entry point
+from .locations_edit import start_location_edit, setup as setup_edit
+
 logger = logging.getLogger(__name__)
 
 # ==============================================================
@@ -242,9 +245,6 @@ def build_location_view_text(loc: dict, lang: str) -> str:
 def setup(mc, get_user_role):
     router = Router(name="locations")
     logger.info("=== locations.setup() called ===")
-    
-    # Lazy import to avoid circular dependency
-    from .locations_edit import start_location_edit, setup as setup_edit
     
     # ==========================================================
     # LIST
