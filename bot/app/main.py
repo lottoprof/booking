@@ -17,13 +17,15 @@ from bot.app.config import BOT_TOKEN
 from bot.app.i18n.loader import load_messages, t, DEFAULT_LANG
 from bot.app.keyboards.common import language_inline, request_phone_keyboard
 from bot.app.keyboards.admin import admin_main
+from bot.app.keyboards.client import client_main
 from bot.app.utils.state import user_lang
 from bot.app.utils.menucontroller import MenuController
 from bot.app.utils.api import api
 from bot.app.flows.admin.menu import AdminMenuFlow
+from bot.app.flows.client.menu import ClientMenuFlow
 
 from bot.app.handlers import admin_reply
-
+from bot.app.handlers import client_reply
 
 BOT_DIR = Path(__file__).resolve().parent
 
@@ -45,6 +47,7 @@ dp = Dispatcher(storage=storage)
 
 menu = MenuController()
 admin_flow = AdminMenuFlow(menu)
+client_flow = ClientMenuFlow(menu)
 
 load_messages(BOT_DIR / "i18n" / "messages.txt")
 
@@ -341,8 +344,13 @@ async def show_menu_for_role(role: str, chat_id: int, lang: str) -> None:
         # TODO: specialist menu
         await bot.send_message(chat_id, f"Role: specialist (menu not implemented)")
     elif role == "client":
-        # TODO: client menu
-        await bot.send_message(chat_id, f"Role: client (menu not implemented)")
+        await menu.show_for_chat(
+            bot=bot,
+            chat_id=chat_id,
+            kb=client_main(lang),
+            title=t("client:main:title", lang),
+            menu_context=None
+        )
     else:
         await bot.send_message(chat_id, f"Role: {role} (unknown)")
 
@@ -356,13 +364,16 @@ async def admin_entry(message: Message, lang: str):
     logger.info(f"admin_entry: chat_id={message.chat.id}, lang={lang}")
     await admin_flow.show_main(message, lang)
 
+async def client_entry(message: Message, lang: str):
+    """Первичный вход в клиент-меню."""
+    logger.info(f"client_entry: chat_id={message.chat.id}, lang={lang}")
+    await client_flow.show_main(message, lang)
 
 ROLE_HANDLERS = {
     "admin": admin_entry,
+    "client": client_entry,
     # "specialist": specialist_entry,
-    # "client": client_entry,
 }
-
 
 async def route_by_role(event: TelegramObject, lang: str):
     """
@@ -394,7 +405,7 @@ async def route_by_role(event: TelegramObject, lang: str):
 # ===============================
 
 dp.include_router(admin_reply.setup(menu, get_user_role))
-
+dp.include_router(client_reply.setup(menu, get_user_role))
 
 # ===============================
 # GATEWAY ENTRYPOINT
