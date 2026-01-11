@@ -3,6 +3,7 @@
 from fastapi import FastAPI, Request, Header, HTTPException
 from fastapi.responses import Response
 import logging
+import asyncio
 
 from app.config import TG_WEBHOOK_SECRET
 from app.middleware.auth import auth_middleware
@@ -65,10 +66,12 @@ async def telegram_webhook(
 
     # 5. Передаём в bot (process_update уже импортирован)
     try:
-        await process_update(update, user_context)
+        asyncio.create_task(
+            process_update(update, user_context),
+            name=f"tg_update:{tg_id or 'unknown'}"
+       )
     except Exception:
-        logger.exception("Telegram update processing failed")
-
+        logger.exception("Failed to schedule Telegram update processing")
     return {"ok": True}
 
 
