@@ -21,11 +21,6 @@ from aiogram.fsm.state import State, StatesGroup
 from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.utils.api import api
-from bot.app.keyboards.admin import (
-    service_view_inline,
-    service_cancel_inline,
-    color_picker_inline,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -289,26 +284,12 @@ def setup(mc, get_user_role):
     router = Router(name="services_edit")
     logger.info("=== services_edit.setup() called ===")
 
+    # Импортируем admin_services из keyboards (внутри setup чтобы избежать circular import)
+    from bot.app.keyboards.admin import admin_services
+
     # ==========================================================
     # ESCAPE HATCH: Reply "Back" во время EDIT FSM
     # ==========================================================
-
-    async def _escape_edit_fsm(message: Message, state: FSMContext):
-        """
-        Escape hatch: Reply-кнопка "Назад" во время FSM редактирования.
-        Очищает состояние и возвращает в меню Services.
-        """
-        # Lazy import to avoid circular dependency
-        from bot.app.keyboards.admin import admin_services
-        
-        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
-        await state.clear()
-        await mc.back_to_reply(
-            message,
-            admin_services(lang),
-            title=t("admin:services:title", lang),
-            menu_context="services",
-        )
 
     @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.name)
     @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.description)
@@ -317,7 +298,15 @@ def setup(mc, get_user_role):
     @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.price)
     @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.color)
     async def escape_edit_fsm(message: Message, state: FSMContext):
-        await _escape_edit_fsm(message, state)
+        """Escape hatch: Reply Back во время Edit FSM → отмена и возврат."""
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+        await state.clear()
+        await mc.back_to_reply(
+            message,
+            admin_services(lang),
+            title=t("admin:services:title", lang),
+            menu_context="services",
+        )
 
     # ==========================================================
     # EDIT: name
@@ -638,6 +627,9 @@ def setup(mc, get_user_role):
         # Показать обновлённую карточку
         service = await api.get_service(svc_id)
         if service:
+            # Lazy import to avoid circular dependency
+            from .services import service_view_inline
+            
             text = build_service_view_text(service, lang)
             kb = service_view_inline(service, lang)
             await mc.edit_inline(callback.message, text, kb)
