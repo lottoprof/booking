@@ -1,9 +1,9 @@
 """
 bot/app/utils/api.py
 
-HTTP-клиент для запросов через GATEWAY.
+HTTP-клиент для запросов в Backend напрямую.
 
-Бот → Gateway → Backend
+Bot — доверенный internal компонент, не нуждается в gateway proxy.
 """
 
 import os
@@ -14,79 +14,94 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-# Gateway URL — бот ходит ТОЛЬКО через gateway
-GATEWAY_URL = os.getenv("GATEWAY_URL", "http://localhost:8080")
+# Backend URL — бот ходит НАПРЯМУЮ в backend (не через gateway)
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 
 class ApiClient:
-    """Асинхронный клиент для API через gateway."""
+    """
+    Асинхронный клиент для API.
+    
+    Использует persistent connection pool для эффективности.
+    """
 
-    def __init__(self, base_url: str = GATEWAY_URL):
+    def __init__(self, base_url: str = BACKEND_URL):
         self.base_url = base_url.rstrip("/")
+        self._client: httpx.AsyncClient | None = None
         logger.info(f"ApiClient initialized with base_url: {self.base_url}")
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        """Lazy initialization of persistent HTTP client."""
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(
+                base_url=self.base_url,
+                timeout=10.0,
+                follow_redirects=True,
+                limits=httpx.Limits(
+                    max_connections=20,
+                    max_keepalive_connections=10,
+                    keepalive_expiry=30.0,
+                ),
+            )
+            logger.info("Created new httpx.AsyncClient")
+        return self._client
+
+    async def close(self):
+        """Close the HTTP client (call on shutdown)."""
+        if self._client and not self._client.is_closed:
+            await self._client.aclose()
+            self._client = None
+            logger.info("Closed httpx.AsyncClient")
 
     async def _request(
         self,
         method: str,
         path: str,
-        headers: dict = None,
         **kwargs
     ) -> Optional[dict | list]:
         """Базовый HTTP запрос."""
-        url = f"{self.base_url}{path}"
+        client = await self._get_client()
         
-        # Bot запросы идут как internal
-        _headers = {"X-Internal-Token": os.getenv("INTERNAL_TOKEN", "bot-internal")}
-        if headers:
-            _headers.update(headers)
-        
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
-            try:
-                resp = await client.request(method, url, headers=_headers, **kwargs)
-                
-                if resp.status_code == 204:
-                    return None
-                    
-                if resp.status_code >= 400:
-                    logger.error(f"API error: {method} {path} -> {resp.status_code} {resp.text}")
-                    return None
-                    
-                return resp.json()
-                
-            except Exception as e:
-                logger.error(f"API request failed: {method} {path} -> {e}")
+        try:
+            resp = await client.request(method, path, **kwargs)
+            
+            if resp.status_code == 204:
                 return None
+                
+            if resp.status_code >= 400:
+                logger.error(f"API error: {method} {path} -> {resp.status_code} {resp.text}")
+                return None
+                
+            return resp.json()
+            
+        except Exception as e:
+            logger.error(f"API request failed: {method} {path} -> {e}")
+            return None
 
     async def _request_with_status(
         self,
         method: str,
         path: str,
-        headers: dict = None,
         **kwargs
     ) -> tuple[Optional[dict | list], int]:
         """HTTP запрос с возвратом статус-кода (для обработки 404)."""
-        url = f"{self.base_url}{path}"
+        client = await self._get_client()
         
-        _headers = {"X-Internal-Token": os.getenv("INTERNAL_TOKEN", "bot-internal")}
-        if headers:
-            _headers.update(headers)
-        
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
-            try:
-                resp = await client.request(method, url, headers=_headers, **kwargs)
+        try:
+            resp = await client.request(method, path, **kwargs)
+            
+            if resp.status_code == 204:
+                return None, 204
                 
-                if resp.status_code == 204:
-                    return None, 204
-                    
-                if resp.status_code >= 400:
-                    logger.info(f"API: {method} {path} -> {resp.status_code}")
-                    return None, resp.status_code
-                    
-                return resp.json(), resp.status_code
+            if resp.status_code >= 400:
+                logger.info(f"API: {method} {path} -> {resp.status_code}")
+                return None, resp.status_code
                 
-            except Exception as e:
-                logger.error(f"API request failed: {method} {path} -> {e}")
-                return None, 0
+            return resp.json(), resp.status_code
+            
+        except Exception as e:
+            logger.error(f"API request failed: {method} {path} -> {e}")
+            return None, 0
 
     # ------------------------------------------------------------------
     # Company

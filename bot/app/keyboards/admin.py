@@ -3,17 +3,15 @@ bot/app/keyboards/admin.py
 
 Клавиатуры админа.
 - Reply: навигация (is_persistent=True)
-- Inline: работа с данными (кроме locations — они в flows/admin/locations.py)
+- Inline keyboards перенесены в соответствующие flow-модули
 """
 
 from aiogram.types import (
     ReplyKeyboardMarkup,
     KeyboardButton,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
 )
 from bot.app.i18n.loader import t
-import math
+
 
 # ============================================================
 # REPLY KEYBOARDS (навигация)
@@ -130,10 +128,6 @@ def admin_rooms(lang: str) -> ReplyKeyboardMarkup:
     )
 
 
-# ============================================================
-# SERVICES - Reply keyboard
-# ============================================================
-
 def admin_services(lang: str) -> ReplyKeyboardMarkup:
     """Меню услуг."""
     return ReplyKeyboardMarkup(
@@ -168,225 +162,6 @@ def admin_specialists(lang: str) -> ReplyKeyboardMarkup:
     )
 
 
-# ============================================================
-# SERVICES - Inline keyboards
-# ============================================================
-
-def _format_service_item(svc: dict, lang: str) -> str:
-    """
-    Форматирует услугу для отображения в списке.
-    
-    Формат: 🛎  Название | 60+10 мин | 2500₽
-    или:    🛎  Название | 60 мин | 2500₽ (без перерыва)
-    """
-    name = svc.get("name", "?")
-    duration = svc.get("duration_min", 0)
-    break_min = svc.get("break_min", 0)
-    price = svc.get("price", 0)
-
-    # Время: "60+10" или просто "60"
-    if break_min > 0:
-        time_str = f"{duration}+{break_min}"
-    else:
-        time_str = str(duration)
-
-    # Цена: целое число если без копеек
-    if price == int(price):
-        price_str = f"{int(price)}{t('common:currency', lang)}"
-    else:
-        price_str = f"{price:.0f}{t('common:currency', lang)}"
-
-    return f"{t('admin:services:item_icon', lang)} {name} | {time_str}{t('common:min', lang)} | {price_str}"
-
-
-def services_list_inline(
-    services: list[dict],
-    page: int,
-    lang: str,
-    per_page: int = 5
-) -> InlineKeyboardMarkup:
-    """Список услуг с пагинацией."""
-    total = len(services)
-    total_pages = max(1, math.ceil(total / per_page))
-    page = max(0, min(page, total_pages - 1))
-
-    start = page * per_page
-    end = start + per_page
-    page_items = services[start:end]
-
-    buttons = []
-
-    # Кнопки услуг
-    for svc in page_items:
-        buttons.append([
-            InlineKeyboardButton(
-                text=_format_service_item(svc, lang),
-                callback_data=f"svc:view:{svc['id']}"
-            )
-        ])
-
-    # Пагинация
-    if total_pages > 1:
-        nav_row = []
-
-        if page > 0:
-            nav_row.append(InlineKeyboardButton(
-                text=t("common:prev", lang),
-                callback_data=f"svc:page:{page - 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="svc:noop"
-            ))
-
-        nav_row.append(InlineKeyboardButton(
-            text=f"{page + 1}/{total_pages}",
-            callback_data="svc:noop"
-        ))
-
-        if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(
-                text=t("common:next", lang),
-                callback_data=f"svc:page:{page + 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="svc:noop"
-            ))
-
-        buttons.append(nav_row)
-
-    # Назад
-    buttons.append([
-        InlineKeyboardButton(
-            text=t("common:back", lang),
-            callback_data="svc:back"
-        )
-    ])
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
-
-
-def service_view_inline(service: dict, lang: str) -> InlineKeyboardMarkup:
-    """Карточка просмотра услуги."""
-    svc_id = service["id"]
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text=t("admin:service:edit", lang),
-                callback_data=f"svc:edit:{svc_id}"
-            ),
-            InlineKeyboardButton(
-                text=t("admin:service:delete", lang),
-                callback_data=f"svc:delete:{svc_id}"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text=t("common:back", lang),
-                callback_data="svc:list:0"
-            )
-        ]
-    ])
-
-
-def service_delete_confirm_inline(svc_id: int, lang: str) -> InlineKeyboardMarkup:
-    """Подтверждение удаления."""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text=t("common:yes", lang),
-                callback_data=f"svc:delete_confirm:{svc_id}"
-            ),
-            InlineKeyboardButton(
-                text=t("common:no", lang),
-                callback_data=f"svc:view:{svc_id}"
-            )
-        ]
-    ])
-
-
-def service_cancel_inline(lang: str) -> InlineKeyboardMarkup:
-    """Кнопка отмены при создании."""
-    return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(
-            text=t("common:cancel", lang),
-            callback_data="svc_create:cancel"
-        )
-    ]])
-
-
-def service_skip_inline(lang: str) -> InlineKeyboardMarkup:
-    """Кнопка пропустить + отмена."""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text=t("common:skip", lang),
-                callback_data="svc_create:skip"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text=t("common:cancel", lang),
-                callback_data="svc_create:cancel"
-            )
-        ]
-    ])
-
-
-# ============================================================
-# COLOR PICKER
-# ============================================================
-
-def get_color_codes(lang: str) -> list[str]:
-    """Получить список кодов цветов из i18n."""
-    colors_str = t("colors:list", lang)
-    return [c.strip() for c in colors_str.split(",") if c.strip()]
-
-
-def color_picker_inline(lang: str) -> InlineKeyboardMarkup:
-    """Выбор цвета услуги (создание)."""
-    buttons = []
-    row = []
-
-    for color_code in get_color_codes(lang):
-        emoji = t(f"color:{color_code}", lang)
-        row.append(InlineKeyboardButton(
-            text=emoji,
-            callback_data=f"svc_color:{color_code}"
-        ))
-
-        if len(row) == 3:
-            buttons.append(row)
-            row = []
-
-    if row:
-        buttons.append(row)
-
-    # Без цвета
-    buttons.append([
-        InlineKeyboardButton(
-            text=t("admin:service:color_none", lang),
-            callback_data="svc_color:none"
-        )
-    ])
-
-    # Отмена
-    buttons.append([
-        InlineKeyboardButton(
-            text=t("common:cancel", lang),
-            callback_data="svc_create:cancel"
-        )
-    ])
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
-
-# ============================================================
-# PACKAGES - Reply keyboard
-# ============================================================
-
 def admin_packages(lang: str) -> ReplyKeyboardMarkup:
     """Меню пакетов услуг."""
     return ReplyKeyboardMarkup(
@@ -402,3 +177,4 @@ def admin_packages(lang: str) -> ReplyKeyboardMarkup:
         resize_keyboard=True,
         is_persistent=True,
     )
+
