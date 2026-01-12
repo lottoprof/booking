@@ -28,6 +28,17 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan: startup and shutdown."""
+    
+    # Warmup: прогреваем Telegram API connection
+    try:
+        from bot.app.main import bot
+        import time
+        start = time.time()
+        me = await bot.get_me()
+        logger.info(f"Warmup: Telegram API ready in {time.time() - start:.2f}s (@{me.username})")
+    except Exception as e:
+        logger.error(f"Warmup failed: {e}")
+    
     logger.info("Gateway started")
     
     yield
