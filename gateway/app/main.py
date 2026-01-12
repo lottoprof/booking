@@ -19,87 +19,20 @@ from app.utils.telegram import (
 )
 
 # ВАЖНО: импорт на уровне модуля, НЕ внутри handler
-from bot.app.main import process_update, bot
+from bot.app.main import process_update
 from bot.app.utils.api import api
 
 logger = logging.getLogger(__name__)
-
-# Background task handle
-_keepalive_task: asyncio.Task | None = None
-
-
-async def warmup():
-    """
-    Прогрев connections при старте.
-    Инициализирует все lazy connections до первого пользователя.
-    """
-    logger.info("Starting warmup...")
-    
-    try:
-        # 1. Прогреваем Telegram API connection (aiohttp внутри aiogram)
-        me = await bot.get_me()
-        logger.info(f"Telegram API ready: @{me.username}")
-    except Exception as e:
-        logger.error(f"Telegram API warmup failed: {e}")
-    
-    try:
-        # 2. Прогреваем Backend API connection (httpx)
-        company = await api.get_company()
-        if company:
-            logger.info(f"Backend API ready: company={company.get('name', 'OK')}")
-        else:
-            logger.warning("Backend API ready but no company found")
-    except Exception as e:
-        logger.error(f"Backend API warmup failed: {e}")
-    
-    logger.info("Warmup completed")
-
-
-async def keepalive_loop():
-    """
-    Периодический ping для поддержания connections.
-    Запускается в background, пингует каждые 5 минут.
-    """
-    while True:
-        await asyncio.sleep(300)  # 5 минут
-        
-        try:
-            # Ping Telegram API
-            await bot.get_me()
-            logger.debug("Keepalive: Telegram API OK")
-        except Exception as e:
-            logger.warning(f"Keepalive: Telegram API failed: {e}")
-        
-        try:
-            # Ping Backend API
-            await api.get_company()
-            logger.debug("Keepalive: Backend API OK")
-        except Exception as e:
-            logger.warning(f"Keepalive: Backend API failed: {e}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan: startup and shutdown."""
-    global _keepalive_task
-    
-    # Startup
-    await warmup()
-    _keepalive_task = asyncio.create_task(keepalive_loop(), name="keepalive")
-    logger.info("Keepalive task started")
+    logger.info("Gateway started")
     
     yield
     
-    # Shutdown
-    if _keepalive_task:
-        _keepalive_task.cancel()
-        try:
-            await _keepalive_task
-        except asyncio.CancelledError:
-            pass
-        logger.info("Keepalive task stopped")
-    
-    # Close API client
+    # Shutdown: закрываем API client
     await api.close()
     logger.info("API client closed")
 
@@ -166,3 +99,4 @@ async def _safe_process_update(update: dict, user_context):
 @app.api_route("/{path:path}", methods=["GET", "POST", "PATCH", "DELETE"])
 async def gateway_proxy(request: Request, path: str) -> Response:
     return await proxy_request(request)
+
