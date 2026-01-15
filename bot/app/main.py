@@ -263,10 +263,13 @@ async def process_contact(message: Message, state: FSMContext):
             await message.answer(t("registration:error", lang))
             return
         
+        # Назначаем роль client (если уже есть — БД проигнорирует по UNIQUE constraint)
+        await api.create_user_role(user["id"], role_id=4)
+        
         user_id = user["id"]
         company_id = user.get("company_id")
-        role = "client"  # TODO: получить реальную роль
-        
+        role = "client"
+
     elif not found:
         # Пользователь не найден — создаём нового
         company = await api.get_company()
