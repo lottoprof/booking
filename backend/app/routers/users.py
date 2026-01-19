@@ -1,8 +1,12 @@
 # backend/app/routers/users.py
 # API.md: PATCH = ALLOWED, DELETE = soft-delete (is_active)
 
+import logging
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from urllib.parse import unquote
 
 from ..database import get_db
@@ -12,6 +16,8 @@ from ..schemas.users import (
     UserUpdate,
     UserRead,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -82,7 +88,58 @@ def update_user(
     if not obj:
         raise HTTPException(status_code=404, detail="Not found")
 
-    for field, value in data.model_dump(exclude_unset=True).items():
+    update_data = data.model_dump(exclude_unset=True)
+    
+    # ==========================================================
+    # MATCHING: imported_clients → users
+    # Если пришёл phone — ищем в imported_clients
+    # ==========================================================
+    if "phone" in update_data and update_data["phone"]:
+        phone = update_data["phone"]
+        try:
+            result = db.execute(
+                text("""
+                    SELECT id, first_name, last_name
+                    FROM imported_clients
+                    WHERE phone = :phone
+                      AND matched_user_id IS NULL
+                """),
+                {"phone": phone}
+            ).fetchone()
+            
+            if result:
+                imported_id, imported_first, imported_last = result
+                
+                # Копируем имя/фамилию если есть
+                if imported_first and "first_name" not in update_data:
+                    update_data["first_name"] = imported_first
+                if imported_last and "last_name" not in update_data:
+                    update_data["last_name"] = imported_last
+                
+                # Помечаем как matched
+                db.execute(
+                    text("""
+                        UPDATE imported_clients
+                        SET matched_user_id = :user_id,
+                            matched_at = :now
+                        WHERE id = :id
+                    """),
+                    {
+                        "user_id": id,
+                        "now": datetime.utcnow().isoformat(),
+                        "id": imported_id
+                    }
+                )
+                logger.info(f"[MATCHING] imported_clients.id={imported_id} → users.id={id}")
+                
+        except Exception as e:
+            # Таблицы нет или другая ошибка — продолжаем без matching
+            logger.debug(f"[MATCHING] Skipped: {e}")
+    
+    # ==========================================================
+    # Применяем изменения
+    # ==========================================================
+    for field, value in update_data.items():
         setattr(obj, field, value)
 
     db.commit()

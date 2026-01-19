@@ -8,14 +8,13 @@ from dataclasses import dataclass
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
-from aiogram.types import Update, Message, CallbackQuery, TelegramObject, ContentType
+from aiogram.types import Update, Message, CallbackQuery, TelegramObject
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
 
 from bot.app.config import BOT_TOKEN
 from bot.app.i18n.loader import load_messages, t, DEFAULT_LANG
-from bot.app.keyboards.common import language_inline, request_phone_keyboard
+from bot.app.keyboards.common import language_inline
 from bot.app.keyboards.admin import admin_main
 from bot.app.keyboards.client import client_main
 from bot.app.utils.state import user_lang
@@ -79,12 +78,46 @@ def get_user_role(tg_id: int) -> str:
 
 
 # ===============================
-# REGISTRATION FSM
+# USER CREATION (without phone)
 # ===============================
 
-class Registration(StatesGroup):
-    """Состояния регистрации."""
-    phone = State()
+async def create_user_without_phone(message: Message) -> Optional[int]:
+    """
+    Создаёт user без телефона при первом контакте.
+    
+    Из Telegram доступно только: tg_id, tg_username.
+    first_name/last_name заполнятся при matching с imported_clients
+    когда пользователь поделится телефоном через phone_gate.
+    """
+    user = message.from_user
+    
+    # Отклоняем ботов
+    if user.is_bot:
+        logger.warning(f"[REG] Rejected bot: tg_id={user.id}")
+        return None
+    
+    company = await api.get_company()
+    if not company:
+        logger.error("[REG] No company in database")
+        return None
+    
+    new_user = await api.create_user(
+        company_id=company["id"],
+        first_name="—",  # Placeholder, заполнится при matching
+        tg_id=user.id,
+        tg_username=user.username,
+        phone=None,
+    )
+    
+    if not new_user:
+        logger.error(f"[REG] Failed to create user for tg_id={user.id}")
+        return None
+    
+    # Назначаем роль client
+    await api.create_user_role(new_user["id"], role_id=4)
+    
+    logger.info(f"[REG] Created user: tg_id={user.id}, user_id={new_user['id']}")
+    return new_user["id"]
 
 
 # ===============================
@@ -99,20 +132,35 @@ async def start_handler(message: Message, state: FSMContext):
     
     logger.info(f"start_handler: tg_id={tg_id}, chat_id={chat_id}")
 
-    # Сброс FSM state (очистка застрявших состояний)
+    # Сброс FSM state
     await state.clear()
     
-    # Сброс языка — пользователь начинает заново
+    # Сброс языка
     user_lang.pop(tg_id, None)
     
     # Сброс навигационного состояния
     await menu.reset(chat_id)
     
-    # Проверяем, нужна ли регистрация
+    # Проверяем, новый ли пользователь
     ctx = get_user_context(tg_id)
     is_new = ctx.is_new if ctx else False
     
-    logger.info(f"start_handler: is_new={is_new}")
+    # Если новый — создаём user без телефона
+    if is_new:
+        user_id = await create_user_without_phone(message)
+        if user_id:
+            # Обновляем локальный контекст
+            _current_user_context[tg_id] = TgUserContext(
+                tg_id=tg_id,
+                user_id=user_id,
+                company_id=ctx.company_id if ctx else None,
+                role="client",
+                is_new=False,
+            )
+        else:
+            # Не удалось создать (бот или ошибка БД)
+            await message.answer("❌ Registration failed")
+            return
     
     # Показываем выбор языка
     kb = language_inline()
@@ -124,12 +172,7 @@ async def start_handler(message: Message, state: FSMContext):
     lang = DEFAULT_LANG
     user_lang[tg_id] = lang
     
-    # Если новый пользователь — запускаем регистрацию
-    if is_new:
-        await start_registration(message, state, lang)
-        return
-    
-    # Показать меню по роли (Message доступен)
+    # Показать меню по роли
     await route_by_role(message, lang)
 
 
@@ -137,7 +180,7 @@ async def start_handler(message: Message, state: FSMContext):
 async def language_callback(callback: CallbackQuery, state: FSMContext):
     """Обработка выбора языка (из inline-кнопок)."""
     tg_id = callback.from_user.id
-    chat_id = callback.message.chat.id  # Сохраняем ДО удаления
+    chat_id = callback.message.chat.id
     lang = callback.data.split(":", 1)[1]
     
     logger.info(f"language_callback: tg_id={tg_id}, chat_id={chat_id}, lang={lang}")
@@ -153,18 +196,7 @@ async def language_callback(callback: CallbackQuery, state: FSMContext):
 
     await callback.answer()
     
-    # Проверяем, нужна ли регистрация
-    ctx = get_user_context(tg_id)
-    is_new = ctx.is_new if ctx else False
-    
-    logger.info(f"language_callback: is_new={is_new}")
-    
-    # Если новый пользователь — запускаем регистрацию
-    if is_new:
-        await start_registration_for_chat(chat_id, state, lang, tg_id)
-        return
-    
-    # Показать меню по роли (используем show_for_chat, т.к. Message удалён)
+    # Показать меню по роли
     role = get_user_role(tg_id)
     logger.info(f"language_callback: showing menu for role={role}")
     
@@ -172,169 +204,11 @@ async def language_callback(callback: CallbackQuery, state: FSMContext):
 
 
 # ===============================
-# REGISTRATION FLOW
-# ===============================
-
-async def start_registration(message: Message, state: FSMContext, lang: str):
-    """Начинает регистрацию (с Message объектом)."""
-    tg_id = message.from_user.id
-    
-    logger.info(f"[REG] Starting registration for tg_id={tg_id}")
-    
-    await state.update_data(lang=lang)
-    await state.set_state(Registration.phone)
-    
-    text = t("registration:welcome", lang)
-    kb = request_phone_keyboard(lang)
-    
-    await menu.show(message, kb, title=text)
-
-
-async def start_registration_for_chat(chat_id: int, state: FSMContext, lang: str, tg_id: int):
-    """Начинает регистрацию (без Message объекта, после language_callback)."""
-    logger.info(f"[REG] Starting registration for tg_id={tg_id} (from callback)")
-    
-    await state.update_data(lang=lang)
-    await state.set_state(Registration.phone)
-    
-    text = t("registration:welcome", lang)
-    kb = request_phone_keyboard(lang)
-    
-    await menu.show_for_chat(
-        bot=bot,
-        chat_id=chat_id,
-        kb=kb,
-        title=text,
-        menu_context=None
-    )
-
-
-@dp.message(Registration.phone, F.content_type == ContentType.CONTACT)
-async def process_contact(message: Message, state: FSMContext):
-    """Обработка полученного контакта."""
-    tg_id = message.from_user.id
-    chat_id = message.chat.id
-    data = await state.get_data()
-    lang = data.get("lang") or user_lang.get(tg_id, DEFAULT_LANG)
-    
-    contact = message.contact
-    
-    # Проверяем, что контакт принадлежит пользователю
-    if contact.user_id != tg_id:
-        logger.warning(f"[REG] Contact user_id mismatch: {contact.user_id} != {tg_id}")
-        await message.answer(t("registration:error", lang))
-        return
-    
-    phone = contact.phone_number
-    if not phone:
-        await message.answer(t("registration:error", lang))
-        return
-    
-    logger.info(f"[REG] Contact received: tg_id={tg_id}, phone={phone}")
-    
-    # Ищем пользователя по телефону
-    user, found = await api.get_user_by_phone(phone)
-    
-    ctx = get_user_context(tg_id)
-    user_info = {
-        "tg_id": tg_id,
-        "tg_username": message.from_user.username,
-        "first_name": message.from_user.first_name,
-        "last_name": message.from_user.last_name,
-    }
-    
-    if found and user:
-        # Пользователь найден по телефону
-        if not user.get("is_active", True):
-            # Деактивирован
-            logger.info(f"[REG] User deactivated: phone={phone}")
-            await state.clear()
-            await message.answer(t("registration:deactivated", lang))
-            return
-        
-        # Связываем tg_id с существующим пользователем (перезапись)
-        logger.info(f"[REG] Linking tg_id={tg_id} to existing user_id={user['id']}")
-        result = await api.update_user(
-            user["id"],
-            tg_id=tg_id,
-            tg_username=user_info.get("tg_username"),
-        )
-        if not result:
-            await message.answer(t("registration:error", lang))
-            return
-        
-        # Назначаем роль client (если уже есть — БД проигнорирует по UNIQUE constraint)
-        await api.create_user_role(user["id"], role_id=4)
-        
-        user_id = user["id"]
-        company_id = user.get("company_id")
-        role = "client"
-
-    elif not found:
-        # Пользователь не найден — создаём нового
-        company = await api.get_company()
-        if not company:
-            logger.error("[REG] No company in database")
-            await message.answer(t("registration:error", lang))
-            return
-        
-        logger.info(f"[REG] Creating new user: phone={phone}, tg_id={tg_id}")
-        new_user = await api.create_user(
-            company_id=company["id"],
-            phone=phone,
-            tg_id=tg_id,
-            tg_username=user_info.get("tg_username"),
-            first_name=user_info.get("first_name"),
-            last_name=user_info.get("last_name"),
-        )
-        
-        if not new_user:
-            await message.answer(t("registration:error", lang))
-            return
-        
-        # Назначаем роль client
-        await api.create_user_role(new_user["id"], role_id=4)
-        
-        user_id = new_user["id"]
-        company_id = company["id"]
-        role = "client"
-        
-    else:
-        # Ошибка API
-        await message.answer(t("registration:error", lang))
-        return
-    
-    # Очищаем FSM
-    await state.clear()
-    
-    # Обновляем локальный контекст
-    _current_user_context[tg_id] = TgUserContext(
-        tg_id=tg_id,
-        user_id=user_id,
-        company_id=company_id,
-        role=role,
-        is_new=False,
-    )
-    
-    logger.info(f"[REG] Registration complete: tg_id={tg_id}, user_id={user_id}")
-    
-    # Сбрасываем меню
-    await menu.reset(chat_id)
-    
-    # Показываем сообщение и меню
-    await message.answer(t("registration:complete", lang))
-    await route_by_role(message, lang)
-
-
-# ===============================
 # ROLE MENU DISPLAY
 # ===============================
 
 async def show_menu_for_role(role: str, chat_id: int, lang: str) -> None:
-    """
-    Показать меню для роли напрямую (без Message объекта).
-    Используется после language_callback.
-    """
+    """Показать меню для роли (без Message объекта)."""
     if role == "admin":
         await menu.show_for_chat(
             bot=bot,
@@ -344,8 +218,7 @@ async def show_menu_for_role(role: str, chat_id: int, lang: str) -> None:
             menu_context=None
         )
     elif role == "specialist":
-        # TODO: specialist menu
-        await bot.send_message(chat_id, f"Role: specialist (menu not implemented)")
+        await bot.send_message(chat_id, "Role: specialist (menu not implemented)")
     elif role == "client":
         await menu.show_for_chat(
             bot=bot,
@@ -367,24 +240,21 @@ async def admin_entry(message: Message, lang: str):
     logger.info(f"admin_entry: chat_id={message.chat.id}, lang={lang}")
     await admin_flow.show_main(message, lang)
 
+
 async def client_entry(message: Message, lang: str):
     """Первичный вход в клиент-меню."""
     logger.info(f"client_entry: chat_id={message.chat.id}, lang={lang}")
     await client_flow.show_main(message, lang)
 
+
 ROLE_HANDLERS = {
     "admin": admin_entry,
     "client": client_entry,
-    # "specialist": specialist_entry,
 }
 
+
 async def route_by_role(event: TelegramObject, lang: str):
-    """
-    Маршрутизация по роли.
-    
-    Используется ТОЛЬКО когда есть валидный Message объект.
-    Для CallbackQuery используйте show_menu_for_role() напрямую.
-    """
+    """Маршрутизация по роли (только для Message)."""
     if not isinstance(event, Message):
         logger.warning(f"route_by_role called with non-Message: {type(event)}")
         return
@@ -408,7 +278,7 @@ async def route_by_role(event: TelegramObject, lang: str):
 # ===============================
 
 dp.include_router(admin_reply.setup(menu, get_user_role))
-dp.include_router(client_reply.setup(menu, get_user_role))
+dp.include_router(client_reply.setup(menu, get_user_role, get_user_context))
 
 # ===============================
 # GATEWAY ENTRYPOINT
@@ -418,7 +288,6 @@ async def process_update(update_data: dict, user_context=None):
     """Точка входа для обработки Telegram update от gateway."""
     try:
         update = Update.model_validate(update_data)
-        logger.info(f"Update parsed: message={update.message is not None}, text={update.message.text if update.message else None}")
     except Exception as e:
         logger.warning("Invalid Telegram update: %s", e)
         return
