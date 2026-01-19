@@ -7,7 +7,7 @@ from typing import Optional
 from dataclasses import dataclass
 
 from aiogram import Bot, Dispatcher, F
-from aiogram.filters import Command
+from aiogram.filters import Command, BaseFilter
 from aiogram.types import Update, Message, CallbackQuery, TelegramObject
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.fsm.context import FSMContext
@@ -79,6 +79,22 @@ def get_user_role(tg_id: int) -> str:
 
 
 # ===============================
+# ROLE FILTER
+# ===============================
+
+class RoleFilter(BaseFilter):
+    """Фильтр по роли пользователя."""
+    
+    def __init__(self, role: str):
+        self.role = role
+    
+    async def __call__(self, event: Message | CallbackQuery) -> bool:
+        tg_id = event.from_user.id
+        user_role = get_user_role(tg_id)
+        return user_role == self.role
+
+
+# ===============================
 # USER CREATION (without phone)
 # ===============================
 
@@ -103,11 +119,11 @@ async def create_user_without_phone(message: Message) -> Optional[int]:
     
     new_user = await api.create_user(
         company_id=company["id"],
-        phone=None,                    # Второй позиционный аргумент
+        phone=None,
         tg_id=user.id,
-        first_name=user.first_name,    # Из Telegram (всегда есть)
-        last_name=user.last_name,      # Из Telegram (может быть None)
-        tg_username=user.username,     # Из Telegram (может быть None)
+        first_name=user.first_name,
+        last_name=user.last_name,
+        tg_username=user.username,
     )
     
     if not new_user:
@@ -275,12 +291,24 @@ async def route_by_role(event: TelegramObject, lang: str):
 
 
 # ===============================
-# REGISTER HANDLERS
+# REGISTER HANDLERS (с фильтрами ролей)
 # ===============================
 
-dp.include_router(admin_reply.setup(menu, get_user_role))
+# Admin роутер — только для role=admin
+admin_router = admin_reply.setup(menu, get_user_role)
+admin_router.message.filter(RoleFilter("admin"))
+admin_router.callback_query.filter(RoleFilter("admin"))
+dp.include_router(admin_router)
+
+# PhoneGate — для всех (FSM перехватывает Contact)
 dp.include_router(setup_phone_gate(menu, get_user_context))
-dp.include_router(client_reply.setup(menu, get_user_role, get_user_context))
+
+# Client роутер — только для role=client
+client_router = client_reply.setup(menu, get_user_role, get_user_context)
+client_router.message.filter(RoleFilter("client"))
+client_router.callback_query.filter(RoleFilter("client"))
+dp.include_router(client_router)
+
 
 # ===============================
 # GATEWAY ENTRYPOINT
