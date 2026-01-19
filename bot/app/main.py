@@ -23,7 +23,6 @@ from bot.app.utils.api import api
 from bot.app.flows.admin.menu import AdminMenuFlow
 from bot.app.flows.client.menu import ClientMenuFlow
 
-from bot.app.handlers.phone_gate import setup_phone_gate
 from bot.app.handlers import admin_reply
 from bot.app.handlers import client_reply
 
@@ -299,9 +298,6 @@ admin_router = admin_reply.setup(menu, get_user_role)
 admin_router.message.filter(RoleFilter("admin"))
 admin_router.callback_query.filter(RoleFilter("admin"))
 dp.include_router(admin_router)
-
-# PhoneGate — для всех (FSM перехватывает Contact)
-dp.include_router(setup_phone_gate(menu, get_user_context))
 
 # Client роутер — только для role=client
 client_router = client_reply.setup(menu, get_user_role, get_user_context)
