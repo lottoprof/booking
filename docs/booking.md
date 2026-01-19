@@ -1064,6 +1064,30 @@ logger.info(
 
 ---
 
+```
+
+backend/app/
+├── services/
+│   └── slots/
+│       ├── __init__.py
+│       ├── config.py             # BookingConfig
+│       ├── calculator.py         # Level 1 (sync)
+│       ├── availability.py       # Level 2 (sync)
+│       ├── redis_store.py        # Обёртка над redis_client (sync)
+│       ├── invalidator.py        # invalidate_location_cache (sync)
+│       └── lock.py               # Distributed lock (sync)
+│
+├── routers/
+│   ├── slots.py                  # GET /slots/calendar, GET /slots/day
+│   └── ...
+│
+├── schemas/
+│   └── slots.py                  # Pydantic models
+│
+└── redis_client.py               # Уже есть (sync)
+
+```
+
 ## 15. Changelog
 
 | Версия | Дата | Изменения |

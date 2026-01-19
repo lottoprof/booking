@@ -1,3 +1,5 @@
+# backend/app/main.py
+
 from fastapi import FastAPI
 
 from .routers import (
@@ -20,6 +22,7 @@ from .routers import (
     wallet_transactions,
     push_subscriptions,
     audit_log,
+    slots,
 )
 
 app = FastAPI(title="Booking API")
@@ -43,4 +46,5 @@ app.include_router(client_wallets.router)
 app.include_router(wallet_transactions.router)
 app.include_router(push_subscriptions.router)
 app.include_router(audit_log.router)
+app.include_router(slots.router)
 
