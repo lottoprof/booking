@@ -175,24 +175,28 @@ sequenceDiagram
     participant C as Клиент
     participant API as FastAPI
     participant R as Redis
-    participant DB as DB
+    participant DB as SQLite
 
-    C->>API: Запрос слотов
-    API->>R: Чтение grid
-    API-->>C: Свободные слоты
+    C->>API: GET /slots/calendar
+    API->>R: Level 1 (базовая сетка)
+    API->>DB: Level 2 (спецы + bookings)
+    API-->>C: Доступные дни
 
-    C->>API: POST /booking
-    API->>R: LOCK(slot)
+    C->>API: GET /slots/day
+    API->>DB: Level 2 детальный
+    API-->>C: Слоты + специалисты
+
+    C->>API: POST /bookings
+    API->>R: LOCK
+    API->>DB: Double-check Level 2
     alt занят
-        API-->>C: ошибка
+        API-->>C: 409 Conflict
     else
         API->>DB: INSERT booking
-        DB-->>API: ok
-        API->>R: update grid
-        API-->>C: подтверждение
+        API-->>C: 201 Created
     end
+    API->>R: UNLOCK
 ```
-
 ---
 
 </details>
@@ -247,32 +251,47 @@ sequenceDiagram
 <details>
 <summary>Нажмите, чтобы увидеть подробности</summary>
 
-## Расчёт на 60 дней
+## Двухуровневая архитектура
 
-* система всегда рассчитывает слоты **на 60 дней вперёд**;
-* каждый день — отдельный grid из 96 слотов;
-* в Redis хранится по одному ключу на каждый день.
+Система использует двухуровневый расчёт слотов.
 
-## 1. Сетка
+### Level 1: Базовая сетка (Redis)
 
-* шаг 15 минут (96 ячеек);
-* округление duration и break вверх.
+**Что содержит:**
+* work_schedule локации
+* calendar_overrides локации
+* min_advance_hours
 
-## 2. Алгоритм расчёта дня
+**Что НЕ содержит:**
+* Bookings
+* Специалистов
+* Комнаты
 
-1. grid = свободно;
-2. применить work_schedule (локация);
-3. применить work_schedule (специалист);
-4. применить overrides;
-5. применить bookings (duration + break);
-6. сохранить в Redis (слоты одного дня).
+**Redis-ключ:** `slots:location:{location_id}:{date}`
 
-## 3. Redis
+**Формат:** строка 96 символов "0"/"1" (шаг 15 минут)
 
-* ключ: `slots_preview:{spec}:{date}`;
-* TTL: 12–24ч;
-* инвалидация только затронутых дней.
+**Назначение:** "Локация РАБОТАЕТ или НЕТ"
 
+### Level 2: Гранулярный расчёт (на лету)
+
+Выполняется после выбора услуги клиентом:
+
+1. получить базовую сетку (Level 1);
+2. применить графики специалистов услуги;
+3. применить calendar_overrides специалистов;
+4. применить bookings специалистов;
+5. если service_rooms не пусто — проверить комнаты;
+6. применить bookings комнат.
+
+**Назначение:** "Кто свободен для ЭТОЙ услуги?"
+
+### Конфигурация
+```python
+horizon_days: int = 60        # 30 / 60 / 90
+min_advance_hours: int = 6    # 1 / 6 / 12 / 24
+slot_step_min: int = 15       # фиксированный
+```
 ---
 
 </details>
@@ -282,39 +301,31 @@ sequenceDiagram
 <details>
 <summary>Нажмите, чтобы увидеть подробности</summary>
 
-## Когда пересчитываем?
+## Инвалидация кеша (Level 1)
 
-* изменение графика локации → 60 дней;
-* изменение графика специалиста → 60 дней;
-* override → только affected-даты;
-* новая/отменённая бронь → 1 день;
-* изменение услуги → пересчитать все даты специалистов, оказывающих услугу.
+| Событие | Инвалидация |
+|---------|-------------|
+| Изменение work_schedule локации | ✅ Да, horizon_days |
+| Создание/удаление override локации | ✅ Да, affected dates |
+| Изменение графика специалиста | ❌ Нет (Level 2) |
+| Создание/отмена booking | ❌ Нет (Level 2) |
 
 ## Redis-lock в процессе бронирования
-
 ```
-1. Клиент запрашивает слоты
-2. API возвращает grid
+1. Клиент выбирает услугу
+2. API рассчитывает Level 2 (спецы + комнаты + bookings)
 3. Клиент выбирает слот
-4. API → Redis: LOCK(slots)
-5. API повторно проверяет слоты
+4. API → Redis: LOCK(location:date)
+5. API повторно проверяет Level 2 (double-check)
 6. Создаёт запись в bookings
-7. Сохраняет duration+break
-8. Обновляет Redis grid
-9. Освобождает LOCK
+7. Назначает room_id (первая свободная)
+8. Освобождает LOCK
 ```
 
-Без redis-lock возможны гоночные условия.
+Grid в Redis НЕ обновляется — bookings проверяются на лету.
 
-## Callback пересчёта
+## Инвалидация кеша
 
-```
-POST /internal/slots/recalc
-{
-  "specialist_id": 17,
-  "dates": ["2025-03-01","2025-03-02"]
-}
-```
-
-</details>
-
+Выполняется callback-функцией `invalidate_location_cache()` при изменении:
+* work_schedule локации
+* calendar_overrides локации
