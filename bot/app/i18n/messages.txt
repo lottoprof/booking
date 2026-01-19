@@ -17,6 +17,9 @@ ru:registration:complete | "✅ Регистрация завершена!"
 en:registration:complete | "✅ Registration complete!"
 ru:registration:error | "❌ Ошибка регистрации. Попробуйте позже."
 en:registration:error | "❌ Registration error. Please try again later."
+ru:registration:share_phone_hint | "👆 Нажмите кнопку «📱 Поделиться номером» ниже"
+en:registration:share_phone_hint | "👆 Press the «📱 Share phone number» button below"
+
 
 # --- admin menu titles ---
 ru:admin:main:title | "🏠 Главное меню"
@@ -657,3 +660,38 @@ en:client:main:services     | "🎟 Services"
 ru:client:main:contact      | "💬 Связаться с нами"
 en:client:main:contact      | "💬 Contact us"
 
+
+# --- client / booking ---
+ru:client:booking:select_service | "🛎 Выберите услугу:"
+en:client:booking:select_service | "🛎 Select a service:"
+ru:client:booking:select_day | "📅 Выберите день:"
+en:client:booking:select_day | "📅 Select a day:"
+ru:client:booking:select_time | "🕐 Выберите время (%s):"
+en:client:booking:select_time | "🕐 Select time (%s):"
+ru:client:booking:select_specialist | "👤 Выберите специалиста (%s):"
+en:client:booking:select_specialist | "👤 Select specialist (%s):"
+
+ru:client:booking:no_services | "😔 Нет доступных услуг"
+en:client:booking:no_services | "😔 No services available"
+ru:client:booking:no_locations | "😔 Нет доступных локаций"
+en:client:booking:no_locations | "😔 No locations available"
+ru:client:booking:no_calendar | "😔 Календарь недоступен"
+en:client:booking:no_calendar | "😔 Calendar unavailable"
+ru:client:booking:no_days | "😔 Нет доступных дней"
+en:client:booking:no_days | "😔 No available days"
+ru:client:booking:no_slots | "😔 Нет доступных слотов"
+en:client:booking:no_slots | "😔 No available slots"
+
+ru:client:booking:confirm_text | "📋 Подтвердите запись:\n\n🛎 %s\n📅 %s в %s\n👤 %s\n⏱ %d мин\n💰 %s"
+en:client:booking:confirm_text | "📋 Confirm booking:\n\n🛎 %s\n📅 %s at %s\n👤 %s\n⏱ %d min\n💰 %s"
+ru:client:booking:confirm_yes | "✅ Подтвердить"
+en:client:booking:confirm_yes | "✅ Confirm"
+
+ru:client:booking:success | "✅ Вы записаны!\n\n🛎 %s\n📅 %s в %s\n\nДо встречи!"
+en:client:booking:success | "✅ You're booked!\n\n🛎 %s\n📅 %s at %s\n\nSee you!"
+ru:client:booking:success_alert | "✅ Запись создана!"
+en:client:booking:success_alert | "✅ Booking created!"
+ru:client:booking:error | "❌ Ошибка создания записи. Попробуйте позже."
+en:client:booking:error | "❌ Booking error. Please try later."
+ru:client:booking:cancelled | "❌ Запись отменена"
+en:client:booking:cancelled | "❌ Booking cancelled"

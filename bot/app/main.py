@@ -23,6 +23,7 @@ from bot.app.utils.api import api
 from bot.app.flows.admin.menu import AdminMenuFlow
 from bot.app.flows.client.menu import ClientMenuFlow
 
+from bot.app.handlers.phone_gate import setup_phone_gate
 from bot.app.handlers import admin_reply
 from bot.app.handlers import client_reply
 
@@ -278,6 +279,7 @@ async def route_by_role(event: TelegramObject, lang: str):
 # ===============================
 
 dp.include_router(admin_reply.setup(menu, get_user_role))
+dp.include_router(setup_phone_gate(menu, get_user_context))
 dp.include_router(client_reply.setup(menu, get_user_role, get_user_context))
 
 # ===============================

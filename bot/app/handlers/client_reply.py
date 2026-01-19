@@ -1,11 +1,12 @@
+# bot/app/handlers/client_reply.py
 """
-bot/app/handlers/client_reply.py
+Reply-кнопки клиента + Booking Flow.
 
-Роутинг Reply-кнопок клиента + PhoneGate.
+PhoneGate роутер в phone_gate.py — подключается отдельно в main.py.
 """
 
-from aiogram import Router, F
-from aiogram.types import Message, ContentType
+from aiogram import Router
+from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
 from bot.app.i18n.loader import t, DEFAULT_LANG
@@ -15,9 +16,9 @@ from bot.app.utils.phone_utils import (
     PhoneGate,
     phone_required,
     show_phone_request,
-    save_user_phone,
-    validate_contact,
 )
+from bot.app.handlers.phone_gate import register_phone_callback
+from bot.app.flows.client.booking import setup as setup_booking
 
 import logging
 logger = logging.getLogger(__name__)
@@ -31,87 +32,50 @@ def setup(menu_controller, get_user_role, get_user_context):
     flow = ClientMenuFlow(menu_controller)
     mc = menu_controller
 
-    # FSM роутер для PhoneGate (ПЕРВЫЙ)
-    fsm_router = Router(name="client_fsm")
+    # Booking роутер
+    booking_router = setup_booking(menu_controller, get_user_context)
     
-    # Reply роутер (ПОСЛЕДНИЙ)
+    # Reply роутер
     reply_router = Router(name="client_reply")
-
-    # ==========================================================
-    # PHONE GATE FSM
-    # ==========================================================
-
-    @fsm_router.message(PhoneGate.waiting, F.content_type == ContentType.CONTACT)
-    async def handle_phone_contact(message: Message, state: FSMContext):
-        """Обработка контакта в PhoneGate."""
-        tg_id = message.from_user.id
-        data = await state.get_data()
-        lang = data.get("lang", DEFAULT_LANG)
-        next_action = data.get("next_action")
-        
-        logger.info(f"[PHONE_GATE] Contact received: tg_id={tg_id}, next_action={next_action}")
-        
-        # Валидация контакта
-        valid, phone = validate_contact(message.contact, tg_id)
-        if not valid:
-            await message.answer(t("registration:error", lang))
-            return
-        
-        # Получаем user_id
-        ctx = get_user_context(tg_id)
-        if not ctx or not ctx.user_id:
-            logger.error(f"[PHONE_GATE] No user context for tg_id={tg_id}")
-            await message.answer(t("registration:error", lang))
-            await state.clear()
-            return
-        
-        # Сохраняем телефон (+ matching с imported_clients)
-        success, error_key = await save_user_phone(ctx.user_id, phone)
-        if not success:
-            await message.answer(t(error_key, lang))
-            return
-        
-        # Очищаем FSM
-        await state.clear()
-        
-        # Уведомление
-        await message.answer(t("registration:complete", lang))
-        
-        # Продолжаем действие
-        if next_action == "book":
-            await do_book(message, state, lang)
-        elif next_action == "bookings":
-            await do_bookings(message, state, lang)
-        elif next_action == "contact":
-            await do_contact(message, state, lang)
-        else:
-            # Возврат в главное меню
-            await flow.show_main(message, lang)
 
     # ==========================================================
     # ACTION HANDLERS
     # ==========================================================
 
-    async def do_book(message: Message, state: FSMContext, lang: str):
+    async def do_book(message: Message, state: FSMContext, lang: str, user_id: int):
         """Запуск booking flow."""
-        logger.info("[CLIENT] Starting book flow")
-        # TODO: запустить FSM выбора слота (ClientBooking)
-        await message.answer("📝 Booking flow (not implemented)")
+        logger.info(f"[CLIENT] do_book user_id={user_id}")
+        await booking_router.start_booking(message, state, lang, user_id)
 
-    async def do_bookings(message: Message, state: FSMContext, lang: str):
-        """Показ списка записей."""
-        logger.info("[CLIENT] Showing bookings")
-        # TODO: показать список записей
-        await message.answer("📋 My bookings (not implemented)")
+    async def do_bookings(message: Message, state: FSMContext, lang: str, user_id: int):
+        """Список записей."""
+        logger.info(f"[CLIENT] do_bookings user_id={user_id}")
+        await message.answer("📋 Мои записи (в разработке)")
 
-    async def do_contact(message: Message, state: FSMContext, lang: str):
-        """Показ контактной информации."""
-        logger.info("[CLIENT] Showing contact")
-        # TODO: показать контакты
-        await message.answer("📞 Contact info (not implemented)")
+    async def do_contact(message: Message, state: FSMContext, lang: str, user_id: int):
+        """Контакты."""
+        logger.info("[CLIENT] do_contact")
+        await message.answer("📞 Контакты (в разработке)")
 
     # ==========================================================
-    # PHONE GATE TRIGGER
+    # PHONE GATE CALLBACKS
+    # ==========================================================
+
+    async def on_phone_book(message, state, lang, user_id, data):
+        await do_book(message, state, lang, user_id)
+
+    async def on_phone_bookings(message, state, lang, user_id, data):
+        await do_bookings(message, state, lang, user_id)
+
+    async def on_phone_contact(message, state, lang, user_id, data):
+        await do_contact(message, state, lang, user_id)
+
+    register_phone_callback("book", on_phone_book)
+    register_phone_callback("bookings", on_phone_bookings)
+    register_phone_callback("contact", on_phone_contact)
+
+    # ==========================================================
+    # REQUIRE PHONE
     # ==========================================================
 
     async def require_phone_and_do(
@@ -119,33 +83,27 @@ def setup(menu_controller, get_user_role, get_user_context):
         state: FSMContext,
         lang: str,
         action: str,
-        action_handler
+        do_action
     ):
-        """
-        Проверяет наличие телефона, запрашивает если нет.
-        
-        Args:
-            action: "book" | "bookings" | "contact"
-            action_handler: функция для выполнения если телефон есть
-        """
+        """Проверяет телефон, запрашивает если нет."""
         tg_id = message.from_user.id
         ctx = get_user_context(tg_id)
         
         if not ctx or not ctx.user_id:
-            logger.error(f"[PHONE_GATE] No user context: tg_id={tg_id}")
             await message.answer(t("registration:error", lang))
             return
         
-        # Проверяем телефон
-        if await phone_required(ctx.user_id):
-            logger.info(f"[PHONE_GATE] Phone required for action={action}")
+        user_id = ctx.user_id
+        
+        if await phone_required(user_id):
+            # Устанавливаем FSM + показываем клавиатуру
             await state.set_state(PhoneGate.waiting)
             await state.update_data(next_action=action, lang=lang)
             await show_phone_request(mc, message, lang)
             return
         
-        # Телефон есть — выполняем действие
-        await action_handler(message, state, lang)
+        # Телефон есть
+        await do_action(message, state, lang, user_id)
 
     # ==========================================================
     # REPLY HANDLERS
@@ -154,50 +112,33 @@ def setup(menu_controller, get_user_role, get_user_context):
     @reply_router.message()
     async def handle_client_reply(message: Message, state: FSMContext):
         tg_id = message.from_user.id
-        chat_id = message.chat.id
         text = message.text
 
-        logger.info(f"[CLIENT_REPLY] Received: tg_id={tg_id}, text='{text}'")
-
-        # Если есть активный FSM state — не обрабатываем
+        # FSM активен — пропускаем
         current_state = await state.get_state()
         if current_state:
-            logger.info(f"[CLIENT_REPLY] Skipped, FSM active: {current_state}")
             return
 
         role = get_user_role(tg_id)
         if role != "client":
-            logger.info(f"[CLIENT_REPLY] Skipped, role={role}")
             return
 
         lang = user_lang.get(tg_id, DEFAULT_LANG)
 
-        # ==============================================================
-        # MAIN MENU (с phone gate)
-        # ==============================================================
-
         if text == t("client:main:book", lang):
             await require_phone_and_do(message, state, lang, "book", do_book)
-            return
 
         elif text == t("client:main:bookings", lang):
             await require_phone_and_do(message, state, lang, "bookings", do_bookings)
-            return
 
         elif text == t("client:main:contact", lang):
             await require_phone_and_do(message, state, lang, "contact", do_contact)
-            return
 
         elif text == t("client:main:services", lang):
-            logger.info("[CLIENT_REPLY] Services selected")
-            # Услуги — без phone gate (просто просмотр)
-            await message.answer("📋 Services (not implemented)")
-            return
+            await message.answer("📋 Услуги (в разработке)")
 
-    # =====================================================
-    # ПОРЯДОК: FSM → Reply
-    # =====================================================
-    router.include_router(fsm_router)
+    # Порядок роутеров
+    router.include_router(booking_router)
     router.include_router(reply_router)
 
     return router

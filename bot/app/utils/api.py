@@ -445,6 +445,135 @@ class ApiClient:
         )
         return result is None
 
+    # ------------------------------------------------------------------
+    # Slots (Level 1 + Level 2)
+    # ------------------------------------------------------------------
+
+    async def get_slots_calendar(
+        self,
+        location_id: int,
+        start_date: str = None,
+        end_date: str = None
+    ) -> Optional[dict]:
+        """
+        GET /slots/calendar — Level 1: базовая сетка локации.
+        
+        Returns:
+            {
+                "location_id": 1,
+                "start_date": "2026-01-20",
+                "end_date": "2026-03-20",
+                "days": [
+                    {"date": "2026-01-20", "has_slots": true, "open_slots_count": 36},
+                    ...
+                ],
+                "horizon_days": 60,
+                "min_advance_hours": 6
+            }
+        """
+        params = {"location_id": location_id}
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+        
+        return await self._request("GET", "/slots/calendar", params=params)
+
+    async def get_slots_day(
+        self,
+        location_id: int,
+        service_id: int,
+        date: str
+    ) -> Optional[dict]:
+        """
+        GET /slots/day — Level 2: гранулярный расчёт для услуги.
+        
+        Returns:
+            {
+                "location_id": 1,
+                "service_id": 12,
+                "date": "2026-01-20",
+                "service_duration_min": 60,
+                "slots_needed": 4,
+                "available_times": [
+                    {
+                        "time": "10:00",
+                        "slot_index": 40,
+                        "specialists": [
+                            {"id": 5, "name": "Иван Петров"},
+                            {"id": 7, "name": "Мария Сидорова"}
+                        ]
+                    },
+                    ...
+                ]
+            }
+        """
+        params = {
+            "location_id": location_id,
+            "service_id": service_id,
+            "date": date
+        }
+        return await self._request("GET", "/slots/day", params=params)
+
+    # ------------------------------------------------------------------
+    # Bookings
+    # ------------------------------------------------------------------
+
+    async def get_bookings(
+        self,
+        client_id: int = None,
+        status: str = None
+    ) -> list[dict]:
+        """GET /bookings/ — список записей."""
+        params = {}
+        if client_id:
+            params["client_id"] = client_id
+        if status:
+            params["status"] = status
+        
+        result = await self._request("GET", "/bookings/", params=params)
+        return result or []
+
+    async def get_booking(self, booking_id: int) -> Optional[dict]:
+        """GET /bookings/{id}"""
+        return await self._request("GET", f"/bookings/{booking_id}")
+
+    async def create_booking(
+        self,
+        location_id: int,
+        service_id: int,
+        specialist_id: int,
+        client_id: int,
+        datetime_start: str,
+        **kwargs
+    ) -> Optional[dict]:
+        """
+        POST /bookings/ — создание записи.
+        
+        Backend автоматически:
+        - Проверяет доступность (Level 2)
+        - Назначает room_id
+        - Рассчитывает final_price
+        
+        Returns:
+            Booking object или None при конфликте
+        """
+        data = {
+            "location_id": location_id,
+            "service_id": service_id,
+            "specialist_id": specialist_id,
+            "client_id": client_id,
+            "datetime": datetime_start,
+            **kwargs
+        }
+        return await self._request("POST", "/bookings/", json=data)
+
+    async def cancel_booking(self, booking_id: int, reason: str = None) -> Optional[dict]:
+        """PATCH /bookings/{id} — отмена записи."""
+        data = {"status": "cancelled"}
+        if reason:
+            data["cancel_reason"] = reason
+        return await self._request("PATCH", f"/bookings/{booking_id}", json=data)
 
 # Singleton
 api = ApiClient()
