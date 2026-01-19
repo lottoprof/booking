@@ -100,11 +100,20 @@ def _apply_work_schedule(
     Apply location work schedule.
     Close slots OUTSIDE working hours.
     
-    Schedule format:
+    Supports TWO formats:
+    
+    Format A (legacy - in database):
     {
-        "0": [["09:00", "18:00"]],           # Monday
-        "1": [["09:00", "12:00"], ["14:00", "20:00"]],  # Tuesday (with break)
-        "6": []                              # Sunday (closed)
+        "mon": {"start": "09:00", "end": "18:00"},
+        "tue": {"start": "09:00", "end": "18:00"},
+        "sun": null
+    }
+    
+    Format B (new - with multiple intervals):
+    {
+        "0": [["09:00", "12:00"], ["14:00", "18:00"]],
+        "1": [["09:00", "18:00"]],
+        "6": []
     }
     """
     try:
@@ -112,8 +121,14 @@ def _apply_work_schedule(
     except json.JSONDecodeError:
         schedule = {}
     
-    weekday = str(target_date.weekday())
-    day_intervals = schedule.get(weekday, [])
+    if not schedule:
+        # Empty schedule - close all slots
+        for i in range(len(grid)):
+            grid[i] = "0"
+        return
+    
+    # Detect format and get day intervals
+    day_intervals = _get_day_intervals(schedule, target_date, config)
     
     if not day_intervals:
         # No working hours - close all slots
@@ -139,6 +154,51 @@ def _apply_work_schedule(
     for i in range(len(grid)):
         if i not in open_slots:
             grid[i] = "0"
+
+
+def _get_day_intervals(
+    schedule: dict,
+    target_date: date,
+    config: BookingConfig,
+) -> list[list[str]]:
+    """
+    Extract working intervals for target_date from schedule.
+    Supports both Format A and Format B.
+    
+    Returns list of intervals: [["09:00", "18:00"], ...]
+    """
+    weekday = target_date.weekday()  # 0 = Monday, 6 = Sunday
+    
+    # Format B: numeric keys "0", "1", etc.
+    weekday_str = str(weekday)
+    if weekday_str in schedule:
+        intervals = schedule[weekday_str]
+        if isinstance(intervals, list):
+            return intervals
+        return []
+    
+    # Format A: named keys "mon", "tue", etc.
+    day_names = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+    day_name = day_names[weekday]
+    
+    if day_name in schedule:
+        day_data = schedule[day_name]
+        
+        if day_data is None:
+            return []
+        
+        if isinstance(day_data, dict):
+            # {"start": "09:00", "end": "18:00"}
+            start = day_data.get("start")
+            end = day_data.get("end")
+            if start and end:
+                return [[start, end]]
+        
+        if isinstance(day_data, list):
+            # Already in interval format
+            return day_data
+    
+    return []
 
 
 def _apply_override(
