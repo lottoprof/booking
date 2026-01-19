@@ -85,9 +85,8 @@ async def create_user_without_phone(message: Message) -> Optional[int]:
     """
     Создаёт user без телефона при первом контакте.
     
-    Из Telegram доступно только: tg_id, tg_username.
-    first_name/last_name заполнятся при matching с imported_clients
-    когда пользователь поделится телефоном через phone_gate.
+    Из Telegram доступно: tg_id (всегда), first_name (всегда),
+    last_name (опционально), tg_username (опционально).
     """
     user = message.from_user
     
@@ -103,10 +102,11 @@ async def create_user_without_phone(message: Message) -> Optional[int]:
     
     new_user = await api.create_user(
         company_id=company["id"],
-        first_name="—",  # Placeholder, заполнится при matching
+        phone=None,                    # Второй позиционный аргумент
         tg_id=user.id,
-        tg_username=user.username,
-        phone=None,
+        first_name=user.first_name,    # Из Telegram (всегда есть)
+        last_name=user.last_name,      # Из Telegram (может быть None)
+        tg_username=user.username,     # Из Telegram (может быть None)
     )
     
     if not new_user:
