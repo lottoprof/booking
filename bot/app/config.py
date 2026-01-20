@@ -9,6 +9,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 class Settings(BaseSettings):
     TG_BOT_TOKEN: str
     SUPPORT_TG_ID: Optional[int] = None
+    CHANNEL_URL: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
