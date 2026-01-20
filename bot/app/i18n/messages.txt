@@ -660,6 +660,9 @@ en:client:main:services     | "🎟 Services"
 ru:client:main:contact      | "💬 Связаться с нами"
 en:client:main:contact      | "💬 Contact us"
 
+# --- client / contact ---
+ru:client:contact:subscribe | "📢 Подписаться"
+en:client:contact:subscribe | "📢 Subscribe"
 
 # --- client / booking ---
 ru:client:booking:select_service | "🛎 Выберите услугу:"

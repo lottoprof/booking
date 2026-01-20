@@ -20,3 +20,4 @@ settings = Settings()
 
 BOT_TOKEN = settings.TG_BOT_TOKEN
 SUPPORT_TG_ID = settings.SUPPORT_TG_ID
+CHANNEL_URL = settings.CHANNEL_URL

@@ -24,7 +24,7 @@ from bot.app.utils.phone_utils import (
     validate_contact,
 )
 from bot.app.keyboards.client import client_main
-from bot.app.config import SUPPORT_TG_ID
+from bot.app.config import SUPPORT_TG_ID, CHANNEL_URL
 
 logger = logging.getLogger(__name__)
 
@@ -33,19 +33,31 @@ logger = logging.getLogger(__name__)
 # Inline keyboard (локальная для этого флоу)
 # ============================================================
 
-def _contact_support_inline(support_tg_id: int, lang: str) -> InlineKeyboardMarkup:
+def _contact_support_inline(support_tg_id: int, channel_url: str | None, lang: str) -> InlineKeyboardMarkup:
     """
-    Inline-кнопка для открытия чата с сотрудником.
-    Использует tg://user?id=... deeplink.
+    Inline-кнопки: связь с поддержкой + подписка на канал.
     """
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
+    buttons = []
+    
+    # Кнопка связи с поддержкой
+    if support_tg_id:
+        buttons.append(
             InlineKeyboardButton(
                 text=t("client:main:contact", lang),  # "💬 Связаться с нами"
                 url=f"tg://user?id={support_tg_id}"
-            ),
-        ],
-    ])
+            )
+        )
+    
+    # Кнопка подписки на канал
+    if channel_url:
+        buttons.append(
+            InlineKeyboardButton(
+                text=t("client:contact:subscribe", lang),  # "📢 Подписаться"
+                url=channel_url
+            )
+        )
+    
+    return InlineKeyboardMarkup(inline_keyboard=[buttons] if buttons else [])
 
 
 # ============================================================
@@ -67,14 +79,15 @@ class ContactFlow:
         
         logger.info(f"[CONTACT] start: tg_id={tg_id}, user_id={user_id}")
         
-        # Проверяем SUPPORT_TG_ID
-        if not SUPPORT_TG_ID:
-            logger.warning("[CONTACT] SUPPORT_TG_ID not configured")
-            # Type B1: удаляем user message, показываем ошибку
-            await self.mc.show_inline_readonly(
+        # Проверяем что хотя бы один контакт настроен
+        if not SUPPORT_TG_ID and not CHANNEL_URL:
+            logger.warning("[CONTACT] Neither SUPPORT_TG_ID nor CHANNEL_URL configured")
+            # Type A: обновляем якорь с сообщением об ошибке
+            await self.mc.show(
                 message,
-                t("common:error", lang),
-                InlineKeyboardMarkup(inline_keyboard=[])
+                client_main(lang),
+                title=t("common:error", lang),
+                menu_context=None
             )
             return
         
@@ -90,12 +103,20 @@ class ContactFlow:
             logger.info("[CONTACT] Phone required, showing request")
             return
         
-        # Телефон есть — Type B1: удаляем user message + показываем inline
-        kb = _contact_support_inline(SUPPORT_TG_ID, lang)
-        await self.mc.show_inline_readonly(
+        # Телефон есть — Type A: обновляем якорь + показываем inline
+        await self.mc.show(
             message,
-            t("client:main:contact", lang),
-            kb
+            client_main(lang),
+            title=t("client:main:title", lang),
+            menu_context=None
+        )
+        
+        kb = _contact_support_inline(SUPPORT_TG_ID, CHANNEL_URL, lang)
+        await self.mc.send_inline_in_flow(
+            bot=message.bot,
+            chat_id=message.chat.id,
+            text=t("client:main:contact", lang),
+            kb=kb
         )
         logger.info(f"[CONTACT] Chat button shown, support_tg_id={SUPPORT_TG_ID}")
     
@@ -142,7 +163,7 @@ class ContactFlow:
         )
         
         # Показываем inline кнопку чата (user message уже удалён)
-        kb = _contact_support_inline(SUPPORT_TG_ID, lang)
+        kb = _contact_support_inline(SUPPORT_TG_ID, CHANNEL_URL, lang)
         await self.mc.send_inline_in_flow(
             bot=message.bot,
             chat_id=message.chat.id,
@@ -186,4 +207,3 @@ def setup(menu_controller, get_user_role) -> Router:
         await message.answer(t("registration:share_phone_hint", lang))
     
     return router
-
