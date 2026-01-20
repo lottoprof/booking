@@ -11,7 +11,7 @@
 import logging
 
 from aiogram import Router, F
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 
 from bot.app.i18n.loader import t, DEFAULT_LANG
@@ -23,11 +23,34 @@ from bot.app.utils.phone_utils import (
     save_user_phone,
     validate_contact,
 )
-from bot.app.keyboards.client import client_main, contact_support_inline
+from bot.app.keyboards.client import client_main
 from bot.app.config import SUPPORT_TG_ID
 
 logger = logging.getLogger(__name__)
 
+
+# ============================================================
+# Inline keyboard (локальная для этого флоу)
+# ============================================================
+
+def _contact_support_inline(support_tg_id: int, lang: str) -> InlineKeyboardMarkup:
+    """
+    Inline-кнопка для открытия чата с сотрудником.
+    Использует tg://user?id=... deeplink.
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text=t("client:main:contact", lang),  # "💬 Связаться с нами"
+                url=f"tg://user?id={support_tg_id}"
+            ),
+        ],
+    ])
+
+
+# ============================================================
+# Flow
+# ============================================================
 
 class ContactFlow:
     """Флоу связи с поддержкой."""
@@ -47,12 +70,17 @@ class ContactFlow:
         # Проверяем SUPPORT_TG_ID
         if not SUPPORT_TG_ID:
             logger.warning("[CONTACT] SUPPORT_TG_ID not configured")
-            await message.answer(t("common:error", lang))
+            # Type B1: удаляем user message, показываем ошибку
+            await self.mc.show_inline_readonly(
+                message,
+                t("common:error", lang),
+                InlineKeyboardMarkup(inline_keyboard=[])
+            )
             return
         
         # Проверяем наличие телефона
         if await phone_required(user_id):
-            # Телефона нет — запрашиваем
+            # Телефона нет — запрашиваем (Type A внутри show_phone_request)
             await state.set_state(PhoneGate.waiting)
             await state.update_data(
                 user_id=user_id,
@@ -62,8 +90,14 @@ class ContactFlow:
             logger.info("[CONTACT] Phone required, showing request")
             return
         
-        # Телефон есть — сразу показываем кнопку чата
-        await self._show_chat_button(message, lang)
+        # Телефон есть — Type B1: удаляем user message + показываем inline
+        kb = _contact_support_inline(SUPPORT_TG_ID, lang)
+        await self.mc.show_inline_readonly(
+            message,
+            t("client:main:contact", lang),
+            kb
+        )
+        logger.info(f"[CONTACT] Chat button shown, support_tg_id={SUPPORT_TG_ID}")
     
     async def on_phone_received(self, message: Message, state: FSMContext) -> None:
         """
@@ -99,24 +133,7 @@ class ContactFlow:
         # Очищаем FSM
         await state.clear()
         
-        # Возвращаем клиентское меню
-        await self.mc.show(
-            message,
-            client_main(lang),
-            title=t("registration:complete", lang),
-            menu_context=None
-        )
-        
-        # Показываем кнопку чата
-        await self._show_chat_button(message, lang)
-    
-    async def on_cancel(self, message: Message, state: FSMContext) -> None:
-        """Отмена запроса телефона."""
-        tg_id = message.from_user.id
-        lang = user_lang.get(tg_id, DEFAULT_LANG)
-        
-        await state.clear()
-        
+        # Type A: возвращаем клиентское меню (удаляет user message)
         await self.mc.show(
             message,
             client_main(lang),
@@ -124,17 +141,20 @@ class ContactFlow:
             menu_context=None
         )
         
-        logger.info("[CONTACT] Cancelled by user")
-    
-    async def _show_chat_button(self, message: Message, lang: str) -> None:
-        """Показываем inline-кнопку для открытия чата."""
-        kb = contact_support_inline(SUPPORT_TG_ID, lang)
-        await message.answer(
-            text=t("client:main:contact", lang),  # "Связаться с нами"
-            reply_markup=kb
+        # Показываем inline кнопку чата (user message уже удалён)
+        kb = _contact_support_inline(SUPPORT_TG_ID, lang)
+        await self.mc.send_inline_in_flow(
+            bot=message.bot,
+            chat_id=message.chat.id,
+            text=t("client:main:contact", lang),
+            kb=kb
         )
-        logger.info(f"[CONTACT] Chat button shown, support_tg_id={SUPPORT_TG_ID}")
+        logger.info(f"[CONTACT] Phone saved, chat button shown")
 
+
+# ============================================================
+# Router setup
+# ============================================================
 
 def setup(menu_controller, get_user_role) -> Router:
     """Настройка роутера."""
@@ -152,7 +172,7 @@ def setup(menu_controller, get_user_role) -> Router:
         if data.get("next_action") == "contact":
             await flow.on_phone_received(message, state)
     
-    # --- FSM: текст вместо контакта ---
+    # --- FSM: текст вместо контакта (подсказка) ---
     @router.message(PhoneGate.waiting, F.text)
     async def on_text(message: Message, state: FSMContext):
         data = await state.get_data()
@@ -162,12 +182,8 @@ def setup(menu_controller, get_user_role) -> Router:
         tg_id = message.from_user.id
         lang = user_lang.get(tg_id, DEFAULT_LANG)
         
-        # Проверяем отмену
-        if message.text == t("common:cancel", lang):
-            await flow.on_cancel(message, state)
-            return
-        
-        # Подсказка
+        # Подсказка — нужно нажать кнопку
         await message.answer(t("registration:share_phone_hint", lang))
     
     return router
+
