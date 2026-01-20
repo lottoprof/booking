@@ -327,6 +327,10 @@ class ApiClient:
             return result, True
         return None, True  # ошибка (не 404)
 
+    async def get_user(self, user_id: int) -> Optional[dict]:
+        """GET /users/{id} — получить пользователя по ID."""
+        return await self._request("GET", f"/users/{user_id}")
+
     async def create_user(
         self,
         company_id: int,

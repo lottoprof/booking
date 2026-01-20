@@ -1,6 +1,6 @@
 # bot/app/handlers/client_reply.py
 """
-Reply-кнопки клиента + Booking Flow.
+Reply-кнопки клиента + Booking Flow + Contact Flow.
 
 Phone Gate вызывается в booking flow перед подтверждением,
 НЕ при нажатии кнопки "Записаться".
@@ -14,6 +14,7 @@ from bot.app.i18n.loader import t, DEFAULT_LANG
 from bot.app.utils.state import user_lang
 from bot.app.flows.client.menu import ClientMenuFlow
 from bot.app.flows.client.booking import setup as setup_booking
+from bot.app.flows.client.contact import setup as setup_contact
 
 import logging
 logger = logging.getLogger(__name__)
@@ -29,6 +30,9 @@ def setup(menu_controller, get_user_role, get_user_context):
 
     # Booking роутер (phone gate внутри, перед confirm)
     booking_router = setup_booking(menu_controller, get_user_context)
+    
+    # Contact роутер
+    contact_router = setup_contact(menu_controller, get_user_role)
     
     # Reply роутер
     reply_router = Router(name="client_reply")
@@ -72,15 +76,18 @@ def setup(menu_controller, get_user_role, get_user_context):
 
         # 💬 Связаться с нами
         elif text == t("client:main:contact", lang):
-            logger.info("[CLIENT] do_contact")
-            await message.answer("📞 Контакты (в разработке)")
+            if not user_id:
+                await message.answer(t("registration:error", lang))
+                return
+            await contact_router.flow.start(message, state, user_id)
 
         # 📋 Услуги
         elif text == t("client:main:services", lang):
             logger.info("[CLIENT] services")
             await message.answer("📋 Услуги (в разработке)")
 
-    # Порядок роутеров
+    # Порядок роутеров: FSM первые, reply последний
+    router.include_router(contact_router)
     router.include_router(booking_router)
     router.include_router(reply_router)
 
