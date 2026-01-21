@@ -22,7 +22,8 @@ from .routers import (
     wallet_transactions,
     push_subscriptions,
     audit_log,
-    wallets,  
+    wallets,
+    slots,
 )
 
 app = FastAPI(title="Booking API")
@@ -53,4 +54,5 @@ app.include_router(audit_log.router)
 # ──────────────────────────────────────────────────────────────────────────────
 # Domain API Routers
 # ──────────────────────────────────────────────────────────────────────────────
-app.include_router(wallets.router)  
+app.include_router(wallets.router) 
+app.include_router(slots.router)
