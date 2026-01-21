@@ -24,6 +24,35 @@ class BookingCreate(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class BookingUpdate(BaseModel):
+    """
+    Update schema for bookings.
+    
+    All fields are optional - only provided fields will be updated.
+    """
+    # Reschedule
+    date_start: Optional[datetime] = None
+    date_end: Optional[datetime] = None
+    
+    # Change assignment
+    specialist_id: Optional[int] = None
+    service_id: Optional[int] = None
+    room_id: Optional[int] = None
+    
+    # Update details
+    duration_minutes: Optional[int] = None
+    final_price: Optional[float] = None
+    
+    # Status management
+    status: Optional[str] = None
+    cancel_reason: Optional[str] = None
+    
+    # Notes
+    notes: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class BookingRead(BaseModel):
     id: int
 

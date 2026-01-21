@@ -111,12 +111,12 @@ class ContactFlow:
             menu_context=None
         )
         
+        # show_inline_readonly удаляет предыдущие inline автоматически
         kb = _contact_support_inline(SUPPORT_TG_ID, CHANNEL_URL, lang)
-        await self.mc.send_inline_in_flow(
-            bot=message.bot,
-            chat_id=message.chat.id,
-            text=t("client:main:contact", lang),
-            kb=kb
+        await self.mc.show_inline_readonly(
+            message,
+            t("client:main:contact", lang),
+            kb
         )
         logger.info(f"[CONTACT] Chat button shown, support_tg_id={SUPPORT_TG_ID}")
     
@@ -162,13 +162,12 @@ class ContactFlow:
             menu_context=None
         )
         
-        # Показываем inline кнопку чата (user message уже удалён)
+        # show_inline_readonly удаляет предыдущие inline автоматически
         kb = _contact_support_inline(SUPPORT_TG_ID, CHANNEL_URL, lang)
-        await self.mc.send_inline_in_flow(
-            bot=message.bot,
-            chat_id=message.chat.id,
-            text=t("client:main:contact", lang),
-            kb=kb
+        await self.mc.show_inline_readonly(
+            message,
+            t("client:main:contact", lang),
+            kb
         )
         logger.info(f"[CONTACT] Phone saved, chat button shown")
 

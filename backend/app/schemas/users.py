@@ -1,7 +1,7 @@
 # backend/app/schemas/users.py
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
 from pydantic import BaseModel
 
 
@@ -46,6 +46,41 @@ class UserRead(BaseModel):
     notes: Optional[str] = None
     is_active: bool
     created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------
+# Stats
+# ---------------------------------------------------------------------
+
+class UserStatsRead(BaseModel):
+    """Booking statistics for a user."""
+    user_id: int
+    total_bookings: int
+    active_bookings: int
+    completed_bookings: int
+    cancelled_bookings: int
+
+    model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------
+# Role change
+# ---------------------------------------------------------------------
+
+class RoleChangeRequest(BaseModel):
+    """Request to change user role."""
+    role: Literal["client", "specialist", "manager"]
+
+    model_config = {"from_attributes": True}
+
+
+class RoleChangeResponse(BaseModel):
+    """Response after role change."""
+    user_id: int
+    old_role: str
+    new_role: str
 
     model_config = {"from_attributes": True}
 

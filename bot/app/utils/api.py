@@ -295,12 +295,27 @@ class ApiClient:
     # Users
     # ------------------------------------------------------------------
 
-    async def get_users(self, phone: str = None) -> list[dict]:
+    async def get_users(self) -> list[dict]:
         """GET /users/ — список активных пользователей."""
-        path = "/users/"
-        if phone:
-            path = f"/users/?phone={phone}"
-        result = await self._request("GET", path)
+        result = await self._request("GET", "/users/")
+        return result or []
+
+    async def search_users(self, q: str, limit: int = 20) -> list[dict]:
+        """
+        GET /users/search — поиск пользователей.
+        
+        Args:
+            q: Search query (min 2 chars)
+            limit: Max results (default 20)
+        
+        Returns:
+            List of matching users
+        """
+        result = await self._request(
+            "GET",
+            "/users/search",
+            params={"q": q, "limit": limit}
+        )
         return result or []
 
     async def get_user(self, user_id: int) -> Optional[dict]:
@@ -316,7 +331,6 @@ class ApiClient:
         - (None, False) — не найден (404)
         - (None, True) — ошибка запроса
         """
-        # Telegram может отдать номер без +
         if not phone.startswith('+'):
             phone = '+' + phone
         
@@ -325,36 +339,85 @@ class ApiClient:
             return None, False
         if result:
             return result, True
-        return None, True  # ошибка (не 404)
+        return None, True
 
-    async def get_user(self, user_id: int) -> Optional[dict]:
-        """GET /users/{id} — получить пользователя по ID."""
-        return await self._request("GET", f"/users/{user_id}")
+    async def get_user_stats(self, user_id: int) -> Optional[dict]:
+        """
+        GET /users/{id}/stats — статистика записей клиента.
+        
+        Returns:
+            {
+                "user_id": 123,
+                "total_bookings": 15,
+                "active_bookings": 2,
+                "completed_bookings": 12,
+                "cancelled_bookings": 1
+            }
+        """
+        return await self._request("GET", f"/users/{user_id}/stats")
+
+    async def get_user_active_bookings(self, user_id: int) -> list[dict]:
+        """
+        GET /users/{id}/active-bookings — активные записи клиента.
+        
+        Returns list of bookings with status 'pending' or 'confirmed'.
+        """
+        result = await self._request("GET", f"/users/{user_id}/active-bookings")
+        return result or []
+
+    async def change_user_role(self, user_id: int, role: str) -> Optional[dict]:
+        """
+        PATCH /users/{id}/role — смена роли пользователя.
+        
+        Args:
+            user_id: User ID
+            role: New role ("client", "specialist", "manager")
+        
+        Returns:
+            {
+                "user_id": 123,
+                "old_role": "client",
+                "new_role": "specialist"
+            }
+        """
+        return await self._request(
+            "PATCH",
+            f"/users/{user_id}/role",
+            json={"role": role}
+        )
 
     async def create_user(
         self,
         company_id: int,
-        phone: str,
-        tg_id: int,
+        first_name: str,
+        phone: str = None,
+        tg_id: int = None,
         **kwargs
     ) -> Optional[dict]:
         """POST /users/ — создание нового пользователя."""
-        # Нормализуем телефон
         if phone and not phone.startswith('+'):
             phone = '+' + phone
     
         data = {
             "company_id": company_id,
-            "phone": phone,
-            "tg_id": tg_id,
-            "first_name": kwargs.get("first_name") or "User",
-            **{k: v for k, v in kwargs.items() if k != "first_name"}
+            "first_name": first_name,
+            **kwargs
         }
+        if phone:
+            data["phone"] = phone
+        if tg_id:
+            data["tg_id"] = tg_id
+            
         return await self._request("POST", "/users/", json=data)
 
     async def update_user(self, user_id: int, **kwargs) -> Optional[dict]:
         """PATCH /users/{id} — обновление пользователя."""
         return await self._request("PATCH", f"/users/{user_id}", json=kwargs)
+
+    async def delete_user(self, user_id: int) -> bool:
+        """DELETE /users/{id} — soft-delete (деактивация)."""
+        result = await self._request("DELETE", f"/users/{user_id}")
+        return result is None
 
     # ------------------------------------------------------------------
     # User Roles
@@ -499,17 +562,7 @@ class ApiClient:
                 "date": "2026-01-20",
                 "service_duration_min": 60,
                 "slots_needed": 4,
-                "available_times": [
-                    {
-                        "time": "10:00",
-                        "slot_index": 40,
-                        "specialists": [
-                            {"id": 5, "name": "Иван Петров"},
-                            {"id": 7, "name": "Мария Сидорова"}
-                        ]
-                    },
-                    ...
-                ]
+                "available_times": [...]
             }
         """
         params = {
@@ -526,14 +579,40 @@ class ApiClient:
     async def get_bookings(
         self,
         client_id: int = None,
-        status: str = None
+        location_id: int = None,
+        specialist_id: int = None,
+        status: str = None,
+        date: str = None,
+        date_from: str = None,
+        date_to: str = None,
     ) -> list[dict]:
-        """GET /bookings/ — список записей."""
+        """
+        GET /bookings/ — список записей с фильтрами.
+        
+        Args:
+            client_id: Filter by client
+            location_id: Filter by location
+            specialist_id: Filter by specialist
+            status: Filter by status (pending, confirmed, cancelled, done)
+            date: Filter by exact date (YYYY-MM-DD)
+            date_from: Filter date_start >= date_from
+            date_to: Filter date_start <= date_to
+        """
         params = {}
         if client_id:
             params["client_id"] = client_id
+        if location_id:
+            params["location_id"] = location_id
+        if specialist_id:
+            params["specialist_id"] = specialist_id
         if status:
             params["status"] = status
+        if date:
+            params["date"] = date
+        if date_from:
+            params["date_from"] = date_from
+        if date_to:
+            params["date_to"] = date_to
         
         result = await self._request("GET", "/bookings/", params=params)
         return result or []
@@ -544,33 +623,71 @@ class ApiClient:
 
     async def create_booking(
         self,
+        company_id: int,
         location_id: int,
         service_id: int,
         specialist_id: int,
         client_id: int,
-        datetime_start: str,
-        **kwargs
+        date_start: str,
+        date_end: str,
+        duration_minutes: int,
+        break_minutes: int = 0,
+        room_id: int = None,
+        notes: str = None,
     ) -> Optional[dict]:
         """
         POST /bookings/ — создание записи.
         
-        Backend автоматически:
-        - Проверяет доступность (Level 2)
-        - Назначает room_id
-        - Рассчитывает final_price
+        Args:
+            company_id: Company ID (required)
+            location_id: Location ID (required)
+            service_id: Service ID (required)
+            specialist_id: Specialist ID (required)
+            client_id: Client user ID (required)
+            date_start: Start datetime ISO format (required)
+            date_end: End datetime ISO format (required)
+            duration_minutes: Duration in minutes (required)
+            break_minutes: Break after service (default 0)
+            room_id: Room ID (optional)
+            notes: Notes (optional)
         
         Returns:
-            Booking object или None при конфликте
+            Booking object или None при ошибке
         """
         data = {
+            "company_id": company_id,
             "location_id": location_id,
             "service_id": service_id,
             "specialist_id": specialist_id,
             "client_id": client_id,
-            "datetime": datetime_start,
-            **kwargs
+            "date_start": date_start,
+            "date_end": date_end,
+            "duration_minutes": duration_minutes,
+            "break_minutes": break_minutes,
         }
+        if room_id:
+            data["room_id"] = room_id
+        if notes:
+            data["notes"] = notes
+            
         return await self._request("POST", "/bookings/", json=data)
+
+    async def update_booking(self, booking_id: int, **kwargs) -> Optional[dict]:
+        """
+        PATCH /bookings/{id} — обновление записи (admin).
+        
+        Допустимые поля:
+            - date_start, date_end: Перенос записи
+            - specialist_id: Смена специалиста
+            - service_id: Смена услуги
+            - duration_minutes: Изменение длительности
+            - final_price: Изменение цены
+            - room_id: Смена комнаты
+            - status: Изменение статуса
+            - cancel_reason: Причина отмены
+            - notes: Заметки
+        """
+        return await self._request("PATCH", f"/bookings/{booking_id}", json=kwargs)
 
     async def cancel_booking(self, booking_id: int, reason: str = None) -> Optional[dict]:
         """PATCH /bookings/{id} — отмена записи."""
@@ -579,5 +696,157 @@ class ApiClient:
             data["cancel_reason"] = reason
         return await self._request("PATCH", f"/bookings/{booking_id}", json=data)
 
+    async def confirm_booking(self, booking_id: int) -> Optional[dict]:
+        """PATCH /bookings/{id} — подтверждение записи."""
+        return await self._request(
+            "PATCH",
+            f"/bookings/{booking_id}",
+            json={"status": "confirmed"}
+        )
+
+    async def complete_booking(self, booking_id: int) -> Optional[dict]:
+        """PATCH /bookings/{id} — завершение записи."""
+        return await self._request(
+            "PATCH",
+            f"/bookings/{booking_id}",
+            json={"status": "done"}
+        )
+
+    # ------------------------------------------------------------------
+    # Wallets (Domain API)
+    # ------------------------------------------------------------------
+
+    async def get_wallet(self, user_id: int) -> Optional[dict]:
+        """
+        GET /wallets/{user_id} — получить кошелёк.
+        Создаёт автоматически если не существует.
+        """
+        return await self._request("GET", f"/wallets/{user_id}")
+
+    async def get_wallet_transactions(
+        self,
+        user_id: int,
+        limit: int = 50,
+        offset: int = 0
+    ) -> list[dict]:
+        """
+        GET /wallets/{user_id}/transactions — история операций.
+        """
+        result = await self._request(
+            "GET",
+            f"/wallets/{user_id}/transactions",
+            params={"limit": limit, "offset": offset}
+        )
+        return result or []
+
+    async def wallet_deposit(
+        self,
+        user_id: int,
+        amount: float,
+        description: str = None,
+        created_by: int = None,
+    ) -> Optional[dict]:
+        """
+        POST /wallets/{user_id}/deposit — пополнение кошелька.
+        
+        Returns:
+            {
+                "success": true,
+                "wallet_id": 1,
+                "new_balance": 1500.0,
+                "transaction_id": 42,
+                "message": "Deposited 500.00 RUB"
+            }
+        """
+        data = {"amount": amount}
+        if description:
+            data["description"] = description
+        if created_by:
+            data["created_by"] = created_by
+        return await self._request("POST", f"/wallets/{user_id}/deposit", json=data)
+
+    async def wallet_withdraw(
+        self,
+        user_id: int,
+        amount: float,
+        description: str = None,
+        created_by: int = None,
+    ) -> Optional[dict]:
+        """
+        POST /wallets/{user_id}/withdraw — списание средств.
+        
+        Возвращает None при недостаточном балансе (400).
+        """
+        data = {"amount": amount}
+        if description:
+            data["description"] = description
+        if created_by:
+            data["created_by"] = created_by
+        return await self._request("POST", f"/wallets/{user_id}/withdraw", json=data)
+
+    async def wallet_payment(
+        self,
+        user_id: int,
+        amount: float,
+        booking_id: int,
+        description: str = None,
+    ) -> Optional[dict]:
+        """
+        POST /wallets/{user_id}/payment — оплата записи.
+        
+        Возвращает None при недостаточном балансе или несуществующей записи.
+        """
+        data = {
+            "amount": amount,
+            "booking_id": booking_id,
+        }
+        if description:
+            data["description"] = description
+        return await self._request("POST", f"/wallets/{user_id}/payment", json=data)
+
+    async def wallet_refund(
+        self,
+        user_id: int,
+        amount: float,
+        booking_id: int = None,
+        description: str = None,
+        created_by: int = None,
+    ) -> Optional[dict]:
+        """
+        POST /wallets/{user_id}/refund — возврат средств.
+        """
+        data = {"amount": amount}
+        if booking_id:
+            data["booking_id"] = booking_id
+        if description:
+            data["description"] = description
+        if created_by:
+            data["created_by"] = created_by
+        return await self._request("POST", f"/wallets/{user_id}/refund", json=data)
+
+    async def wallet_correction(
+        self,
+        user_id: int,
+        amount: float,
+        description: str,
+        created_by: int,
+    ) -> Optional[dict]:
+        """
+        POST /wallets/{user_id}/correction — корректировка баланса (admin).
+        
+        Args:
+            amount: Может быть + или -
+            description: Причина (обязательно, мин. 3 символа)
+            created_by: ID админа (обязательно)
+        """
+        data = {
+            "amount": amount,
+            "description": description,
+            "created_by": created_by,
+        }
+        return await self._request("POST", f"/wallets/{user_id}/correction", json=data)
+
+
 # Singleton
 api = ApiClient()
+

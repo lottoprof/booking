@@ -3,24 +3,79 @@
 
 import logging
 from datetime import datetime
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, func
 from urllib.parse import unquote
 
 from ..database import get_db
-from ..models.generated import Users as DBUsers
+from ..models.generated import Users as DBUsers, Bookings as DBBookings, UserRoles as DBUserRoles
 from ..schemas.users import (
     UserCreate,
     UserUpdate,
     UserRead,
+    UserStatsRead,
+    RoleChangeRequest,
+    RoleChangeResponse,
 )
+from ..schemas.bookings import BookingRead
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
+# Role ID mapping (from schema)
+ROLE_IDS = {
+    "admin": 1,
+    "manager": 2,
+    "specialist": 3,
+    "client": 4,
+}
+ROLE_NAMES = {v: k for k, v in ROLE_IDS.items()}
+
+
+# ---------------------------------------------------------------------
+# Search endpoint (MUST be before /{id} to avoid route conflict)
+# ---------------------------------------------------------------------
+
+@router.get("/search", response_model=list[UserRead])
+def search_users(
+    q: str = Query(..., min_length=2, description="Search query (min 2 chars)"),
+    limit: int = Query(20, ge=1, le=100, description="Max results"),
+    db: Session = Depends(get_db),
+):
+    """
+    Search users by phone, first_name, or last_name.
+    
+    Returns only active users, ordered by last_name, first_name.
+    """
+    q_lower = q.lower()
+    q_pattern = f"%{q}%"
+    q_lower_pattern = f"%{q_lower}%"
+    
+    results = (
+        db.query(DBUsers)
+        .filter(
+            DBUsers.is_active == 1,
+            (
+                DBUsers.phone.like(q_pattern)
+                | func.lower(DBUsers.first_name).like(q_lower_pattern)
+                | func.lower(DBUsers.last_name).like(q_lower_pattern)
+            )
+        )
+        .order_by(DBUsers.last_name, DBUsers.first_name)
+        .limit(limit)
+        .all()
+    )
+    
+    return results
+
+
+# ---------------------------------------------------------------------
+# Base CRUD
+# ---------------------------------------------------------------------
 
 @router.get("/", response_model=list[UserRead])
 def list_users(db: Session = Depends(get_db)):
@@ -29,6 +84,7 @@ def list_users(db: Session = Depends(get_db)):
         .filter(DBUsers.is_active == 1)
         .all()
     )
+
 
 @router.get("/by_tg/{tg_id}", response_model=UserRead)
 def get_user_by_tg_id(tg_id: int, db: Session = Depends(get_db)):
@@ -41,13 +97,13 @@ def get_user_by_tg_id(tg_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return obj
 
+
 @router.get("/by_phone/{phone}", response_model=UserRead)
 def get_user_by_phone(phone: str, db: Session = Depends(get_db)):
     """
-    Поиск пользователя по телефону.
-    Возвращает пользователя независимо от is_active (для проверки деактивации).
+    Search user by phone.
+    Returns user regardless of is_active (for deactivation check).
     """
-    # URL decode: %2B → +
     phone = unquote(phone)
     
     obj = (
@@ -59,12 +115,149 @@ def get_user_by_phone(phone: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return obj
 
+
+# ---------------------------------------------------------------------
+# User stats endpoint
+# ---------------------------------------------------------------------
+
+@router.get("/{id}/stats", response_model=UserStatsRead)
+def get_user_stats(id: int, db: Session = Depends(get_db)):
+    """
+    Get booking statistics for a user.
+    
+    Returns counts of total, active, completed, and cancelled bookings.
+    """
+    # Verify user exists
+    user = db.get(DBUsers, id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Aggregate booking stats
+    stats = db.execute(
+        text("""
+            SELECT 
+                COUNT(*) as total_bookings,
+                SUM(CASE WHEN status IN ('pending', 'confirmed') THEN 1 ELSE 0 END) as active_bookings,
+                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed_bookings,
+                SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_bookings
+            FROM bookings
+            WHERE client_id = :user_id
+        """),
+        {"user_id": id}
+    ).fetchone()
+    
+    return UserStatsRead(
+        user_id=id,
+        total_bookings=stats[0] or 0,
+        active_bookings=stats[1] or 0,
+        completed_bookings=stats[2] or 0,
+        cancelled_bookings=stats[3] or 0,
+    )
+
+
+# ---------------------------------------------------------------------
+# Active bookings endpoint
+# ---------------------------------------------------------------------
+
+@router.get("/{id}/active-bookings", response_model=list[BookingRead])
+def get_user_active_bookings(id: int, db: Session = Depends(get_db)):
+    """
+    Get active bookings for a user (status: pending or confirmed).
+    
+    Used before deactivation to show user's upcoming appointments.
+    """
+    # Verify user exists
+    user = db.get(DBUsers, id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    bookings = (
+        db.query(DBBookings)
+        .filter(
+            DBBookings.client_id == id,
+            DBBookings.status.in_(["pending", "confirmed"])
+        )
+        .order_by(DBBookings.date_start)
+        .all()
+    )
+    
+    return bookings
+
+
+# ---------------------------------------------------------------------
+# Role change endpoint
+# ---------------------------------------------------------------------
+
+@router.patch("/{id}/role", response_model=RoleChangeResponse)
+def change_user_role(
+    id: int,
+    data: RoleChangeRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Change user's primary role.
+    
+    Updates the user_roles table:
+    - client → role_id = 4
+    - specialist → role_id = 3
+    - manager → role_id = 2
+    
+    Note: When changing to 'specialist', the specialist record must be
+    created separately via POST /specialists/.
+    """
+    # Verify user exists
+    user = db.get(DBUsers, id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Validate new role
+    new_role = data.role.lower()
+    if new_role not in ROLE_IDS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid role. Must be one of: {list(ROLE_IDS.keys())}"
+        )
+    
+    new_role_id = ROLE_IDS[new_role]
+    
+    # Find current role (highest priority)
+    current_role_record = (
+        db.query(DBUserRoles)
+        .filter(DBUserRoles.user_id == id)
+        .order_by(DBUserRoles.role_id)  # Lower id = higher priority
+        .first()
+    )
+    
+    old_role = "client"  # default if no role record
+    if current_role_record:
+        old_role = ROLE_NAMES.get(current_role_record.role_id, "client")
+        # Update existing role
+        current_role_record.role_id = new_role_id
+    else:
+        # Create new role record
+        new_role_record = DBUserRoles(user_id=id, role_id=new_role_id)
+        db.add(new_role_record)
+    
+    db.commit()
+    
+    return RoleChangeResponse(
+        user_id=id,
+        old_role=old_role,
+        new_role=new_role,
+    )
+
+
+# ---------------------------------------------------------------------
+# Get user by ID (after specific routes)
+# ---------------------------------------------------------------------
+
 @router.get("/{id}", response_model=UserRead)
 def get_user(id: int, db: Session = Depends(get_db)):
     obj = db.get(DBUsers, id)
     if not obj:
         raise HTTPException(status_code=404, detail="Not found")
     return obj
+
 
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def create_user(
@@ -92,7 +285,6 @@ def update_user(
     
     # ==========================================================
     # MATCHING: imported_clients → users
-    # Если пришёл phone — ищем в imported_clients
     # ==========================================================
     if "phone" in update_data and update_data["phone"]:
         phone = update_data["phone"]
@@ -110,13 +302,11 @@ def update_user(
             if result:
                 imported_id, imported_first, imported_last = result
                 
-                # Копируем имя/фамилию если есть
                 if imported_first and "first_name" not in update_data:
                     update_data["first_name"] = imported_first
                 if imported_last and "last_name" not in update_data:
                     update_data["last_name"] = imported_last
                 
-                # Помечаем как matched
                 db.execute(
                     text("""
                         UPDATE imported_clients
@@ -133,11 +323,10 @@ def update_user(
                 logger.info(f"[MATCHING] imported_clients.id={imported_id} → users.id={id}")
                 
         except Exception as e:
-            # Таблицы нет или другая ошибка — продолжаем без matching
             logger.debug(f"[MATCHING] Skipped: {e}")
     
     # ==========================================================
-    # Применяем изменения
+    # Apply changes
     # ==========================================================
     for field, value in update_data.items():
         setattr(obj, field, value)
