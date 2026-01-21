@@ -16,6 +16,7 @@ from bot.app.flows.admin import services as services_flow
 from bot.app.flows.admin import rooms as rooms_flow
 from bot.app.flows.admin import specialists as specialists_flow
 from bot.app.flows.admin import packages as packages_flow
+from bot.app.flows.admin import clients as clients_flow
 
 
 import logging
@@ -40,6 +41,7 @@ def setup(menu_controller, get_user_role):
     pkg_router = packages_flow.setup(menu_controller, get_user_role)
     room_router = rooms_flow.setup(menu_controller, get_user_role)
     spec_router = specialists_flow.setup(menu_controller, get_user_role)
+    clients_router = clients_flow.setup(menu_controller, get_user_role)
 
     # ==========================================================
     # CONTEXT HANDLERS: menu_context → {action → handler}
@@ -82,9 +84,9 @@ def setup(menu_controller, get_user_role):
             "back": lambda msg, st, lang: flow.back_to_main(msg, lang),
         },
         "clients": {
-            # "find": lambda msg, st: ...,       # TODO
-            # "bookings": lambda msg, st: ...,   # TODO
-            # "wallets": lambda msg, st: ...,    # TODO
+            "find": lambda msg, st: clients_router.start_search(msg, st),
+            # "bookings": lambda msg, st: ...,   # TODO: Phase 2
+            # "wallets": lambda msg, st: ...,    # TODO: список всех кошельков
             "back": lambda msg, st, lang: flow.back_to_main(msg, lang),
         },
     }
@@ -187,7 +189,9 @@ def setup(menu_controller, get_user_role):
     router.include_router(pkg_router)
     router.include_router(room_router)
     router.include_router(spec_router)
+    router.include_router(clients_router)
     router.include_router(reply_router)  # Catch-all последний
 
 
     return router
+

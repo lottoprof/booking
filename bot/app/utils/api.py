@@ -846,6 +846,97 @@ class ApiClient:
         }
         return await self._request("POST", f"/wallets/{user_id}/correction", json=data)
 
+    # ------------------------------------------------------------------
+    # Users (Clients module)
+    # ------------------------------------------------------------------
+
+    async def get_user(self, user_id: int) -> Optional[dict]:
+        """GET /users/{id}"""
+        return await self._request("GET", f"/users/{user_id}")
+
+    async def update_user(self, user_id: int, **kwargs) -> Optional[dict]:
+        """PATCH /users/{id}"""
+        return await self._request("PATCH", f"/users/{user_id}", json=kwargs)
+
+    async def delete_user(self, user_id: int) -> bool:
+        """DELETE /users/{id} — soft-delete (is_active=0)."""
+        result = await self._request("DELETE", f"/users/{user_id}")
+        return result is None
+
+    async def search_users(self, query: str, limit: int = 20) -> list[dict]:
+        """
+        GET /users/search?q=...
+        
+        Search by phone, first_name, or last_name.
+        Min query length: 2 chars.
+        """
+        result = await self._request(
+            "GET",
+            "/users/search",
+            params={"q": query, "limit": limit}
+        )
+        return result or []
+
+    async def get_user_stats(self, user_id: int) -> Optional[dict]:
+        """
+        GET /users/{id}/stats
+        
+        Returns:
+            {
+                "user_id": 1,
+                "total_bookings": 10,
+                "active_bookings": 2,
+                "completed_bookings": 7,
+                "cancelled_bookings": 1
+            }
+        """
+        return await self._request("GET", f"/users/{user_id}/stats")
+
+    async def get_user_active_bookings(self, user_id: int) -> list[dict]:
+        """
+        GET /users/{id}/active-bookings
+        
+        Returns bookings with status 'pending' or 'confirmed'.
+        Used before deactivation to show upcoming appointments.
+        """
+        result = await self._request("GET", f"/users/{user_id}/active-bookings")
+        return result or []
+
+    async def change_user_role(self, user_id: int, new_role: str) -> Optional[dict]:
+        """
+        PATCH /users/{id}/role
+        
+        Args:
+            user_id: User ID
+            new_role: "client" | "specialist" | "manager" | "admin"
+        
+        Returns:
+            {
+                "user_id": 1,
+                "old_role": "client",
+                "new_role": "specialist"
+            }
+        """
+        return await self._request(
+            "PATCH",
+            f"/users/{user_id}/role",
+            json={"role": new_role}
+        )
+
+    # ------------------------------------------------------------------
+    # User Roles (for reading only, changes via /users/{id}/role)
+    # ------------------------------------------------------------------
+
+    async def get_user_roles(self, user_id: int) -> list[dict]:
+        """
+        GET /user_roles/ filtered by user_id.
+        
+        Returns role records for user.
+        """
+        all_roles = await self._request("GET", "/user_roles/")
+        if not all_roles:
+            return []
+        return [r for r in all_roles if r.get("user_id") == user_id]
 
 # Singleton
 api = ApiClient()
