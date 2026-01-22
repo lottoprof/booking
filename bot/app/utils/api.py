@@ -356,15 +356,6 @@ class ApiClient:
         """
         return await self._request("GET", f"/users/{user_id}/stats")
 
-    async def get_user_active_bookings(self, user_id: int) -> list[dict]:
-        """
-        GET /users/{id}/active-bookings — активные записи клиента.
-        
-        Returns list of bookings with status 'pending' or 'confirmed'.
-        """
-        result = await self._request("GET", f"/users/{user_id}/active-bookings")
-        return result or []
-
     async def change_user_role(self, user_id: int, role: str) -> Optional[dict]:
         """
         PATCH /users/{id}/role — смена роли пользователя.

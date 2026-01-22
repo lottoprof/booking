@@ -79,3 +79,10 @@ class BookingRead(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
+class BookingReadWithDetails(BookingRead):
+    """booking with related names for client display."""
+    service_name: Optional[str] = None
+    specialist_name: Optional[str] = None
+    location_name: Optional[str] = None
+

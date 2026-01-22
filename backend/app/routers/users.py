@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text, func
 from urllib.parse import unquote
 
@@ -21,6 +21,8 @@ from ..schemas.users import (
     RoleChangeResponse,
 )
 from ..schemas.bookings import BookingRead
+from ..schemas.bookings import BookingRead, BookingReadWithDetails
+
 
 logger = logging.getLogger(__name__)
 
@@ -155,16 +157,17 @@ def get_user_stats(id: int, db: Session = Depends(get_db)):
     )
 
 
+
 # ---------------------------------------------------------------------
 # Active bookings endpoint
 # ---------------------------------------------------------------------
 
-@router.get("/{id}/active-bookings", response_model=list[BookingRead])
+@router.get("/{id}/active-bookings", response_model=list[BookingReadWithDetails])
 def get_user_active_bookings(id: int, db: Session = Depends(get_db)):
     """
     Get active bookings for a user (status: pending or confirmed).
     
-    Used before deactivation to show user's upcoming appointments.
+    Returns bookings with service_name, specialist_name, location_name.
     """
     # Verify user exists
     user = db.get(DBUsers, id)
@@ -173,6 +176,11 @@ def get_user_active_bookings(id: int, db: Session = Depends(get_db)):
     
     bookings = (
         db.query(DBBookings)
+        .options(
+            joinedload(DBBookings.service),
+            joinedload(DBBookings.specialist),
+            joinedload(DBBookings.location),
+        )
         .filter(
             DBBookings.client_id == id,
             DBBookings.status.in_(["pending", "confirmed"])
@@ -181,8 +189,16 @@ def get_user_active_bookings(id: int, db: Session = Depends(get_db)):
         .all()
     )
     
-    return bookings
-
+    # Map to extended schema
+    result = []
+    for b in bookings:
+        data = BookingReadWithDetails.model_validate(b)
+        data.service_name = b.service.name if b.service else None
+        data.specialist_name = b.specialist.display_name or (b.specialist.user.first_name if b.specialist and b.specialist.user else None)
+        data.location_name = b.location.name if b.location else None
+        result.append(data)
+    
+    return result
 
 # ---------------------------------------------------------------------
 # Role change endpoint
