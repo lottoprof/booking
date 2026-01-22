@@ -520,7 +520,10 @@ def setup(menu_controller, get_user_context):
         
         await state.set_state(ClientBooking.confirm)
         kb = confirm_booking_inline(lang)
-        await message.answer(text=text, reply_markup=kb)
+        
+        # Трекаем inline для удаления при back_to_reply
+        confirm_msg = await message.answer(text=text, reply_markup=kb)
+        await mc._add_inline_id(message.chat.id, confirm_msg.message_id)
 
     @router.callback_query(ClientBooking.confirm, F.data == "book:confirm_yes")
     async def handle_confirm(callback: CallbackQuery, state: FSMContext):
