@@ -10,6 +10,7 @@ from .config import BookingConfig, get_booking_config
 from .calculator import calculate_location_grid
 from .redis_store import SlotsRedisStore
 from .invalidator import invalidate_location_cache
+from .availability import calculate_service_availability
 
 __all__ = [
     "BookingConfig",
@@ -17,4 +18,6 @@ __all__ = [
     "calculate_location_grid",
     "SlotsRedisStore",
     "invalidate_location_cache",
+    "calculate_service_availability",
 ]
+

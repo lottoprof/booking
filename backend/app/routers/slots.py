@@ -2,11 +2,8 @@
 """
 Slots API endpoints.
 
-Level 1 (this phase):
-- GET /slots/calendar - Calendar of available days for location
-
-Level 2 (future):
-- GET /slots/day - Detailed slots for a day (service-specific)
+Level 1: GET /slots/calendar - Calendar of available days for location
+Level 2: GET /slots/day - Detailed slots for a day (service-specific)
 """
 
 from datetime import date, timedelta
@@ -16,9 +13,9 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..redis_client import redis_client
 from ..schemas.slots import (
-    SlotsCalendarResponse,
-    SlotsDayStatus,
-    SlotsGridResponse,
+    CalendarResponse,
+    DayAvailability,
+    DaySlotsResponse,
 )
 from ..services.slots import (
     BookingConfig,
@@ -27,12 +24,13 @@ from ..services.slots import (
     SlotsRedisStore,
 )
 from ..services.slots.calculator import count_open_slots, has_any_open_slot
+from ..services.slots.availability import calculate_service_availability
 
 
 router = APIRouter(prefix="/slots", tags=["slots"])
 
 
-@router.get("/calendar", response_model=SlotsCalendarResponse)
+@router.get("/calendar", response_model=CalendarResponse)
 def get_slots_calendar(
     location_id: int,
     start_date: date | None = None,
@@ -40,21 +38,14 @@ def get_slots_calendar(
     db: Session = Depends(get_db),
 ):
     """
-    Get calendar of available days for a location.
+    Get calendar of available days for a location (Level 1).
     
     Returns list of days with availability status.
-    Uses Level 1 (base grid) - shows if location is open,
-    but actual service availability requires Level 2.
-    
-    Args:
-        location_id: Location ID
-        start_date: Start date (default: today)
-        end_date: End date (default: start_date + horizon_days)
+    Uses base grid - shows if location is open.
     """
     config = get_booking_config()
     store = SlotsRedisStore(redis_client, config)
     
-    # Default dates
     today = date.today()
     if start_date is None:
         start_date = today
@@ -87,13 +78,13 @@ def get_slots_calendar(
         grid = cached_grids.get(dt)
         
         if grid is None:
-            # Calculate and cache
             grid = calculate_location_grid(db, location_id, dt, config)
             grids_to_cache[dt] = grid
         
-        days.append(SlotsDayStatus(
-            date=dt,
-            has_slots=has_any_open_slot(grid),
+        days.append(DayAvailability(
+            date=dt.isoformat(),
+            weekday=dt.weekday(),
+            is_available=has_any_open_slot(grid),
             open_slots_count=count_open_slots(grid),
         ))
     
@@ -101,18 +92,65 @@ def get_slots_calendar(
     if grids_to_cache:
         store.mset_grids(location_id, grids_to_cache)
     
-    return SlotsCalendarResponse(
+    return CalendarResponse(
         location_id=location_id,
-        start_date=start_date,
-        end_date=end_date,
+        start_date=start_date.isoformat(),
+        end_date=end_date.isoformat(),
         days=days,
         horizon_days=config.horizon_days,
         min_advance_hours=config.min_advance_hours,
-        slot_step_minutes=config.slot_step_minutes,
     )
 
 
-@router.get("/grid", response_model=SlotsGridResponse)
+@router.get("/day", response_model=DaySlotsResponse)
+def get_slots_day(
+    location_id: int,
+    service_id: int,
+    target_date: date = Query(..., alias="date"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get available time slots for a service on a specific day (Level 2).
+    
+    Returns list of available start times with specialists who can provide
+    the service at each time.
+    
+    Args:
+        location_id: Location ID
+        service_id: Service ID  
+        date: Target date (YYYY-MM-DD)
+    """
+    config = get_booking_config()
+    
+    # Validate date is within horizon
+    today = date.today()
+    max_date = today + timedelta(days=config.horizon_days)
+    
+    if target_date < today:
+        raise HTTPException(
+            status_code=400,
+            detail="Date cannot be in the past"
+        )
+    
+    if target_date > max_date:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Date cannot be more than {config.horizon_days} days ahead"
+        )
+    
+    # Calculate service availability (Level 2)
+    result = calculate_service_availability(
+        db=db,
+        location_id=location_id,
+        service_id=service_id,
+        target_date=target_date,
+        config=config,
+    )
+    
+    return DaySlotsResponse(**result)
+
+
+@router.get("/grid")
 def get_slots_grid(
     location_id: int,
     target_date: date = Query(..., alias="date"),
@@ -121,11 +159,6 @@ def get_slots_grid(
 ):
     """
     Get raw grid for location and date (admin/debug endpoint).
-    
-    Args:
-        location_id: Location ID
-        date: Target date
-        force_recalc: Force recalculation (bypass cache)
     """
     config = get_booking_config()
     store = SlotsRedisStore(redis_client, config)
@@ -143,14 +176,14 @@ def get_slots_grid(
     
     version = store.get_version(location_id)
     
-    return SlotsGridResponse(
-        location_id=location_id,
-        date=target_date,
-        grid=grid,
-        cached=cached,
-        version=version,
-        slots_per_day=config.slots_per_day,
-    )
+    return {
+        "location_id": location_id,
+        "date": target_date.isoformat(),
+        "grid": grid,
+        "cached": cached,
+        "version": version,
+        "slots_per_day": config.slots_per_day,
+    }
 
 
 @router.post("/invalidate")
@@ -160,10 +193,6 @@ def invalidate_slots_cache(
 ):
     """
     Manually invalidate slots cache for location (admin endpoint).
-    
-    Args:
-        location_id: Location ID
-        dates: Specific dates to invalidate, or None for all
     """
     from ..services.slots import invalidate_location_cache
     
@@ -174,3 +203,4 @@ def invalidate_slots_cache(
         "deleted_keys": deleted,
         "dates": [d.isoformat() for d in dates] if dates else "all",
     }
+
