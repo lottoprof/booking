@@ -19,8 +19,8 @@ class BookingConfig:
         cache_ttl_seconds: Redis cache TTL for base grid
     """
     horizon_days: int = 60
-    min_advance_hours: int = 6
-    slot_step_minutes: int = 15  # 15 / 30 / 60
+    min_advance_hours: int = 12
+    slot_step_minutes: int = 30  # 15 / 30 / 60
     cache_ttl_seconds: int = 86400  # 24 hours
     
     def __post_init__(self):
