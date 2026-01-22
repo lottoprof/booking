@@ -42,7 +42,8 @@ class ClientBooking(StatesGroup):
     """FSM состояния бронирования."""
     service = State()      # Выбор услуги
     day = State()          # Выбор дня
-    time = State()         # Выбор времени + специалиста
+    time = State()         # Выбор времени
+    specialist = State()   # Выбор специалиста 
     phone = State()        # Запрос телефона (если нет)
     confirm = State()      # Подтверждение
 
@@ -166,18 +167,8 @@ def time_slots_inline(slots: list[dict], page: int, lang: str, slots_per_page: i
     row = []
     for slot in page_items:
         time_str = slot["time"]
-        specialists = slot.get("specialists", [])
-        spec_count = len(specialists)
-        
-        if spec_count == 1:
-            spec_name = specialists[0].get("name", "").split()[0]
-            display = f"{time_str} ({spec_name})"
-            callback = f"book:time:{time_str}:{specialists[0]['id']}"
-        else:
-            display = f"{time_str} ({spec_count})"
-            callback = f"book:time_multi:{time_str}"
-        
-        row.append(InlineKeyboardButton(text=display, callback_data=callback))
+        # Только время — без специалиста
+        row.append(InlineKeyboardButton(text=time_str, callback_data=f"book:time:{time_str}"))
         if len(row) == 2:
             buttons.append(row)
             row = []
@@ -369,32 +360,8 @@ def setup(menu_controller, get_user_context):
 
     @router.callback_query(ClientBooking.time, F.data.startswith("book:time:"))
     async def handle_time_select(callback: CallbackQuery, state: FSMContext):
-        """Выбор времени (один специалист) → phone gate → подтверждение."""
-        parts = callback.data.split(":")
-        time_str = f"{parts[2]}:{parts[3]}"
-        spec_id = int(parts[4])
-        
-        data = await state.get_data()
-        lang = data.get("lang", DEFAULT_LANG)
-        slots = data.get("time_slots", [])
-        
-        slot = next((s for s in slots if s["time"] == time_str), None)
-        if not slot:
-            await callback.answer(t("common:error", lang), show_alert=True)
-            return
-        
-        spec = next((s for s in slot.get("specialists", []) if s["id"] == spec_id), None)
-        spec_name = spec.get("name", "?") if spec else "?"
-        
-        logger.info(f"[BOOKING] Time: {time_str}, specialist: {spec_name}")
-        
-        await state.update_data(selected_time=time_str, specialist_id=spec_id, specialist_name=spec_name)
-        await check_phone_and_confirm(callback, state, lang)
-
-    @router.callback_query(ClientBooking.time, F.data.startswith("book:time_multi:"))
-    async def handle_time_multi(callback: CallbackQuery, state: FSMContext):
-        """Выбор времени (несколько специалистов) → выбор специалиста."""
-        time_str = callback.data.split(":")[-1]
+        """Выбор времени → проверка количества специалистов."""
+        time_str = callback.data.replace("book:time:", "")  # "10:15"
         data = await state.get_data()
         lang = data.get("lang", DEFAULT_LANG)
         slots = data.get("time_slots", [])
@@ -407,11 +374,24 @@ def setup(menu_controller, get_user_context):
         specialists = slot.get("specialists", [])
         await state.update_data(selected_time=time_str, pending_specialists=specialists)
         
-        kb = specialists_select_inline(specialists, time_str, lang)
-        await callback.message.edit_text(text=t("client:booking:select_specialist", lang) % time_str, reply_markup=kb)
-        await callback.answer()
-
-    @router.callback_query(ClientBooking.time, F.data.startswith("book:spec:"))
+        if len(specialists) == 1:
+            # Один специалист — пропускаем выбор
+            spec = specialists[0]
+            logger.info(f"[BOOKING] Time: {time_str}, specialist: {spec.get('name')} (auto)")
+            await state.update_data(specialist_id=spec["id"], specialist_name=spec.get("name", "?"))
+            await check_phone_and_confirm(callback, state, lang)
+        else:
+            # Несколько — показываем экран выбора
+            logger.info(f"[BOOKING] Time: {time_str}, specialists: {len(specialists)}")
+            await state.set_state(ClientBooking.specialist)
+            kb = specialists_select_inline(specialists, time_str, lang)
+            await callback.message.edit_text(
+                text=t("client:booking:select_specialist", lang) % time_str,
+                reply_markup=kb
+            )
+            await callback.answer()
+            
+    @router.callback_query(ClientBooking.specialist, F.data.startswith("book:spec:"))
     async def handle_specialist_select(callback: CallbackQuery, state: FSMContext):
         """Выбор специалиста → phone gate → подтверждение."""
         parts = callback.data.split(":")
@@ -430,13 +410,19 @@ def setup(menu_controller, get_user_context):
         await state.update_data(selected_time=time_str, specialist_id=spec_id, specialist_name=spec_name)
         await check_phone_and_confirm(callback, state, lang)
 
-    @router.callback_query(ClientBooking.time, F.data == "book:back_time")
-    async def handle_back_to_time(callback: CallbackQuery, state: FSMContext):
+    @router.callback_query(ClientBooking.specialist, F.data == "book:back_time")
+    async def handle_back_to_time_from_spec(callback: CallbackQuery, state: FSMContext):
+        """Назад к выбору времени из экрана специалиста."""
         data = await state.get_data()
         lang = data.get("lang", DEFAULT_LANG)
         dt = datetime.strptime(data.get("selected_date", "2026-01-01"), "%Y-%m-%d")
+        
+        await state.set_state(ClientBooking.time)
         kb = time_slots_inline(data.get("time_slots", []), 0, lang)
-        await callback.message.edit_text(text=t("client:booking:select_time", lang) % dt.strftime("%d.%m.%Y"), reply_markup=kb)
+        await callback.message.edit_text(
+            text=t("client:booking:select_time", lang) % dt.strftime("%d.%m.%Y"),
+            reply_markup=kb
+        )
         await callback.answer()
 
     # ==========================================================
