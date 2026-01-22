@@ -527,15 +527,14 @@ def setup(menu_controller, get_user_context):
         data = await state.get_data()
         lang = data.get("lang", DEFAULT_LANG)
 
-        # Парсим datetime_start и вычисляем datetime_end
         datetime_str = f"{data.get('selected_date')}T{data.get('selected_time')}:00"
-        duration = data.get("duration_min", 60)
-    
+        duration = data.get("service_duration", 60)
+        
         dt_start = datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S")
         dt_end = dt_start + timedelta(minutes=duration)
 
-        logger.info(f"[BOOKING] Creating: user={data.get('user_id')}, datetime={datetime_str}, duration={duration}")
-
+        logger.info(f"[BOOKING] Creating: user={data.get('user_id')}, datetime={datetime_str}")
+    
         booking = await api.create_booking(
             company_id=data.get("company_id"),
             location_id=data.get("location_id"),
@@ -546,13 +545,13 @@ def setup(menu_controller, get_user_context):
             date_end=dt_end.strftime("%Y-%m-%dT%H:%M:%S"),
             duration_minutes=duration,
         )
-    
+        
         if not booking:
             await callback.message.edit_text(text=t("client:booking:error", lang), reply_markup=None)
             await state.clear()
             await callback.answer()
             return
-    
+        
         dt = datetime.strptime(data.get("selected_date"), "%Y-%m-%d")
         success_text = t("client:booking:success", lang) % (
             data.get("service_name", "?"), dt.strftime("%d.%m.%Y"), data.get("selected_time")
