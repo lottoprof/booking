@@ -13,6 +13,7 @@ Flow:
 import logging
 import math
 from datetime import datetime
+from datetime import datetime, timedelta
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ContentType
 from aiogram.fsm.context import FSMContext
@@ -544,6 +545,47 @@ def setup(menu_controller, get_user_context):
             await callback.answer()
             return
         
+        dt = datetime.strptime(data.get("selected_date"), "%Y-%m-%d")
+        success_text = t("client:booking:success", lang) % (
+            data.get("service_name", "?"), dt.strftime("%d.%m.%Y"), data.get("selected_time")
+        )
+        
+        await callback.message.edit_text(text=success_text, reply_markup=None)
+        await state.clear()
+        await callback.answer(t("client:booking:success_alert", lang), show_alert=True)
+
+    @router.callback_query(ClientBooking.confirm, F.data == "book:confirm_yes")
+    async def handle_confirm(callback: CallbackQuery, state: FSMContext):
+        """Создание записи."""
+        data = await state.get_data()
+        lang = data.get("lang", DEFAULT_LANG)
+
+        # Парсим datetime_start и вычисляем datetime_end
+        datetime_str = f"{data.get('selected_date')}T{data.get('selected_time')}:00"
+        duration = data.get("duration_min", 60)
+    
+        dt_start = datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S")
+        dt_end = dt_start + timedelta(minutes=duration)
+
+        logger.info(f"[BOOKING] Creating: user={data.get('user_id')}, datetime={datetime_str}, duration={duration}")
+
+        booking = await api.create_booking(
+            company_id=data.get("company_id"),
+            location_id=data.get("location_id"),
+            service_id=data.get("service_id"),
+            specialist_id=data.get("specialist_id"),
+            client_id=data.get("user_id"),
+            date_start=datetime_str,
+            date_end=dt_end.strftime("%Y-%m-%dT%H:%M:%S"),
+            duration_minutes=duration,
+        )
+    
+        if not booking:
+            await callback.message.edit_text(text=t("client:booking:error", lang), reply_markup=None)
+            await state.clear()
+            await callback.answer()
+            return
+    
         dt = datetime.strptime(data.get("selected_date"), "%Y-%m-%d")
         success_text = t("client:booking:success", lang) % (
             data.get("service_name", "?"), dt.strftime("%d.%m.%Y"), data.get("selected_time")
