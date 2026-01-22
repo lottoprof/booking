@@ -278,26 +278,24 @@ def _get_service(db: Session, service_id: int):
         Services.is_active == 1
     ).first()
 
-
 def _get_service_specialists(db: Session, service_id: int) -> list:
     """Get active specialists who provide this service."""
-    from ...models.generated import Specialists, SpecialistServices
+    from ...models.generated import Specialists, t_specialist_services
     
-    # Join through specialist_services
-    results = (
+    return (
         db.query(Specialists)
         .join(
-            SpecialistServices,
-            Specialists.id == SpecialistServices.specialist_id
+            t_specialist_services,
+            Specialists.id == t_specialist_services.c.specialist_id
         )
         .filter(
-            SpecialistServices.service_id == service_id,
-            SpecialistServices.is_active == 1,
+            t_specialist_services.c.service_id == service_id,
+            t_specialist_services.c.is_active == 1,
             Specialists.is_active == 1,
         )
         .all()
     )
-    
+
     return results
 
 
