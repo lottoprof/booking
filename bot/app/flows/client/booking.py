@@ -286,8 +286,9 @@ def setup(menu_controller, get_user_context):
             return
         
         location_id = locations[0]["id"]
-        await state.update_data(location_id=location_id)
-        
+        company_id = locations[0].get("company_id")
+        await state.update_data(location_id=location_id, company_id=company_id)
+
         calendar = await api.get_slots_calendar(location_id)
         if not calendar or not calendar.get("days"):
             await callback.answer(t("client:booking:no_calendar", lang), show_alert=True)
