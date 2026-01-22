@@ -546,21 +546,21 @@ def setup(menu_controller, get_user_context):
             date_end=dt_end.strftime("%Y-%m-%dT%H:%M:%S"),
             duration_minutes=duration,
         )
-        
+
         if not booking:
-            await callback.message.edit_text(text=t("client:booking:error", lang), reply_markup=None)
+            await callback.answer(t("client:booking:error", lang), show_alert=True)
             await state.clear()
-            await callback.answer()
+            from bot.app.keyboards.client import client_main
+            await mc.back_to_reply(callback.message, client_main(lang), title=t("client:main:title", lang))
             return
         
-        dt = datetime.strptime(data.get("selected_date"), "%Y-%m-%d")
-        success_text = t("client:booking:success", lang) % (
-            data.get("service_name", "?"), dt.strftime("%d.%m.%Y"), data.get("selected_time")
-        )
-        
-        await callback.message.edit_text(text=success_text, reply_markup=None)
-        await state.clear()
+        # Успех - короткий alert
         await callback.answer(t("client:booking:success_alert", lang), show_alert=True)
+        await state.clear()
+        
+        # Возврат в главное меню
+        from bot.app.keyboards.client import client_main
+        await mc.back_to_reply(callback.message, client_main(lang), title=t("client:main:title", lang))
 
     # ==========================================================
     # CANCEL
@@ -569,9 +569,11 @@ def setup(menu_controller, get_user_context):
     @router.callback_query(F.data == "book:cancel")
     async def handle_cancel(callback: CallbackQuery, state: FSMContext):
         data = await state.get_data()
-        await callback.message.edit_text(text=t("client:booking:cancelled", data.get("lang", DEFAULT_LANG)), reply_markup=None)
+        lang = data.get("lang", DEFAULT_LANG)
+        await callback.answer(t("client:booking:cancelled", lang), show_alert=True)
         await state.clear()
-        await callback.answer()
+        from bot.app.keyboards.client import client_main
+        await mc.back_to_reply(callback.message, client_main(lang), title=t("client:main:title", lang))
 
     @router.callback_query(F.data == "book:noop")
     async def handle_noop(callback: CallbackQuery):
