@@ -13,6 +13,9 @@ from bot.app.utils.api import api
 
 PAGE_SIZE = 5
 
+# Временное хранение контекста (user_id, lang, bookings) по chat_id
+_context: dict[int, dict] = {}
+
 
 def my_bookings_inline(bookings: list[dict], page: int, lang: str) -> InlineKeyboardMarkup:
     """Список записей клиента с пагинацией."""
@@ -32,7 +35,6 @@ def my_bookings_inline(bookings: list[dict], page: int, lang: str) -> InlineKeyb
     
     buttons = []
     for b in page_items:
-        # Форматируем дату и время
         dt = datetime.fromisoformat(b["date_start"].replace("Z", ""))
         date_str = dt.strftime("%d.%m")
         time_str = dt.strftime("%H:%M")
@@ -57,7 +59,6 @@ def my_bookings_inline(bookings: list[dict], page: int, lang: str) -> InlineKeyb
             nav_row.append(InlineKeyboardButton(text=" ", callback_data="mybk:noop"))
         buttons.append(nav_row)
     
-    # Кнопка Скрыть
     buttons.append([InlineKeyboardButton(text=t("common:hide", lang), callback_data="mybk:hide")])
     
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -71,27 +72,31 @@ def setup(menu_controller):
     async def show_my_bookings(message: Message, user_id: int, lang: str):
         """Показать записи клиента."""
         bookings = await api.get_user_active_bookings(user_id)
-        
-        # Сортируем по дате
         bookings.sort(key=lambda b: b.get("date_start", ""))
+        
+        # Сохраняем контекст для пагинации
+        chat_id = message.chat.id
+        _context[chat_id] = {
+            "user_id": user_id,
+            "lang": lang,
+            "bookings": bookings,
+        }
         
         title = t("client:bookings:title", lang) % len(bookings)
         kb = my_bookings_inline(bookings, page=0, lang=lang)
         
-        # Type B1: readonly inline
         await mc.show_inline_readonly(message, title, kb)
     
     @router.callback_query(F.data.startswith("mybk:page:"))
     async def handle_page(callback: CallbackQuery):
         """Пагинация."""
         page = int(callback.data.split(":")[-1])
-        user_id = callback.from_user.id
+        chat_id = callback.message.chat.id
         
-        # Получаем lang из callback (или default)
-        lang = DEFAULT_LANG
-        
-        bookings = await api.get_user_active_bookings(user_id)
-        bookings.sort(key=lambda b: b.get("date_start", ""))
+        # Берём из сохранённого контекста
+        ctx = _context.get(chat_id, {})
+        lang = ctx.get("lang", DEFAULT_LANG)
+        bookings = ctx.get("bookings", [])
         
         kb = my_bookings_inline(bookings, page, lang)
         await callback.message.edit_reply_markup(reply_markup=kb)
@@ -100,6 +105,9 @@ def setup(menu_controller):
     @router.callback_query(F.data == "mybk:hide")
     async def handle_hide(callback: CallbackQuery):
         """Скрыть сообщение."""
+        chat_id = callback.message.chat.id
+        _context.pop(chat_id, None)  # Очищаем контекст
+        
         try:
             await callback.message.delete()
         except Exception:
