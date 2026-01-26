@@ -64,45 +64,41 @@ async def format_booking_created(
     booking: dict,
     recipient_role: str,
     ad_text: Optional[str] = None,
+    lang: str = DEFAULT_LANG,
 ) -> str:
     """Format booking_created notification."""
     b = await _enrich_booking(booking)
     booking_id = b.get("id", "?")
+    minutes = t("common:minutes", lang)
 
     if recipient_role == "client":
-        lines = [
-            f"<b>Запись подтверждена #{booking_id}</b>",
-            "",
-        ]
+        title = t("notify:created:title:client", lang)
+        lines = [f"<b>{title} #{booking_id}</b>", ""]
         if b.get("location_name"):
             lines.append(f"📍 {b['location_name']}")
         if b.get("service_name"):
             dur = b.get("service_duration", "")
-            lines.append(f"💇 {b['service_name']}" + (f" · {dur} мин" if dur else ""))
+            lines.append(f"💇 {b['service_name']}" + (f" · {dur} {minutes}" if dur else ""))
         if b.get("date_start"):
             lines.append(f"🕐 {_format_dt(b['date_start'])}")
         if b.get("specialist_name"):
             lines.append(f"👨‍💼 {b['specialist_name']}")
     elif recipient_role == "specialist":
-        lines = [
-            f"📅 <b>Новая запись #{booking_id}</b>",
-            "",
-        ]
+        title = t("notify:created:title", lang)
+        lines = [f"{title} <b>#{booking_id}</b>", ""]
         if b.get("client_name"):
             lines.append(f"👤 {b['client_name']}")
         if b.get("client_phone"):
             lines.append(f"📞 {b['client_phone']}")
         if b.get("service_name"):
             dur = b.get("service_duration", "")
-            lines.append(f"💇 {b['service_name']}" + (f" · {dur} мин" if dur else ""))
+            lines.append(f"💇 {b['service_name']}" + (f" · {dur} {minutes}" if dur else ""))
         if b.get("date_start"):
             lines.append(f"🕐 {_format_dt(b['date_start'])}")
     else:
         # admin / default
-        lines = [
-            f"📅 <b>Новая запись #{booking_id}</b>",
-            "",
-        ]
+        title = t("notify:created:title", lang)
+        lines = [f"{title} <b>#{booking_id}</b>", ""]
         if b.get("client_name"):
             lines.append(f"👤 {b['client_name']}")
         if b.get("client_phone"):
@@ -111,7 +107,7 @@ async def format_booking_created(
             lines.append(f"📍 {b['location_name']}")
         if b.get("service_name"):
             dur = b.get("service_duration", "")
-            lines.append(f"💇 {b['service_name']}" + (f" · {dur} мин" if dur else ""))
+            lines.append(f"💇 {b['service_name']}" + (f" · {dur} {minutes}" if dur else ""))
         if b.get("date_start"):
             lines.append(f"🕐 {_format_dt(b['date_start'])}")
         if b.get("specialist_name"):
@@ -131,28 +127,25 @@ async def format_booking_cancelled(
     booking: dict,
     recipient_role: str,
     ad_text: Optional[str] = None,
+    lang: str = DEFAULT_LANG,
 ) -> str:
     """Format booking_cancelled notification."""
     b = await _enrich_booking(booking)
     booking_id = b.get("id", "?")
 
     if recipient_role == "client":
-        lines = [
-            f"❌ <b>Ваша запись отменена #{booking_id}</b>",
-            "",
-        ]
+        title = t("notify:cancelled:title:client", lang)
+        lines = [f"<b>{title} #{booking_id}</b>", ""]
         if b.get("location_name"):
             lines.append(f"📍 {b['location_name']}")
         if b.get("service_name"):
             lines.append(f"💇 {b['service_name']}")
         if b.get("date_start"):
             lines.append(f"🕐 {_format_dt(b['date_start'])}")
-        lines.extend(["", "Для новой записи используйте /start"])
+        lines.extend(["", t("notify:cancelled:new_booking", lang)])
     elif recipient_role == "specialist":
-        lines = [
-            f"❌ <b>Запись отменена #{booking_id}</b>",
-            "",
-        ]
+        title = t("notify:cancelled:title", lang)
+        lines = [f"{title} <b>#{booking_id}</b>", ""]
         if b.get("client_name"):
             lines.append(f"👤 {b['client_name']}")
         if b.get("service_name"):
@@ -163,10 +156,8 @@ async def format_booking_cancelled(
             lines.append(f"📝 {b['cancel_reason']}")
     else:
         # admin
-        lines = [
-            f"❌ <b>Запись отменена #{booking_id}</b>",
-            "",
-        ]
+        title = t("notify:cancelled:title", lang)
+        lines = [f"{title} <b>#{booking_id}</b>", ""]
         if b.get("client_name"):
             lines.append(f"👤 {b['client_name']}")
         if b.get("location_name"):
@@ -196,6 +187,7 @@ async def format_booking_rescheduled(
     old_datetime: Optional[str] = None,
     new_datetime: Optional[str] = None,
     ad_text: Optional[str] = None,
+    lang: str = DEFAULT_LANG,
 ) -> str:
     """Format booking_rescheduled notification."""
     b = await _enrich_booking(booking)
@@ -203,44 +195,40 @@ async def format_booking_rescheduled(
 
     old_dt = _format_dt(old_datetime) if old_datetime else "—"
     new_dt = _format_dt(new_datetime) if new_datetime else _format_dt(b.get("date_start", ""))
+    was = t("notify:rescheduled:was", lang)
+    now = t("notify:rescheduled:now", lang)
 
     if recipient_role == "client":
-        lines = [
-            f"🔄 <b>Ваша запись перенесена #{booking_id}</b>",
-            "",
-        ]
+        title = t("notify:rescheduled:title:client", lang)
+        lines = [f"<b>{title} #{booking_id}</b>", ""]
         if b.get("location_name"):
             lines.append(f"📍 {b['location_name']}")
         if b.get("service_name"):
             lines.append(f"💇 {b['service_name']}")
-        lines.append(f"🕐 Было: {old_dt}")
-        lines.append(f"🕐 Стало: {new_dt}")
-        lines.extend(["", "Если время не подходит — свяжитесь с нами."])
+        lines.append(f"🕐 {was}: {old_dt}")
+        lines.append(f"🕐 {now}: {new_dt}")
+        lines.extend(["", t("notify:rescheduled:contact_us", lang)])
     elif recipient_role == "specialist":
-        lines = [
-            f"🔄 <b>Запись перенесена #{booking_id}</b>",
-            "",
-        ]
+        title = t("notify:rescheduled:title", lang)
+        lines = [f"{title} <b>#{booking_id}</b>", ""]
         if b.get("client_name"):
             lines.append(f"👤 {b['client_name']}")
         if b.get("service_name"):
             lines.append(f"💇 {b['service_name']}")
-        lines.append(f"🕐 Было: {old_dt}")
-        lines.append(f"🕐 Стало: {new_dt}")
+        lines.append(f"🕐 {was}: {old_dt}")
+        lines.append(f"🕐 {now}: {new_dt}")
     else:
         # admin
-        lines = [
-            f"🔄 <b>Запись перенесена #{booking_id}</b>",
-            "",
-        ]
+        title = t("notify:rescheduled:title", lang)
+        lines = [f"{title} <b>#{booking_id}</b>", ""]
         if b.get("client_name"):
             lines.append(f"👤 {b['client_name']}")
         if b.get("location_name"):
             lines.append(f"📍 {b['location_name']}")
         if b.get("service_name"):
             lines.append(f"💇 {b['service_name']}")
-        lines.append(f"🕐 Было: {old_dt}")
-        lines.append(f"🕐 Стало: {new_dt}")
+        lines.append(f"🕐 {was}: {old_dt}")
+        lines.append(f"🕐 {now}: {new_dt}")
         if b.get("specialist_name"):
             lines.append(f"👨‍💼 {b['specialist_name']}")
 
@@ -264,6 +252,7 @@ async def format_booking_done(
     b = await _enrich_booking(booking)
     booking_id = b.get("id", "?")
 
+    minutes = t("common:minutes", lang)
     lines = [
         f"{t('notify:done:title', lang)} <b>#{booking_id}</b>",
         "",
@@ -277,7 +266,7 @@ async def format_booking_done(
         lines.append(f"📍 {b['location_name']}")
     if b.get("service_name"):
         dur = b.get("service_duration", "")
-        lines.append(f"💇 {b['service_name']}" + (f" · {dur} мин" if dur else ""))
+        lines.append(f"💇 {b['service_name']}" + (f" · {dur} {minutes}" if dur else ""))
     if b.get("date_start"):
         lines.append(f"🕐 {_format_dt(b['date_start'])}")
     if b.get("specialist_name"):
@@ -308,6 +297,7 @@ async def format_event(
     booking: dict,
     recipient_role: str,
     ad_text: Optional[str] = None,
+    lang: str = DEFAULT_LANG,
     **kwargs,
 ) -> str:
     """Format an event message for a specific recipient role."""
@@ -322,9 +312,7 @@ async def format_event(
             old_datetime=kwargs.get("old_datetime"),
             new_datetime=kwargs.get("new_datetime"),
             ad_text=ad_text,
+            lang=lang,
         )
 
-    if event_type == "booking_done":
-        return await formatter(booking, recipient_role, ad_text=ad_text)
-
-    return await formatter(booking, recipient_role, ad_text=ad_text)
+    return await formatter(booking, recipient_role, ad_text=ad_text, lang=lang)

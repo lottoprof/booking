@@ -134,7 +134,7 @@ def _build_keyboard(
         return InlineKeyboardMarkup(inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="✏️ Редактировать",
+                    text=t("common:edit", lang),
                     callback_data=f"bkn:edit:{booking_id}",
                 ),
                 InlineKeyboardButton(

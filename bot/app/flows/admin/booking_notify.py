@@ -34,7 +34,7 @@ async def handle_hide(callback: CallbackQuery):
         await callback.message.delete()
     except Exception:
         pass
-    await callback.answer("Скрыто")
+    await callback.answer(t("common:hidden", DEFAULT_LANG))
 
 
 @router.callback_query(F.data.startswith("bkn:edit:"))
@@ -45,7 +45,7 @@ async def handle_edit(callback: CallbackQuery):
 
     booking = await api.get_booking(booking_id)
     if not booking:
-        await callback.answer("Запись не найдена", show_alert=True)
+        await callback.answer(t("common:not_found", DEFAULT_LANG), show_alert=True)
         return
 
     from bot.app.flows.common.booking_edit import build_edit_menu_keyboard, _format_edit_view
@@ -122,7 +122,7 @@ async def handle_back(callback: CallbackQuery):
 
     booking = await api.get_booking(booking_id)
     if not booking:
-        await callback.answer("Запись не найдена", show_alert=True)
+        await callback.answer(t("common:not_found", DEFAULT_LANG), show_alert=True)
         return
 
     text = await _format_notification(booking)
@@ -134,10 +134,11 @@ async def handle_back(callback: CallbackQuery):
     await callback.answer()
 
 
-async def _format_notification(booking: dict) -> str:
+async def _format_notification(booking: dict, lang: str = DEFAULT_LANG) -> str:
     """Format the notification message (simplified view)."""
     booking_id = booking.get("id", "?")
-    lines = [f"📅 <b>Запись #{booking_id}</b>", ""]
+    title = t("notify:booking:title", lang)
+    lines = [f"{title} <b>#{booking_id}</b>", ""]
 
     if booking.get("client_id"):
         client = await api.get_user(booking["client_id"])
@@ -154,21 +155,22 @@ async def _format_notification(booking: dict) -> str:
         except Exception:
             lines.append(f"🕐 {booking['date_start']}")
 
-    lines.append(f"📋 {booking.get('status', '—')}")
+    status_label = t("notify:status_label", lang)
+    lines.append(f"{status_label} {booking.get('status', '—')}")
 
     return "\n".join(lines)
 
 
-def _build_notify_keyboard(booking_id: int) -> InlineKeyboardMarkup:
+def _build_notify_keyboard(booking_id: int, lang: str = DEFAULT_LANG) -> InlineKeyboardMarkup:
     """Build notification keyboard."""
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="✏️ Редактировать",
+                text=t("common:edit", lang),
                 callback_data=f"bkn:edit:{booking_id}",
             ),
             InlineKeyboardButton(
-                text="🙈 Скрыть",
+                text=t("common:hide", lang),
                 callback_data=f"bkn:hide:{booking_id}",
             ),
         ]

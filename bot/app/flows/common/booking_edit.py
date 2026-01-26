@@ -27,6 +27,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
 from bot.app.utils.api import api
+from bot.app.i18n.loader import t, DEFAULT_LANG
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +52,14 @@ async def show_edit_menu(callback: CallbackQuery):
     booking_id = int(parts[2])
     return_to = parts[3] if len(parts) > 3 else "hide"
 
+    lang = DEFAULT_LANG
     booking = await api.get_booking(booking_id)
     if not booking:
-        await callback.answer("Запись не найдена", show_alert=True)
+        await callback.answer(t("common:not_found", lang), show_alert=True)
         return
 
-    text = _format_edit_view(booking)
-    keyboard = build_edit_menu_keyboard(booking_id, return_to)
+    text = _format_edit_view(booking, lang=lang)
+    keyboard = build_edit_menu_keyboard(booking_id, return_to, lang=lang)
 
     await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
     await callback.answer()
@@ -73,16 +75,17 @@ async def confirm_cancel(callback: CallbackQuery):
     parts = callback.data.split(":")
     booking_id = int(parts[2])
     return_to = ":".join(parts[3:]) if len(parts) > 3 else "hide"
+    lang = DEFAULT_LANG
 
-    text = "❓ Отменить запись?\n\nЭто действие нельзя отменить."
+    text = t("bke:cancel_confirm", lang)
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="✅ Да, отменить",
+                text=t("bke:yes_cancel", lang),
                 callback_data=f"bke:confirm_cancel:{booking_id}:{return_to}",
             ),
             InlineKeyboardButton(
-                text="❌ Нет",
+                text=t("common:no", lang),
                 callback_data=f"bke:menu:{booking_id}:{return_to}",
             ),
         ]
@@ -98,30 +101,31 @@ async def do_cancel(callback: CallbackQuery):
     parts = callback.data.split(":")
     booking_id = int(parts[2])
     return_to = ":".join(parts[3:]) if len(parts) > 3 else "hide"
+    lang = DEFAULT_LANG
 
     # Cancel via backend (will emit booking_cancelled event)
     result = await api.cancel_booking(
         booking_id,
-        reason="Отменено через бот",
+        reason=t("bke:cancelled_reason", lang),
         initiated_by_user_id=None,  # TODO: pass actual initiator
         initiated_by_role=None,
     )
 
     if result is None:
-        await callback.answer("Ошибка при отмене", show_alert=True)
+        await callback.answer(t("bke:cancel_error", lang), show_alert=True)
         return
 
-    text = f"❌ Запись #{booking_id} отменена"
+    text = t("bke:cancelled", lang, booking_id)
 
     if return_to == "hide":
         await callback.message.edit_text(text, reply_markup=None)
     else:
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="← Назад", callback_data=return_to)]
+            [InlineKeyboardButton(text=t("common:back", lang), callback_data=return_to)]
         ])
         await callback.message.edit_text(text, reply_markup=keyboard)
 
-    await callback.answer("Запись отменена")
+    await callback.answer(t("bke:cancelled_short", lang))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -134,9 +138,10 @@ async def start_reschedule(callback: CallbackQuery, state: FSMContext):
     parts = callback.data.split(":")
     booking_id = int(parts[2])
 
+    lang = DEFAULT_LANG
     booking = await api.get_booking(booking_id)
     if not booking:
-        await callback.answer("Запись не найдена", show_alert=True)
+        await callback.answer(t("common:not_found", lang), show_alert=True)
         return
 
     # Save context for FSM
@@ -152,12 +157,12 @@ async def start_reschedule(callback: CallbackQuery, state: FSMContext):
     # Show calendar
     calendar = await api.get_slots_calendar(booking["location_id"])
     if not calendar or not calendar.get("days"):
-        await callback.answer("Нет доступных дат", show_alert=True)
+        await callback.answer(t("bke:no_dates", lang), show_alert=True)
         await state.clear()
         return
 
-    text = "📅 Выберите новую дату:"
-    keyboard = _build_date_keyboard(calendar["days"])
+    text = t("bke:select_date", lang)
+    keyboard = _build_date_keyboard(calendar["days"], lang=lang)
 
     await callback.message.edit_text(text, reply_markup=keyboard)
     await callback.answer()
@@ -175,17 +180,19 @@ async def select_date(callback: CallbackQuery, state: FSMContext):
     location_id = data["reschedule_location_id"]
     service_id = data["reschedule_service_id"]
 
+    lang = DEFAULT_LANG
+
     # Get available time slots for this date
     slots = await api.get_slots_day(location_id, service_id, date_str)
     if not slots or not slots.get("available_times"):
-        await callback.answer("Нет доступного времени на эту дату", show_alert=True)
+        await callback.answer(t("bke:no_times", lang), show_alert=True)
         return
 
     await state.update_data(reschedule_date=date_str)
     await state.set_state(RescheduleStates.select_time)
 
-    text = f"🕐 Выберите время на {date_str}:"
-    keyboard = _build_time_keyboard(slots["available_times"], date_str)
+    text = t("bke:select_time", lang, date_str)
+    keyboard = _build_time_keyboard(slots["available_times"], date_str, lang=lang)
 
     await callback.message.edit_text(text, reply_markup=keyboard)
     await callback.answer()
@@ -200,25 +207,28 @@ async def select_time(callback: CallbackQuery, state: FSMContext):
     time_str = callback.data.split(":", 2)[2]
     data = await state.get_data()
 
+    lang = DEFAULT_LANG
     await state.update_data(reschedule_time=time_str)
     await state.set_state(RescheduleStates.confirm)
 
     old_dt = data.get("reschedule_old_datetime", "")
     new_dt = f"{data['reschedule_date']}T{time_str}"
+    was = t("notify:rescheduled:was", lang)
+    now = t("notify:rescheduled:now", lang)
 
     text = (
-        f"Подтвердите перенос:\n\n"
-        f"🕐 Было: {_format_dt(old_dt)}\n"
-        f"🕐 Стало: {_format_dt(new_dt)}"
+        f"{t('bke:confirm_reschedule', lang)}\n\n"
+        f"🕐 {was}: {_format_dt(old_dt)}\n"
+        f"🕐 {now}: {_format_dt(new_dt)}"
     )
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="✅ Подтвердить",
+                text=t("common:confirm", lang),
                 callback_data="bke:confirm_reschedule",
             ),
             InlineKeyboardButton(
-                text="❌ Отмена",
+                text=t("common:cancel", lang),
                 callback_data="bke:cancel_reschedule",
             ),
         ]
@@ -263,11 +273,12 @@ async def confirm_reschedule(callback: CallbackQuery, state: FSMContext):
     )
 
     await state.clear()
+    lang = DEFAULT_LANG
 
     if result:
-        text = f"✅ Запись #{booking_id} перенесена\n\n🕐 {_format_dt(new_start)}"
+        text = t("bke:rescheduled", lang, booking_id) + f"\n\n🕐 {_format_dt(new_start)}"
     else:
-        text = f"❌ Ошибка при переносе записи #{booking_id}"
+        text = t("bke:reschedule_error", lang, booking_id)
 
     await callback.message.edit_text(text, reply_markup=None)
     await callback.answer()
@@ -280,7 +291,7 @@ async def confirm_reschedule(callback: CallbackQuery, state: FSMContext):
 async def cancel_reschedule(callback: CallbackQuery, state: FSMContext):
     """Cancel the reschedule flow."""
     await state.clear()
-    await callback.message.edit_text("Перенос отменён.", reply_markup=None)
+    await callback.message.edit_text(t("bke:reschedule_cancelled", DEFAULT_LANG), reply_markup=None)
     await callback.answer()
 
 
@@ -297,14 +308,16 @@ def _format_dt(iso_str: str) -> str:
         return iso_str
 
 
-def _format_edit_view(booking: dict) -> str:
+def _format_edit_view(booking: dict, lang: str = DEFAULT_LANG) -> str:
     """Format booking info for edit menu."""
     booking_id = booking.get("id", "?")
-    lines = [f"📝 <b>Запись #{booking_id}</b>", ""]
+    title = t("bke:edit_title", lang)
+    lines = [f"{title} <b>#{booking_id}</b>", ""]
 
     if booking.get("date_start"):
         lines.append(f"🕐 {_format_dt(booking['date_start'])}")
-    lines.append(f"📋 Статус: {booking.get('status', '—')}")
+    status_label = t("bke:status_label", lang)
+    lines.append(f"{status_label}: {booking.get('status', '—')}")
 
     return "\n".join(lines)
 
@@ -313,24 +326,25 @@ def build_edit_menu_keyboard(
     booking_id: int,
     return_to: str,
     allow_reschedule: bool = True,
+    lang: str = DEFAULT_LANG,
 ) -> InlineKeyboardMarkup:
     """Build edit menu keyboard."""
     buttons = [
         [InlineKeyboardButton(
-            text="❌ Отменить запись",
+            text=t("bke:cancel_booking", lang),
             callback_data=f"bke:cancel:{booking_id}:{return_to}",
         )],
     ]
 
     if allow_reschedule:
         buttons.append([InlineKeyboardButton(
-            text="🕐 Изменить время",
+            text=t("bke:change_time", lang),
             callback_data=f"bke:reschedule:{booking_id}",
         )])
 
     back_cb = return_to if return_to != "hide" else f"bke:back:{booking_id}"
     buttons.append([InlineKeyboardButton(
-        text="← Назад",
+        text=t("common:back", lang),
         callback_data=back_cb,
     )])
 
@@ -340,6 +354,7 @@ def build_edit_menu_keyboard(
 def _build_date_keyboard(
     days: list[dict],
     max_buttons: int = 12,
+    lang: str = DEFAULT_LANG,
 ) -> InlineKeyboardMarkup:
     """Build calendar date selection keyboard."""
     buttons = []
@@ -350,7 +365,7 @@ def _build_date_keyboard(
             continue
 
         date_str = day["date"]
-        # Format: "28 Jan"
+        # Format: "28.01"
         try:
             dt = datetime.strptime(date_str, "%Y-%m-%d")
             label = dt.strftime("%d.%m")
@@ -370,7 +385,7 @@ def _build_date_keyboard(
         buttons.append(row)
 
     buttons.append([InlineKeyboardButton(
-        text="❌ Отмена",
+        text=t("common:cancel", lang),
         callback_data="bke:cancel_reschedule",
     )])
 
@@ -380,6 +395,7 @@ def _build_date_keyboard(
 def _build_time_keyboard(
     times: list,
     date_str: str,
+    lang: str = DEFAULT_LANG,
 ) -> InlineKeyboardMarkup:
     """Build time selection keyboard."""
     buttons = []
@@ -405,7 +421,7 @@ def _build_time_keyboard(
         buttons.append(row)
 
     buttons.append([InlineKeyboardButton(
-        text="❌ Отмена",
+        text=t("common:cancel", lang),
         callback_data="bke:cancel_reschedule",
     )])
 
