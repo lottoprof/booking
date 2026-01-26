@@ -4,6 +4,8 @@
 
 PRAGMA foreign_keys=OFF;
 
+BEGIN TRANSACTION;
+
 CREATE TABLE bookings_new (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     company_id INTEGER NOT NULL,
@@ -38,5 +40,7 @@ INSERT INTO bookings_new SELECT * FROM bookings;
 DROP TABLE bookings;
 
 ALTER TABLE bookings_new RENAME TO bookings;
+
+COMMIT;
 
 PRAGMA foreign_keys=ON;

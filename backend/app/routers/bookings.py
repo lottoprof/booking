@@ -166,7 +166,7 @@ def update_booking(
         setattr(obj, field, value)
 
     # Update timestamp
-    obj.updated_at = datetime.utcnow().isoformat()
+    obj.updated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
     db.commit()
     db.refresh(obj)
