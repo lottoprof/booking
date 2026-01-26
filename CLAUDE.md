@@ -34,7 +34,7 @@ cd gateway && uvicorn app.main:app --host 0.0.0.0 --port 8080
 
 ### Component Flow
 ```
-Telegram → NGINX → Gateway (/tg/webhook) → Redis Queue → Bot Worker → Backend API → SQLite/Redis
+Telegram → NGINX → Gateway (/tg/webhook) → Bot (direct import) → Backend API → SQLite/Redis
 ```
 
 ### Three Services
@@ -49,7 +49,8 @@ Telegram → NGINX → Gateway (/tg/webhook) → Redis Queue → Bot Worker → 
    - Single entry point for Telegram webhooks at `/tg/webhook`
    - Verifies `X-Telegram-Bot-Api-Secret-Token`
    - Rate limiting, authentication, audit logging
-   - Enqueues updates to Redis; does NOT execute bot logic
+   - Calls bot directly via `from bot.app.main import process_update`
+   - Runs event consumer loops (p2p, broadcast, retry) as asyncio tasks
 
 3. **bot/** - aiogram 3 UI worker
    - Role-based handlers: admin, specialist, client
@@ -108,3 +109,59 @@ SQLite stored at `data/sqlite/booking.db`. Key tables:
 - FSM must be in Redis only (never in-memory)
 - Gateway never calls Telegram API directly
 - All role-based access control enforced by backend
+
+## Mandatory Rules
+
+### i18n — All User-Facing Text
+
+**Never hardcode text** in bot handlers, keyboards, or notifications. All user-facing strings must use the i18n system:
+
+- **Define keys** in `bot/app/i18n/messages.txt` with format: `{lang}:{key} | "{text}"`
+- **Read text** via `t(key, lang)` from `bot/app/i18n/loader.py`
+- **Filter by text** via `t_all(key)` for multi-language matching in handlers
+- Default language: `ru` (fallback if lang is None)
+
+```python
+# WRONG — hardcoded text
+await callback.answer("Услуга подтверждена", show_alert=True)
+button = InlineKeyboardButton(text="✅ Да", callback_data="...")
+
+# RIGHT — i18n keys
+from bot.app.i18n.loader import t, DEFAULT_LANG
+await callback.answer(t("notify:done:confirmed", lang), show_alert=True)
+button = InlineKeyboardButton(text=t("common:yes", lang), callback_data="...")
+```
+
+### MenuController — Bot Keyboard Navigation
+
+**Always use `MenuController`** (`bot/app/utils/menucontroller.py`) for sending and managing Telegram keyboards. Never call `bot.send_message()` with `reply_markup` directly in handlers — use the controller methods instead.
+
+Key methods:
+- `mc.show(message, kb)` — show ReplyKeyboard (deletes old menu, tracks anchor in Redis)
+- `mc.show_inline_readonly(message, text, kb)` — show InlineKeyboard (readonly, keeps Reply menu)
+- `mc.show_inline_input(message, text, kb)` — show InlineKeyboard (removes Reply menu for input)
+- `mc.back_to_reply(callback_message, kb)` — return from Inline to Reply menu
+- `mc.edit_inline(callback_message, text, kb)` — edit existing Inline message
+- `mc.show_for_chat(bot, chat_id, kb)` — show ReplyKeyboard by chat_id (no Message object)
+- `mc.send_inline_in_flow(bot, chat_id, text, kb)` — send Inline in FSM flow
+- `mc.reset(chat_id)` — full navigation reset (for /start)
+
+MenuController tracks message IDs in Redis (`tg:menu:{chat_id}`, `tg:inline:{chat_id}`) to properly clean up old messages.
+
+### Architecture Boundaries
+
+- **Business logic** (scheduling, timers, status checks, data validation) belongs in **backend**, not in bot or gateway
+- **Bot** is a UI layer only — it formats messages and handles user interaction via backend API
+- **Gateway** is a proxy + middleware layer — auth, rate limiting, audit, event consumers
+
+### SQLite Timestamp Format
+
+Always use `"%Y-%m-%d %H:%M:%S"` for timestamps. Never use `datetime.isoformat()` — it produces `T` separator and microseconds that are inconsistent with SQLite `CURRENT_TIMESTAMP`.
+
+```python
+# WRONG
+obj.updated_at = datetime.utcnow().isoformat()  # → "2026-01-26T13:02:09.166084"
+
+# RIGHT
+obj.updated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")  # → "2026-01-26 13:02:09"
+```
