@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 import logging
 import asyncio
 
-from app.config import TG_WEBHOOK_SECRET
+from app.config import TG_WEBHOOK_SECRET, REDIS_URL
 from app.middleware.auth import auth_middleware
 from app.middleware.rate_limit import rate_limit_middleware, check_tg_rate_limit
 from app.middleware.access_policy import access_policy_middleware
@@ -21,6 +21,11 @@ from app.utils.telegram import (
 # ВАЖНО: импорт на уровне модуля, НЕ внутри handler
 from bot.app.main import process_update
 from bot.app.utils.api import api
+from bot.app.events.consumer import (
+    p2p_consumer_loop,
+    broadcast_consumer_loop,
+    retry_consumer_loop,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +45,29 @@ async def lifespan(app: FastAPI):
         logger.error(f"Warmup failed: {e}")
     
     logger.info("Gateway started")
-    
+
+    # Start event consumer loops
+    consumer_tasks = [
+        asyncio.create_task(
+            p2p_consumer_loop(REDIS_URL), name="p2p_consumer"
+        ),
+        asyncio.create_task(
+            broadcast_consumer_loop(REDIS_URL), name="broadcast_consumer"
+        ),
+        asyncio.create_task(
+            retry_consumer_loop(REDIS_URL), name="retry_consumer"
+        ),
+    ]
+    logger.info("Event consumer loops started")
+
     yield
-    
+
+    # Shutdown: cancel consumer loops
+    for task in consumer_tasks:
+        task.cancel()
+    await asyncio.gather(*consumer_tasks, return_exceptions=True)
+    logger.info("Event consumer loops stopped")
+
     # Shutdown: закрываем API client
     await api.close()
     logger.info("API client closed")

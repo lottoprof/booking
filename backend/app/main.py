@@ -22,6 +22,8 @@ from .routers import (
     wallet_transactions,
     push_subscriptions,
     audit_log,
+    notification_settings,
+    ad_templates,
     wallets,
     slots,
 )
@@ -49,6 +51,8 @@ app.include_router(booking_discounts.router)
 app.include_router(client_wallets.router)
 app.include_router(wallet_transactions.router)
 app.include_router(push_subscriptions.router)
+app.include_router(notification_settings.router)
+app.include_router(ad_templates.router)
 app.include_router(audit_log.router)
 
 # ──────────────────────────────────────────────────────────────────────────────

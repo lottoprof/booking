@@ -331,6 +331,33 @@ class WalletTransactions(Base):
     users = relationship('Users', back_populates='wallet_transactions')
     wallet = relationship('ClientWallets', back_populates='wallet_transactions')
 
+class NotificationSettings(Base):
+    __tablename__ = 'notification_settings'
+    __table_args__ = (
+        UniqueConstraint('event_type', 'recipient_role', 'channel', 'company_id'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    event_type = Column(Text, nullable=False)
+    recipient_role = Column(Text, nullable=False)
+    channel = Column(Text, nullable=False, server_default=text("'all'"))
+    enabled = Column(Integer, nullable=False, server_default=text('1'))
+    ad_template_id = Column(Integer)
+    company_id = Column(ForeignKey('company.id', ondelete='CASCADE'), nullable=False)
+
+
+class AdTemplates(Base):
+    __tablename__ = 'ad_templates'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(Text, nullable=False)
+    content_tg = Column(Text, nullable=False)
+    content_html = Column(Text)
+    active = Column(Integer, nullable=False, server_default=text('1'))
+    valid_until = Column(Text)
+    company_id = Column(ForeignKey('company.id', ondelete='CASCADE'), nullable=False)
+
+
 class AuditLog(Base):
     __tablename__ = 'audit_log'
 

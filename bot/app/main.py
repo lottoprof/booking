@@ -25,6 +25,8 @@ from bot.app.flows.client.menu import ClientMenuFlow
 
 from bot.app.handlers import admin_reply
 from bot.app.handlers import client_reply
+from bot.app.flows.admin import booking_notify
+from bot.app.flows.common import booking_edit
 
 BOT_DIR = Path(__file__).resolve().parent
 
@@ -304,6 +306,14 @@ client_router = client_reply.setup(menu, get_user_role, get_user_context)
 client_router.message.filter(RoleFilter("client"))
 client_router.callback_query.filter(RoleFilter("client"))
 dp.include_router(client_router)
+
+# Booking notification callbacks — admin only
+notify_router = booking_notify.router
+notify_router.callback_query.filter(RoleFilter("admin"))
+dp.include_router(notify_router)
+
+# Booking edit module — all roles (bke:* callbacks)
+dp.include_router(booking_edit.router)
 
 
 # ===============================

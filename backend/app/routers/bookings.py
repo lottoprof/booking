@@ -1,10 +1,11 @@
 # backend/app/routers/bookings.py
 # API.md: Extended with filters and PATCH support for admin module
 
+import logging
 from datetime import date, datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -15,6 +16,9 @@ from ..schemas.bookings import (
     BookingUpdate,
     BookingRead,
 )
+from ..services.events import emit_event
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -97,11 +101,29 @@ def get_booking(id: int, db: Session = Depends(get_db)):
 def create_booking(
     data: BookingCreate,
     db: Session = Depends(get_db),
+    x_initiated_by_user_id: Optional[int] = Header(None),
+    x_initiated_by_role: Optional[str] = Header(None),
+    x_initiated_by_channel: Optional[str] = Header(None),
 ):
     obj = DBBookings(**data.model_dump())
     db.add(obj)
     db.commit()
     db.refresh(obj)
+
+    # Emit booking_created event
+    initiated_by = None
+    if x_initiated_by_user_id:
+        initiated_by = {
+            "user_id": x_initiated_by_user_id,
+            "role": x_initiated_by_role or "unknown",
+            "channel": x_initiated_by_channel or "api",
+        }
+
+    emit_event("booking_created", {
+        "booking_id": obj.id,
+        "initiated_by": initiated_by,
+    })
+
     return obj
 
 
@@ -110,10 +132,13 @@ def update_booking(
     id: int,
     data: BookingUpdate,
     db: Session = Depends(get_db),
+    x_initiated_by_user_id: Optional[int] = Header(None),
+    x_initiated_by_role: Optional[str] = Header(None),
+    x_initiated_by_channel: Optional[str] = Header(None),
 ):
     """
     Update booking fields.
-    
+
     Supports updating:
     - date_start, date_end: Reschedule appointment
     - specialist_id: Change specialist
@@ -124,7 +149,7 @@ def update_booking(
     - status: Change booking status
     - cancel_reason: Add cancellation reason
     - notes: Update notes
-    
+
     Note: updated_at is automatically set to current timestamp.
     """
     obj = db.get(DBBookings, id)
@@ -132,15 +157,45 @@ def update_booking(
         raise HTTPException(status_code=404, detail="Not found")
 
     changes = data.model_dump(exclude_unset=True)
-    
+
+    # Capture old values for event emission
+    old_date_start = obj.date_start
+    old_status = obj.status
+
     for field, value in changes.items():
         setattr(obj, field, value)
-    
+
     # Update timestamp
     obj.updated_at = datetime.utcnow().isoformat()
-    
+
     db.commit()
     db.refresh(obj)
+
+    # Emit events based on what changed
+    initiated_by = None
+    if x_initiated_by_user_id:
+        initiated_by = {
+            "user_id": x_initiated_by_user_id,
+            "role": x_initiated_by_role or "unknown",
+            "channel": x_initiated_by_channel or "api",
+        }
+
+    new_status = changes.get("status")
+    new_date_start = changes.get("date_start")
+
+    if new_status == "cancelled" and old_status != "cancelled":
+        emit_event("booking_cancelled", {
+            "booking_id": obj.id,
+            "initiated_by": initiated_by,
+        })
+    elif new_date_start and str(new_date_start) != str(old_date_start):
+        emit_event("booking_rescheduled", {
+            "booking_id": obj.id,
+            "old_datetime": str(old_date_start),
+            "new_datetime": str(new_date_start),
+            "initiated_by": initiated_by,
+        })
+
     return obj
 
 

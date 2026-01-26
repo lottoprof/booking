@@ -625,10 +625,13 @@ class ApiClient:
         break_minutes: int = 0,
         room_id: int = None,
         notes: str = None,
+        initiated_by_user_id: int = None,
+        initiated_by_role: str = None,
+        initiated_by_channel: str = None,
     ) -> Optional[dict]:
         """
         POST /bookings/ — создание записи.
-        
+
         Args:
             company_id: Company ID (required)
             location_id: Location ID (required)
@@ -641,7 +644,10 @@ class ApiClient:
             break_minutes: Break after service (default 0)
             room_id: Room ID (optional)
             notes: Notes (optional)
-        
+            initiated_by_user_id: User who initiated the action (optional)
+            initiated_by_role: Role of initiator (optional)
+            initiated_by_channel: Channel: tg_bot, web, api (optional)
+
         Returns:
             Booking object или None при ошибке
         """
@@ -660,13 +666,30 @@ class ApiClient:
             data["room_id"] = room_id
         if notes:
             data["notes"] = notes
-            
-        return await self._request("POST", "/bookings/", json=data)
 
-    async def update_booking(self, booking_id: int, **kwargs) -> Optional[dict]:
+        headers = {}
+        if initiated_by_user_id:
+            headers["X-Initiated-By-User-Id"] = str(initiated_by_user_id)
+        if initiated_by_role:
+            headers["X-Initiated-By-Role"] = initiated_by_role
+        if initiated_by_channel:
+            headers["X-Initiated-By-Channel"] = initiated_by_channel
+
+        return await self._request(
+            "POST", "/bookings/", json=data, headers=headers
+        )
+
+    async def update_booking(
+        self,
+        booking_id: int,
+        initiated_by_user_id: int = None,
+        initiated_by_role: str = None,
+        initiated_by_channel: str = None,
+        **kwargs,
+    ) -> Optional[dict]:
         """
         PATCH /bookings/{id} — обновление записи (admin).
-        
+
         Допустимые поля:
             - date_start, date_end: Перенос записи
             - specialist_id: Смена специалиста
@@ -678,14 +701,42 @@ class ApiClient:
             - cancel_reason: Причина отмены
             - notes: Заметки
         """
-        return await self._request("PATCH", f"/bookings/{booking_id}", json=kwargs)
+        headers = {}
+        if initiated_by_user_id:
+            headers["X-Initiated-By-User-Id"] = str(initiated_by_user_id)
+        if initiated_by_role:
+            headers["X-Initiated-By-Role"] = initiated_by_role
+        if initiated_by_channel:
+            headers["X-Initiated-By-Channel"] = initiated_by_channel
 
-    async def cancel_booking(self, booking_id: int, reason: str = None) -> Optional[dict]:
+        return await self._request(
+            "PATCH", f"/bookings/{booking_id}", json=kwargs, headers=headers
+        )
+
+    async def cancel_booking(
+        self,
+        booking_id: int,
+        reason: str = None,
+        initiated_by_user_id: int = None,
+        initiated_by_role: str = None,
+        initiated_by_channel: str = None,
+    ) -> Optional[dict]:
         """PATCH /bookings/{id} — отмена записи."""
         data = {"status": "cancelled"}
         if reason:
             data["cancel_reason"] = reason
-        return await self._request("PATCH", f"/bookings/{booking_id}", json=data)
+
+        headers = {}
+        if initiated_by_user_id:
+            headers["X-Initiated-By-User-Id"] = str(initiated_by_user_id)
+        if initiated_by_role:
+            headers["X-Initiated-By-Role"] = initiated_by_role
+        if initiated_by_channel:
+            headers["X-Initiated-By-Channel"] = initiated_by_channel
+
+        return await self._request(
+            "PATCH", f"/bookings/{booking_id}", json=data, headers=headers
+        )
 
     async def confirm_booking(self, booking_id: int) -> Optional[dict]:
         """PATCH /bookings/{id} — подтверждение записи."""
@@ -928,6 +979,75 @@ class ApiClient:
         if not all_roles:
             return []
         return [r for r in all_roles if r.get("user_id") == user_id]
+
+    # ------------------------------------------------------------------
+    # Notification Settings
+    # ------------------------------------------------------------------
+
+    async def get_notification_settings(
+        self,
+        company_id: int = None,
+        event_type: str = None,
+        recipient_role: str = None,
+    ) -> list[dict]:
+        """GET /notification_settings/ with optional filters."""
+        params = {}
+        if company_id:
+            params["company_id"] = company_id
+        if event_type:
+            params["event_type"] = event_type
+        if recipient_role:
+            params["recipient_role"] = recipient_role
+        result = await self._request("GET", "/notification_settings/", params=params)
+        return result or []
+
+    # ------------------------------------------------------------------
+    # Ad Templates
+    # ------------------------------------------------------------------
+
+    async def get_ad_template(self, template_id: int) -> Optional[dict]:
+        """GET /ad_templates/{id}"""
+        return await self._request("GET", f"/ad_templates/{template_id}")
+
+    # ------------------------------------------------------------------
+    # Users by role (for notification recipients)
+    # ------------------------------------------------------------------
+
+    async def get_users_by_role(self, role_name: str) -> list[dict]:
+        """
+        Get users that have a specific role.
+
+        Fetches all user_roles, filters by role, then fetches user details.
+        """
+        all_roles = await self._request("GET", "/user_roles/")
+        if not all_roles:
+            return []
+
+        # Roles table: admin=1, specialist=2, manager=3, client=4
+        role_map = {"admin": 1, "specialist": 2, "manager": 3, "client": 4}
+        role_id = role_map.get(role_name)
+        if not role_id:
+            return []
+
+        user_ids = list({
+            r["user_id"] for r in all_roles if r.get("role_id") == role_id
+        })
+
+        users = []
+        for uid in user_ids:
+            user = await self.get_user(uid)
+            if user and user.get("is_active", 0):
+                users.append(user)
+
+        return users
+
+    async def get_push_subscriptions_by_user(self, user_id: int) -> list[dict]:
+        """Get push subscriptions for a user."""
+        all_subs = await self._request("GET", "/push_subscriptions/")
+        if not all_subs:
+            return []
+        return [s for s in all_subs if s.get("user_id") == user_id]
+
 
 # Singleton
 api = ApiClient()

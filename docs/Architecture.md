@@ -17,10 +17,12 @@
 ## 2.  Взаимодействие компонентов
 
 ```
-Telegram → NGINX → /tg/webhook → gateway → bot (вызов модуля) → backend → SQLite / Redis
+Telegram → NGINX → /tg/webhook → gateway → asyncio.create_task(process_update()) → bot → backend → SQLite / Redis
 ```
 
 * Все входящие соединения идут через `gateway`
+* Gateway импортирует `process_update` из bot на уровне модуля и вызывает как async task
+* Redis-очередь между gateway и bot **не используется** (прямой вызов)
 * `bot.main()` не запускается отдельно, а вызывается как библиотека
 * `backend` работает с SQLite и Redis
 * `Redis` используется и ботом, и backend'ом, но с разным уровнем доступа
@@ -44,17 +46,69 @@ Telegram → NGINX → /tg/webhook → gateway → bot (вызов модуля)
 ### 3.2. gateway
 
 * FastAPI-прокси
-* `/gateway/app/utils/telegram.pyk` — точка входа Telegram
+* `/tg/webhook` — точка входа Telegram
 * Проверка `X-Telegram-Bot-Api-Secret-Token`
 * Устанавливает `client_type = internal`
-* Вызывает bot как модуль (через `process_update`)
+* Формирует payload Telegram update + TgUserContext
+* Вызывает `bot.process_update()` через `asyncio.create_task()` (прямой import, не Redis-очередь)
+* Не обращается к Telegram API напрямую
 
 * Аутентификация TG-пользователей (get_or_create + role)
 * Кэширование user context в Redis (TTL 10 мин)
 * Rate limiting по tg_id (настраивается в middleware/rate_limit.py)
 * Передача TgUserContext в bot
 
+* **Event consumers**: В lifespan запускаются asyncio tasks для чтения событий из Redis:
+  * `p2p_consumer_loop` — мгновенная доставка уведомлений (events:p2p)
+  * `broadcast_consumer_loop` — throttled доставка (events:broadcast, 30 msg/sec)
+  * `retry_consumer_loop` — повторная обработка failed events
+
+### 3.2.1. Система нотификаций
+
+```
+Backend API (booking created/cancelled/rescheduled)
+    │
+    └── RPUSH Redis
+            │
+    ┌───────┴────────┐
+    ▼                ▼
+events:p2p      events:broadcast
+(instant)       (throttled 30/sec)
+    │                │
+    ▼                ▼
+Consumer loops в gateway process (asyncio tasks в lifespan)
+    │
+    ├── notification_settings (БД) → enabled? ad_template?
+    ├── resolve recipients → exclude initiator
+    ├── format message + optional ad
+    │
+    ├── tg_id → bot.send_message()
+    └── push_subscription → Web Push HTTP POST
+```
+
+**Таблицы БД:**
+* `notification_settings` — настройки по event_type × recipient_role × channel
+* `ad_templates` — рекламные вставки в уведомления
+
+**Матрица получателей:**
+
+| Событие | initiated_by | → Client | → Specialist | → Admin |
+|---------|-------------|----------|-------------|---------|
+| booking_created | client | ✅ подтверждение | ✅ новая запись | ✅ новая запись |
+| booking_created | admin | ✅ создана для вас | ✅ новая запись | ❌ сам |
+| booking_cancelled | client | ❌ сам | ✅ отменена | ✅ отменена |
+| booking_cancelled | admin | ✅ ваша запись отменена | ✅ отменена | ❌ сам |
+| booking_rescheduled | admin | ✅ перенесена | ✅ перенесена | ❌ сам |
+
+**Каналы доставки:** tg_id → Telegram; push_subscription (без tg_id) → Web Push.
+
+**Retry и DLQ:**
+* events:p2p:retry / events:broadcast:retry — повторные попытки (до 3)
+* events:p2p:dead / events:broadcast:dead — dead-letter queue
+
 ### 3.3. bot (Telegram)
+
+* Bot запускается как worker и не имеет webhook endpoint
 
 * aiogram 3 FSM-бот
 * Поддерживает роли: `admin`, `specialist`, `client`
@@ -180,4 +234,186 @@ Telegram → NGINX → /tg/webhook → gateway → bot (вызов модуля)
 Бот — чистый UI-слой, gateway — единая точка контроля.
 
 ---
+
+# Telegram Gateway Architecture (Production)
+
+## Назначение
+
+Этот документ фиксирует **финальную архитектуру обработки Telegram‑апдейтов** для production.
+
+---
+
+## Базовый принцип
+
+* **Gateway управляет Telegram**: безопасность, аутентификация, rate‑limit, аудит, контекст пользователя.
+* **Bot — UI‑воркер**: FSM, MenuController, обработка update и взаимодействие с Telegram API.
+* **Связь gateway → bot** через прямой import и `asyncio.create_task()`.
+
+Webhook **никогда не выполняет бизнес‑логику и не обращается к Telegram API**.
+
+---
+
+## Архитектурная схема
+
+```
+Telegram
+   ↓
+NGINX
+   ↓
+Gateway (/tg/webhook)
+ ├─ verify secret token
+ ├─ rate‑limit / audit
+ ├─ authenticate TG user
+ ├─ build TgUserContext
+ └─ asyncio.create_task(process_update())
+        ↓
+Bot (aiogram, in-process)
+ ├─ dp.feed_update(bot, update)
+ ├─ FSM (Redis)
+ ├─ MenuController
+ └─ Telegram API
+```
+
+---
+
+## Ответственность компонентов
+
+### Gateway
+
+Gateway — **единственная точка входа Telegram**.
+
+Отвечает за:
+
+* проверку `X-Telegram-Bot-Api-Secret-Token`
+* rate‑limit и защиту от флуда
+* аудит и логирование
+* определение `client_type = internal`
+* аутентификацию пользователя и роли
+* формирование `TgUserContext`
+* вызов `process_update()` через asyncio task
+
+**Gateway также запускает:**
+
+* Event consumer loops (p2p, broadcast, retry) — обработка уведомлений из Redis
+
+---
+
+### Redis
+
+Используется как **shared runtime layer**.
+
+Ключи:
+
+* `fsm:*` — FSM состояния бота
+* `last_menu:*` — UI состояние
+* `events:p2p` — очередь мгновенных уведомлений
+* `events:broadcast` — очередь throttled уведомлений
+* `events:*:retry` — повторные попытки
+* `events:*:dead` — dead-letter queue
+* `slots:*` — кэш слотов
+* `rl:*` — rate limiting
+
+---
+
+### Bot
+
+Bot работает **in-process с gateway**, вызывается через import.
+
+Отвечает за:
+
+* обработку Telegram update через dispatcher
+* FSM (через Redis)
+* MenuController
+* общение с Telegram API
+* обработку событий нотификаций (events module)
+
+Bot **не знает** про gateway, HTTP, auth, rate‑limit.
+
+---
+
+## Критические риски и как они закрыты
+
+### 1. Асинхронность и отладка
+
+**Риск:** потеря связности логов.
+
+**Решение:**
+
+* единый `trace_id` (tg update id или UUID)
+* передаётся через gateway → Redis → bot → backend
+
+---
+
+### 2. Порядок сообщений (Telegram ordering)
+
+**Риск:** race condition при параллельной обработке.
+
+**Решение (принятое):**
+
+* сериализация обработки **по chat_id**
+* `asyncio.Lock` / `Semaphore` на chat_id
+
+Гарантирует:
+
+* сохранение порядка Telegram
+* корректную работу FSM
+
+---
+
+### 3. FSM состояние
+
+**Риск:** потеря состояния при рестарте или retry.
+
+**Решение:**
+
+* FSM **только в Redis**
+* сериализация состояния
+* TTL на ключи
+
+FSM в памяти процесса **запрещён**.
+
+---
+
+### 4. Retry и DLQ
+
+**Риск:** бесконечные падения или потеря update.
+
+**Решение:**
+
+* ограниченное число retry
+* backoff
+* `tg:updates:dead` для ручного анализа
+
+DLQ — обязательный элемент production.
+
+---
+
+## Почему это не нарушает gateway‑centric модель
+
+Gateway по‑прежнему:
+
+* контролирует вход
+* управляет доверием
+* определяет контекст
+* принимает все Telegram‑запросы
+
+Очередь **разрывает только синхронность**, а не ответственность.
+
+Bot остаётся UI‑модулем, как и было спроектировано.
+
+---
+
+## Минимальный production‑чеклист
+
+* [x] webhook отвечает < 50 ms (async task, не блокирует response)
+* [x] gateway вызывает bot через asyncio.create_task (in-process)
+* [x] FSM в Redis
+* [x] Notification events через Redis queues (events:p2p, events:broadcast)
+* [x] retry + DLQ для notification events
+
+---
+
+## Статус
+
+Изменения возможны только при масштабировании (шардирование очередей), без изменения базовых принципов.
 
