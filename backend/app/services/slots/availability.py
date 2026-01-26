@@ -3,21 +3,24 @@
 Level 2: Service availability calculation.
 
 Calculates available time slots for a specific service on a specific day.
+Uses set[str] of "HH:MM" time strings instead of grid bit-arrays.
+
 Takes into account:
-- Base location grid (Level 1)
+- Base location slots (Level 1, cached in Redis Sorted Set)
 - Specialists who provide the service
 - Specialist schedules and overrides
 - Existing bookings
-- Rooms (if service requires room)
 """
 
 import json
 from datetime import date, datetime
 from math import ceil
+from redis import Redis
 from sqlalchemy.orm import Session
 
-from .config import BookingConfig, get_booking_config
-from .calculator import calculate_location_grid, is_range_available
+from .config import BookingConfig, get_booking_config, time_str_to_minutes, minutes_to_time_str
+from .calculator import calculate_day_slots
+from .redis_store import SlotsRedisStore
 
 
 def calculate_service_availability(
@@ -26,25 +29,20 @@ def calculate_service_availability(
     service_id: int,
     target_date: date,
     config: BookingConfig | None = None,
+    redis: Redis | None = None,
 ) -> dict:
     """
     Calculate available time slots for a service.
-    
-    Args:
-        db: Database session
-        location_id: Location ID
-        service_id: Service ID
-        target_date: Date to check
-        config: Booking configuration
-    
+
     Returns:
-        Dict with available times (for DaySlotsResponse)
+        Dict with available times (for SlotsDayResponse).
     """
     config = config or get_booking_config()
-    
-    # Step 1: Get base location grid (Level 1)
-    base_grid = calculate_location_grid(db, location_id, target_date, config)
-    
+    now = datetime.now()
+
+    # Step 1: Get base location slots (Level 1)
+    base_times = _get_base_times(db, location_id, target_date, config, now, redis)
+
     # Step 2: Get service info
     service = _get_service(db, service_id)
     if not service:
@@ -56,12 +54,12 @@ def calculate_service_availability(
             "slots_needed": 0,
             "available_times": [],
         }
-    
+
     duration_min = service.duration_min
     break_min = service.break_min or 0
     total_min = duration_min + break_min
     slots_needed = ceil(total_min / config.slot_step_minutes)
-    
+
     # Step 3: Get specialists for this service
     specialists = _get_service_specialists(db, service_id)
     if not specialists:
@@ -73,40 +71,56 @@ def calculate_service_availability(
             "slots_needed": slots_needed,
             "available_times": [],
         }
-    
-    # Step 4: Calculate grid for each specialist
-    specialist_grids = {}
+
+    base_set = set(base_times)
+
+    # Step 4: Build per-specialist available time sets
+    specialist_times: dict[int, tuple[str, set[str]]] = {}
     for spec in specialists:
-        spec_grid = _calculate_specialist_grid(
-            db, base_grid, spec, target_date, config
+        times = set(base_set)
+
+        # Intersect with specialist working times
+        working = _get_specialist_working_times(
+            spec.work_schedule, target_date, config
         )
-        specialist_grids[spec.id] = {
-            "grid": spec_grid,
-            "name": spec.display_name or f"Specialist {spec.id}",
-        }
-    
-    # Step 5: Find available start times
+        times &= working
+
+        # Check specialist overrides
+        overrides = _get_specialist_overrides(db, spec.id, target_date)
+        if overrides:
+            times = set()
+
+        # Subtract booked times
+        bookings = _get_specialist_bookings(db, spec.id, target_date)
+        booked = _get_booked_times(bookings, config)
+        times -= booked
+
+        name = spec.display_name or f"Specialist {spec.id}"
+        specialist_times[spec.id] = (name, times)
+
+    # Step 5: Find available start times (need slots_needed consecutive)
     available_times = []
-    
-    for slot_index in range(config.slots_per_day - slots_needed + 1):
-        # Find specialists available for this slot range
+    step = config.slot_step_minutes
+
+    for time_str in sorted(base_set):
+        needed = _consecutive_times(time_str, slots_needed, step)
+        if not needed:
+            continue
+
         available_specialists = []
-        
-        for spec_id, spec_data in specialist_grids.items():
-            if is_range_available(spec_data["grid"], slot_index, slots_needed):
+        for spec_id, (spec_name, spec_times) in specialist_times.items():
+            if all(t in spec_times for t in needed):
                 available_specialists.append({
                     "id": spec_id,
-                    "name": spec_data["name"],
+                    "name": spec_name,
                 })
-        
+
         if available_specialists:
-            time_str = config.format_slot_time(slot_index)
             available_times.append({
                 "time": time_str,
-                "slot_index": slot_index,
                 "specialists": available_specialists,
             })
-    
+
     return {
         "location_id": location_id,
         "service_id": service_id,
@@ -117,73 +131,62 @@ def calculate_service_availability(
     }
 
 
-def _calculate_specialist_grid(
+# ── Base times (Level 1 with cache) ─────────────────────────────────────
+
+
+def _get_base_times(
     db: Session,
-    base_grid: str,
-    specialist,
+    location_id: int,
     target_date: date,
     config: BookingConfig,
-) -> str:
-    """
-    Calculate availability grid for a specialist.
-    
-    Starts with base_grid and applies:
-    - Specialist work_schedule
-    - Specialist calendar_overrides
-    - Specialist bookings
-    """
-    # Start with base grid (copy)
-    grid = list(base_grid)
-    
-    # Apply specialist work_schedule
-    if specialist.work_schedule:
-        _apply_specialist_schedule(grid, specialist.work_schedule, target_date, config)
-    
-    # Apply specialist calendar_overrides
-    overrides = _get_specialist_overrides(db, specialist.id, target_date)
-    for override in overrides:
-        _apply_override_to_grid(grid, override, config)
-    
-    # Apply specialist bookings
-    bookings = _get_specialist_bookings(db, specialist.id, target_date)
-    for booking in bookings:
-        _apply_booking_to_grid(grid, booking, config)
-    
-    return "".join(grid)
+    now: datetime,
+    redis: Redis | None,
+) -> list[str]:
+    """Get base location times, using Redis cache when available."""
+    if redis is not None:
+        store = SlotsRedisStore(redis, config)
+        cached = store.get_available_slots(location_id, target_date, now)
+        if cached is not None:
+            return cached
+
+        # Cache miss — calculate and store
+        slots = calculate_day_slots(db, location_id, target_date, config, now)
+        store.store_day_slots(location_id, target_date, slots)
+        return [time_str for time_str, _ in slots]
+
+    # No Redis — calculate on the fly
+    slots = calculate_day_slots(db, location_id, target_date, config, now)
+    return [time_str for time_str, _ in slots]
 
 
-def _apply_specialist_schedule(
-    grid: list[str],
-    work_schedule_json: str,
+# ── Specialist helpers ───────────────────────────────────────────────────
+
+
+def _get_specialist_working_times(
+    work_schedule_json: str | None,
     target_date: date,
     config: BookingConfig,
-) -> None:
-    """Apply specialist's work schedule to grid."""
+) -> set[str]:
+    """Get set of "HH:MM" times when specialist works on target_date."""
     try:
         schedule = json.loads(work_schedule_json) if work_schedule_json else {}
     except json.JSONDecodeError:
         schedule = {}
-    
+
     if not schedule:
-        # Empty schedule - specialist doesn't work
-        for i in range(len(grid)):
-            grid[i] = "0"
-        return
-    
+        return set()
+
     weekday = target_date.weekday()
     day_names = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
     day_name = day_names[weekday]
     weekday_str = str(weekday)
-    
-    # Get intervals for this day
-    intervals = []
-    
-    # Format B: numeric keys
+
+    # Get intervals (Format B then Format A)
+    intervals: list = []
     if weekday_str in schedule:
         val = schedule[weekday_str]
         if isinstance(val, list):
             intervals = val
-    # Format A: named keys
     elif day_name in schedule:
         val = schedule[day_name]
         if val is None:
@@ -195,80 +198,74 @@ def _apply_specialist_schedule(
                 intervals = [[start, end]]
         elif isinstance(val, list):
             intervals = val
-    
+
     if not intervals:
-        # Day off for specialist
-        for i in range(len(grid)):
-            grid[i] = "0"
-        return
-    
-    # Build set of working slots
-    working_slots = set()
+        return set()
+
+    step = config.slot_step_minutes
+    times: set[str] = set()
     for interval in intervals:
         if len(interval) != 2:
             continue
-        start_slot = _time_to_slot(interval[0], config)
-        end_slot = _time_to_slot(interval[1], config)
-        for s in range(start_slot, end_slot):
-            working_slots.add(s)
-    
-    # Close slots outside working hours
-    for i in range(len(grid)):
-        if i not in working_slots:
-            grid[i] = "0"
+        start_min = time_str_to_minutes(interval[0])
+        end_min = time_str_to_minutes(interval[1])
+        t = start_min
+        while t < end_min:
+            times.add(minutes_to_time_str(t))
+            t += step
+
+    return times
 
 
-def _apply_override_to_grid(
-    grid: list[str],
-    override,
-    config: BookingConfig,
-) -> None:
-    """Apply calendar override to grid (closes all slots)."""
-    for i in range(len(grid)):
-        grid[i] = "0"
+def _get_booked_times(bookings: list, config: BookingConfig) -> set[str]:
+    """Get set of "HH:MM" times occupied by existing bookings."""
+    times: set[str] = set()
+    step = config.slot_step_minutes
+
+    for booking in bookings:
+        try:
+            if isinstance(booking.date_start, str):
+                dt = datetime.fromisoformat(booking.date_start)
+            else:
+                dt = booking.date_start
+
+            start_min = dt.hour * 60 + dt.minute
+            duration = booking.duration_minutes or 60
+            break_min = booking.break_minutes or 0
+            total_min = duration + break_min
+            slots_needed = ceil(total_min / step)
+
+            for i in range(slots_needed):
+                t = start_min + i * step
+                times.add(minutes_to_time_str(t))
+        except (ValueError, AttributeError):
+            pass
+
+    return times
 
 
-def _apply_booking_to_grid(
-    grid: list[str],
-    booking,
-    config: BookingConfig,
-) -> None:
-    """Apply existing booking to grid (close occupied slots)."""
-    # Parse booking start time
-    try:
-        if isinstance(booking.date_start, str):
-            dt = datetime.fromisoformat(booking.date_start)
-        else:
-            dt = booking.date_start
-        
-        start_slot = config.time_to_slot(dt.hour, dt.minute)
-        
-        # Calculate slots needed for this booking
-        duration = booking.duration_minutes or 60
-        break_min = booking.break_minutes or 0
-        total_min = duration + break_min
-        slots_needed = ceil(total_min / config.slot_step_minutes)
-        
-        # Close slots
-        for i in range(start_slot, min(start_slot + slots_needed, len(grid))):
-            grid[i] = "0"
-            
-    except (ValueError, AttributeError):
-        pass
+def _consecutive_times(
+    start_time: str,
+    slots_needed: int,
+    step: int,
+) -> list[str]:
+    """
+    Generate list of consecutive time strings starting from start_time.
+
+    Returns empty list if times would cross midnight (>= 24:00).
+    """
+    start_min = time_str_to_minutes(start_time)
+    result = []
+    for i in range(slots_needed):
+        t = start_min + i * step
+        if t >= 24 * 60:
+            return []
+        result.append(minutes_to_time_str(t))
+    return result
 
 
-def _time_to_slot(time_str: str, config: BookingConfig) -> int:
-    """Convert "HH:MM" to slot index."""
-    try:
-        parts = time_str.split(":")
-        hour = int(parts[0])
-        minute = int(parts[1]) if len(parts) > 1 else 0
-        return config.time_to_slot(hour, minute)
-    except (ValueError, IndexError):
-        return 0
+# ── Database helpers ─────────────────────────────────────────────────────
 
-
-# Database helpers
 
 def _get_service(db: Session, service_id: int):
     """Get service by ID."""
@@ -278,10 +275,11 @@ def _get_service(db: Session, service_id: int):
         Services.is_active == 1
     ).first()
 
+
 def _get_service_specialists(db: Session, service_id: int) -> list:
     """Get active specialists who provide this service."""
     from ...models.generated import Specialists, t_specialist_services
-    
+
     return (
         db.query(Specialists)
         .join(
@@ -296,15 +294,13 @@ def _get_service_specialists(db: Session, service_id: int) -> list:
         .all()
     )
 
-    return results
-
 
 def _get_specialist_overrides(db: Session, specialist_id: int, target_date: date) -> list:
     """Get calendar overrides for specialist on date."""
     from ...models.generated import CalendarOverrides
-    
+
     date_str = target_date.isoformat()
-    
+
     return (
         db.query(CalendarOverrides)
         .filter(
@@ -321,9 +317,9 @@ def _get_specialist_bookings(db: Session, specialist_id: int, target_date: date)
     """Get active bookings for specialist on date."""
     from ...models.generated import Bookings
     from sqlalchemy import func
-    
+
     date_str = target_date.isoformat()
-    
+
     return (
         db.query(Bookings)
         .filter(
@@ -333,4 +329,3 @@ def _get_specialist_bookings(db: Session, specialist_id: int, target_date: date)
         )
         .all()
     )
-

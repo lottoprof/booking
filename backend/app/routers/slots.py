@@ -6,7 +6,7 @@ Level 1: GET /slots/calendar - Calendar of available days for location
 Level 2: GET /slots/day - Detailed slots for a day (service-specific)
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -17,14 +17,14 @@ from ..schemas.slots import (
     SlotsDayStatus,
     SlotsDayResponse,
     SlotsGridResponse,
+    SlotDebugEntry,
 )
 from ..services.slots import (
     BookingConfig,
     get_booking_config,
-    calculate_location_grid,
+    calculate_day_slots,
     SlotsRedisStore,
 )
-from ..services.slots.calculator import count_open_slots, has_any_open_slot
 from ..services.slots.availability import calculate_service_availability
 
 
@@ -41,46 +41,51 @@ def get_slots_calendar(
     """Get calendar of available days for a location (Level 1)."""
     config = get_booking_config()
     store = SlotsRedisStore(redis_client, config)
-    
+    now = datetime.now()
+
     today = date.today()
     if start_date is None:
         start_date = today
     if end_date is None:
         end_date = start_date + timedelta(days=config.horizon_days)
-    
+
     if start_date < today:
         start_date = today
     if end_date > today + timedelta(days=config.horizon_days):
         end_date = today + timedelta(days=config.horizon_days)
     if end_date < start_date:
         end_date = start_date
-    
+
     dates = []
     current = start_date
     while current <= end_date:
         dates.append(current)
         current += timedelta(days=1)
-    
-    cached_grids = store.mget_grids(location_id, dates)
-    grids_to_cache = {}
+
+    # Batch check cached counts
+    cached_counts = store.mget_counts(location_id, dates, now)
+    days_to_calc: dict[date, list[tuple[str, float]]] = {}
+
     days = []
-    
     for dt in dates:
-        grid = cached_grids.get(dt)
-        
-        if grid is None:
-            grid = calculate_location_grid(db, location_id, dt, config)
-            grids_to_cache[dt] = grid
-        
+        count = cached_counts.get(dt)
+
+        if count is None:
+            # Cache miss — calculate
+            slots = calculate_day_slots(db, location_id, dt, config, now)
+            days_to_calc[dt] = slots
+            count = len([t for t, exp in slots if exp > now.timestamp()])
+
         days.append(SlotsDayStatus(
             date=dt,
-            has_slots=has_any_open_slot(grid),
-            open_slots_count=count_open_slots(grid),
+            has_slots=count > 0,
+            open_slots_count=count,
         ))
-    
-    if grids_to_cache:
-        store.mset_grids(location_id, grids_to_cache)
-    
+
+    # Store calculated days in batch
+    if days_to_calc:
+        store.store_multiple_days(location_id, days_to_calc)
+
     return SlotsCalendarResponse(
         location_id=location_id,
         start_date=start_date,
@@ -101,24 +106,25 @@ def get_slots_day(
 ):
     """Get available time slots for a service on a specific day (Level 2)."""
     config = get_booking_config()
-    
+
     today = date.today()
     max_date = today + timedelta(days=config.horizon_days)
-    
+
     if target_date < today:
         raise HTTPException(status_code=400, detail="Date cannot be in the past")
-    
+
     if target_date > max_date:
         raise HTTPException(status_code=400, detail=f"Date cannot be more than {config.horizon_days} days ahead")
-    
+
     result = calculate_service_availability(
         db=db,
         location_id=location_id,
         service_id=service_id,
         target_date=target_date,
         config=config,
+        redis=redis_client,
     )
-    
+
     return SlotsDayResponse(**result)
 
 
@@ -129,30 +135,37 @@ def get_slots_grid(
     force_recalc: bool = False,
     db: Session = Depends(get_db),
 ):
-    """Get raw grid for location and date (admin/debug endpoint)."""
+    """Get sorted set debug view for location and date (admin/debug endpoint)."""
     config = get_booking_config()
     store = SlotsRedisStore(redis_client, config)
-    
+    now = datetime.now()
+
     cached = False
-    grid = None
-    
+    slot_data: list[tuple[str, float]] | None = None
+
     if not force_recalc:
-        grid = store.get_grid(location_id, target_date)
-        cached = grid is not None
-    
-    if grid is None:
-        grid = calculate_location_grid(db, location_id, target_date, config)
-        store.set_grid(location_id, target_date, grid)
-    
-    version = store.get_version(location_id)
-    
+        slot_data = store.get_all_slots_with_scores(location_id, target_date)
+        cached = slot_data is not None
+
+    if slot_data is None:
+        slots = calculate_day_slots(db, location_id, target_date, config, now)
+        store.store_day_slots(location_id, target_date, slots)
+        slot_data = slots
+
+    debug_slots = [
+        SlotDebugEntry(
+            time=time_str,
+            expires_at=datetime.fromtimestamp(expire_ts),
+        )
+        for time_str, expire_ts in slot_data
+    ]
+
     return SlotsGridResponse(
         location_id=location_id,
         date=target_date,
-        grid=grid,
+        slots=debug_slots,
+        total_slots=len(debug_slots),
         cached=cached,
-        version=version,
-        slots_per_day=config.slots_per_day,
     )
 
 
@@ -163,12 +176,11 @@ def invalidate_slots_cache(
 ):
     """Manually invalidate slots cache for location (admin endpoint)."""
     from ..services.slots import invalidate_location_cache
-    
+
     deleted = invalidate_location_cache(redis_client, location_id, dates)
-    
+
     return {
         "location_id": location_id,
         "deleted_keys": deleted,
         "dates": [d.isoformat() for d in dates] if dates else "all",
     }
-

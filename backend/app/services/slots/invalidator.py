@@ -1,6 +1,6 @@
 # backend/app/services/slots/invalidator.py
 """
-Cache invalidation for location grids.
+Cache invalidation for location slots.
 
 Triggers:
 ✓ Location work_schedule changed → invalidate all dates
@@ -36,15 +36,7 @@ def invalidate_location_cache(
         Number of deleted cache keys
     """
     store = SlotsRedisStore(redis)
-    
-    # Delete grids
-    deleted = store.delete_grids(location_id, dates)
-    
-    # Increment version (for cache busting)
-    if deleted > 0 or dates is None:
-        store.incr_version(location_id)
-    
-    return deleted
+    return store.delete_day_slots(location_id, dates)
 
 
 def get_affected_dates(

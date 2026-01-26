@@ -11,17 +11,15 @@ from functools import lru_cache
 class BookingConfig:
     """
     Configuration for booking/slots system.
-    
+
     Attributes:
         horizon_days: How many days ahead to show slots (30/60/90)
         min_advance_hours: Minimum hours before slot can be booked (1/6/12/24)
         slot_step_minutes: Base grid step in minutes (15/30/60)
-        cache_ttl_seconds: Redis cache TTL for base grid
     """
     horizon_days: int = 60
     min_advance_hours: int = 12
     slot_step_minutes: int = 30  # 15 / 30 / 60
-    cache_ttl_seconds: int = 86400  # 24 hours
     
     def __post_init__(self):
         """Validate configuration."""
@@ -53,6 +51,17 @@ class BookingConfig:
         """Convert slot index to time string "HH:MM"."""
         hour, minute = self.slot_to_time(slot)
         return f"{hour:02d}:{minute:02d}"
+
+
+def time_str_to_minutes(time_str: str) -> int:
+    """Convert "HH:MM" to total minutes since midnight."""
+    parts = time_str.split(":")
+    return int(parts[0]) * 60 + int(parts[1])
+
+
+def minutes_to_time_str(minutes: int) -> str:
+    """Convert total minutes since midnight to "HH:MM"."""
+    return f"{minutes // 60:02d}:{minutes % 60:02d}"
 
 
 @lru_cache
