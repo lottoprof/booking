@@ -14,6 +14,7 @@ from typing import Optional
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from bot.app.utils.api import api
+from bot.app.i18n.loader import t, DEFAULT_LANG
 from .recipients import Recipient, resolve_recipients, get_ad_template_for_event
 from .formatters import format_event
 
@@ -104,9 +105,30 @@ def _build_keyboard(
     event_type: str,
     booking: dict,
     recipient_role: str,
+    lang: str = DEFAULT_LANG,
 ) -> Optional[InlineKeyboardMarkup]:
     """Build inline keyboard for the notification."""
     booking_id = booking.get("id")
+
+    if event_type == "booking_done" and recipient_role == "admin":
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=t("common:no", lang),
+                    callback_data=f"bkn:done_no:{booking_id}",
+                ),
+                InlineKeyboardButton(
+                    text=t("common:yes", lang),
+                    callback_data=f"bkn:done_yes:{booking_id}",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=t("common:hide", lang),
+                    callback_data=f"bkn:hide:{booking_id}",
+                ),
+            ],
+        ])
 
     if recipient_role == "admin":
         return InlineKeyboardMarkup(inline_keyboard=[
@@ -116,7 +138,7 @@ def _build_keyboard(
                     callback_data=f"bkn:edit:{booking_id}",
                 ),
                 InlineKeyboardButton(
-                    text="🙈 Скрыть",
+                    text=t("common:hide", lang),
                     callback_data=f"bkn:hide:{booking_id}",
                 ),
             ]

@@ -1,5 +1,9 @@
 # backend/app/main.py
 
+import asyncio
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from .routers import (
@@ -27,8 +31,27 @@ from .routers import (
     wallets,
     slots,
 )
+from .services.completion_checker import completion_checker_loop
 
-app = FastAPI(title="Booking API")
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan: start background tasks."""
+    checker_task = asyncio.create_task(
+        completion_checker_loop(), name="completion_checker"
+    )
+    logger.info("Completion checker started")
+
+    yield
+
+    checker_task.cancel()
+    await asyncio.gather(checker_task, return_exceptions=True)
+    logger.info("Completion checker stopped")
+
+
+app = FastAPI(title="Booking API", lifespan=lifespan)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CRUD Routers

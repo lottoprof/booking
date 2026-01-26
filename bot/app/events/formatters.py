@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional
 
 from bot.app.utils.api import api
+from bot.app.i18n.loader import t, DEFAULT_LANG
 
 logger = logging.getLogger(__name__)
 
@@ -250,6 +251,47 @@ async def format_booking_rescheduled(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# booking_done (completion confirmation)
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def format_booking_done(
+    booking: dict,
+    recipient_role: str,
+    ad_text: Optional[str] = None,
+    lang: str = DEFAULT_LANG,
+) -> str:
+    """Format booking_done notification — card + confirmation question."""
+    b = await _enrich_booking(booking)
+    booking_id = b.get("id", "?")
+
+    lines = [
+        f"{t('notify:done:title', lang)} <b>#{booking_id}</b>",
+        "",
+    ]
+
+    if b.get("client_name"):
+        lines.append(f"👤 {b['client_name']}")
+    if b.get("client_phone"):
+        lines.append(f"📞 {b['client_phone']}")
+    if b.get("location_name"):
+        lines.append(f"📍 {b['location_name']}")
+    if b.get("service_name"):
+        dur = b.get("service_duration", "")
+        lines.append(f"💇 {b['service_name']}" + (f" · {dur} мин" if dur else ""))
+    if b.get("date_start"):
+        lines.append(f"🕐 {_format_dt(b['date_start'])}")
+    if b.get("specialist_name"):
+        lines.append(f"👨‍💼 {b['specialist_name']}")
+
+    lines.extend(["", f"<b>{t('notify:done:question', lang)}</b>"])
+
+    if ad_text:
+        lines.extend(["", "---", ad_text])
+
+    return "\n".join(lines)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Dispatcher
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -257,6 +299,7 @@ FORMATTERS = {
     "booking_created": format_booking_created,
     "booking_cancelled": format_booking_cancelled,
     "booking_rescheduled": format_booking_rescheduled,
+    "booking_done": format_booking_done,
 }
 
 
@@ -280,5 +323,8 @@ async def format_event(
             new_datetime=kwargs.get("new_datetime"),
             ad_text=ad_text,
         )
+
+    if event_type == "booking_done":
+        return await formatter(booking, recipient_role, ad_text=ad_text)
 
     return await formatter(booking, recipient_role, ad_text=ad_text)

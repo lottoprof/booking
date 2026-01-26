@@ -48,3 +48,16 @@ async def handle_booking_rescheduled(data: dict) -> None:
         return
 
     await deliver_booking_event("booking_rescheduled", data)
+
+
+@register_event("booking_done")
+async def handle_booking_done(data: dict) -> None:
+    """Handle booking completion — ask admin/manager to confirm service delivery."""
+    from .delivery import deliver_booking_event
+
+    booking_id = data.get("booking_id")
+    if not booking_id:
+        logger.error("booking_done event without booking_id")
+        return
+
+    await deliver_booking_event("booking_done", data)

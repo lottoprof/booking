@@ -20,3 +20,6 @@ redis==7.1.0
 # ===== Telegram =====
 aiogram==3.23.0
 
+# ==== Push ====
+pywebpush
+

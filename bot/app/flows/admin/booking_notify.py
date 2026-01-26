@@ -2,9 +2,11 @@
 Callback handlers for booking notification buttons.
 
 Callbacks:
-- bkn:edit:{booking_id}  — Edit booking → delegate to common/booking_edit
-- bkn:hide:{booking_id}  — Hide (delete) notification message
-- bkn:back:{booking_id}  — Return to notification view
+- bkn:edit:{booking_id}    — Edit booking → delegate to common/booking_edit
+- bkn:hide:{booking_id}    — Hide (delete) notification message
+- bkn:back:{booking_id}    — Return to notification view
+- bkn:done_yes:{booking_id} — Confirm service delivered → status "done"
+- bkn:done_no:{booking_id}  — Service not provided → status "no_show"
 """
 
 import logging
@@ -18,6 +20,7 @@ from aiogram.types import (
 )
 
 from bot.app.utils.api import api
+from bot.app.i18n.loader import t, DEFAULT_LANG
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +55,64 @@ async def handle_edit(callback: CallbackQuery):
 
     await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
     await callback.answer()
+
+
+@router.callback_query(F.data.startswith("bkn:done_yes:"))
+async def handle_done_yes(callback: CallbackQuery):
+    """Confirm service was delivered — set status to 'done'."""
+    booking_id = int(callback.data.split(":")[2])
+    lang = DEFAULT_LANG
+
+    booking = await api.get_booking(booking_id)
+    if not booking:
+        await callback.answer(t("common:error", lang), show_alert=True)
+        return
+
+    if booking.get("status") in ("done", "no_show", "cancelled"):
+        await callback.answer(
+            t("notify:done:already_processed", lang), show_alert=True
+        )
+        return
+
+    result = await api.complete_booking(booking_id)
+    if result:
+        await callback.answer(t("notify:done:confirmed", lang), show_alert=True)
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+    else:
+        await callback.answer(t("common:error", lang), show_alert=True)
+
+
+@router.callback_query(F.data.startswith("bkn:done_no:"))
+async def handle_done_no(callback: CallbackQuery):
+    """Service was NOT provided — set status to 'no_show'."""
+    booking_id = int(callback.data.split(":")[2])
+    lang = DEFAULT_LANG
+
+    booking = await api.get_booking(booking_id)
+    if not booking:
+        await callback.answer(t("common:error", lang), show_alert=True)
+        return
+
+    if booking.get("status") in ("done", "no_show", "cancelled"):
+        await callback.answer(
+            t("notify:done:already_processed", lang), show_alert=True
+        )
+        return
+
+    result = await api.update_booking(booking_id, status="no_show")
+    if result:
+        await callback.answer(
+            t("notify:done:not_provided", lang), show_alert=True
+        )
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+    else:
+        await callback.answer(t("common:error", lang), show_alert=True)
 
 
 @router.callback_query(F.data.startswith("bkn:back:"))
