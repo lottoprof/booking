@@ -36,15 +36,22 @@ async def handle_hide(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("bkn:edit:"))
 async def handle_edit(callback: CallbackQuery):
-    """Open edit menu — redirect to common booking_edit module."""
+    """Open edit menu — render directly, Back returns to notification view."""
     booking_id = int(callback.data.split(":")[2])
+    return_to = f"bkn:back:{booking_id}"
 
-    # Rewrite callback_data to common module format
-    # return_to = bkn:back:{booking_id} so "Back" returns to notification view
-    callback.data = f"bke:menu:{booking_id}:bkn:back:{booking_id}"
+    booking = await api.get_booking(booking_id)
+    if not booking:
+        await callback.answer("Запись не найдена", show_alert=True)
+        return
 
-    from bot.app.flows.common.booking_edit import show_edit_menu
-    await show_edit_menu(callback)
+    from bot.app.flows.common.booking_edit import build_edit_menu_keyboard, _format_edit_view
+
+    text = _format_edit_view(booking)
+    keyboard = build_edit_menu_keyboard(booking_id, return_to)
+
+    await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
+    await callback.answer()
 
 
 @router.callback_query(F.data.startswith("bkn:back:"))
