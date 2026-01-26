@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - REDIS_URL=redis://redis:6379/1
+      - DATABASE_URL=sqlite:///./data/sqlite/booking.db
+    depends_on:
+      - redis
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - ./data/sqlite:/app/data/sqlite
+    command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - REDIS_URL=redis://redis:6379/1
+      - DOMAIN_API_URL=http://backend:8000
+    depends_on:
+      - redis
+      - backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+    command: uvicorn gateway.app.main:app --host 0.0.0.0 --port 8080 --reload
