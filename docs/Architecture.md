@@ -27,6 +27,10 @@ Telegram → NGINX → /tg/webhook → gateway → asyncio.create_task(process_u
 * `backend` работает с SQLite и Redis
 * `Redis` используется и ботом, и backend'ом, но с разным уровнем доступа
 
+> **TODO:** Выделение бота в отдельный процесс (worker) через Redis-очередь `tg:updates` — отложено.
+> Если у вас сотни-тысячи пользователей — один процесс справится. Разделение оправдано при десятках тысяч update/min. Преждевременная оптимизация инфраструктуры.
+> См. [TODO-bot-worker-separation.md](TODO-bot-worker-separation.md)
+
 ---
 
 ## 3.  Компоненты системы
