@@ -1,7 +1,7 @@
 """
 Booking event handlers.
 
-Handles: booking_created, booking_cancelled, booking_rescheduled.
+Handles: booking_created, booking_cancelled, booking_rescheduled, booking_done, booking_reminder.
 """
 
 import logging
@@ -61,3 +61,16 @@ async def handle_booking_done(data: dict) -> None:
         return
 
     await deliver_booking_event("booking_done", data)
+
+
+@register_event("booking_reminder")
+async def handle_booking_reminder(data: dict) -> None:
+    """Handle booking reminder — notify client before appointment."""
+    from .delivery import deliver_booking_event
+
+    booking_id = data.get("booking_id")
+    if not booking_id:
+        logger.error("booking_reminder event without booking_id")
+        return
+
+    await deliver_booking_event("booking_reminder", data)

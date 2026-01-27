@@ -312,6 +312,11 @@ notify_router = booking_notify.router
 notify_router.callback_query.filter(RoleFilter("admin", "manager"))
 dp.include_router(notify_router)
 
+# Client reminder callbacks (bkr:*)
+client_notify_router = booking_notify.client_notify_router
+client_notify_router.callback_query.filter(RoleFilter("client"))
+dp.include_router(client_notify_router)
+
 # Booking edit module — all roles (bke:* callbacks)
 dp.include_router(booking_edit.router)
 

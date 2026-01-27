@@ -281,6 +281,40 @@ async def format_booking_done(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# booking_reminder
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def format_booking_reminder(
+    booking: dict,
+    recipient_role: str,
+    ad_text: Optional[str] = None,
+    lang: str = DEFAULT_LANG,
+) -> str:
+    """Format booking_reminder notification for client."""
+    b = await _enrich_booking(booking)
+    booking_id = b.get("id", "?")
+    minutes = t("common:minutes", lang)
+
+    title = t("notify:reminder:title", lang)
+    lines = [f"<b>{title} #{booking_id}</b>", ""]
+
+    if b.get("location_name"):
+        lines.append(f"📍 {b['location_name']}")
+    if b.get("service_name"):
+        dur = b.get("service_duration", "")
+        lines.append(f"💇 {b['service_name']}" + (f" · {dur} {minutes}" if dur else ""))
+    if b.get("date_start"):
+        lines.append(f"🕐 {_format_dt(b['date_start'])}")
+    if b.get("specialist_name"):
+        lines.append(f"👨‍💼 {b['specialist_name']}")
+
+    if ad_text:
+        lines.extend(["", "---", ad_text])
+
+    return "\n".join(lines)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Dispatcher
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -289,6 +323,7 @@ FORMATTERS = {
     "booking_cancelled": format_booking_cancelled,
     "booking_rescheduled": format_booking_rescheduled,
     "booking_done": format_booking_done,
+    "booking_reminder": format_booking_reminder,
 }
 
 

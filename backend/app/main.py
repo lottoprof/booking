@@ -32,6 +32,7 @@ from .routers import (
     slots,
 )
 from .services.completion_checker import completion_checker_loop
+from .services.reminder_checker import reminder_checker_loop
 
 logger = logging.getLogger(__name__)
 
@@ -42,13 +43,17 @@ async def lifespan(app: FastAPI):
     checker_task = asyncio.create_task(
         completion_checker_loop(), name="completion_checker"
     )
-    logger.info("Completion checker started")
+    reminder_task = asyncio.create_task(
+        reminder_checker_loop(), name="reminder_checker"
+    )
+    logger.info("Completion checker and reminder checker started")
 
     yield
 
     checker_task.cancel()
-    await asyncio.gather(checker_task, return_exceptions=True)
-    logger.info("Completion checker stopped")
+    reminder_task.cancel()
+    await asyncio.gather(checker_task, reminder_task, return_exceptions=True)
+    logger.info("Completion checker and reminder checker stopped")
 
 
 app = FastAPI(title="Booking API", lifespan=lifespan)

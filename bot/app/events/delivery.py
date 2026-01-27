@@ -144,7 +144,21 @@ def _build_keyboard(
             ]
         ])
 
-    # No keyboard for client / specialist notifications
+    if event_type == "booking_reminder" and recipient_role == "client":
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=t("notify:reminder:cancel", lang),
+                    callback_data=f"bkr:cancel:{booking_id}",
+                ),
+                InlineKeyboardButton(
+                    text=t("notify:reminder:confirm", lang),
+                    callback_data=f"bkr:confirm:{booking_id}",
+                ),
+            ],
+        ])
+
+    # No keyboard for other client / specialist notifications
     return None
 
 

@@ -1,12 +1,16 @@
 """
 Callback handlers for booking notification buttons.
 
-Callbacks:
+Admin/manager callbacks (bkn:*):
 - bkn:edit:{booking_id}    — Edit booking → delegate to common/booking_edit
 - bkn:hide:{booking_id}    — Hide (delete) notification message
 - bkn:back:{booking_id}    — Return to notification view
 - bkn:done_yes:{booking_id} — Confirm service delivered → status "done"
 - bkn:done_no:{booking_id}  — Service not provided → status "no_show"
+
+Client callbacks (bkr:*):
+- bkr:confirm:{booking_id} — Client confirms attendance → status "confirmed"
+- bkr:cancel:{booking_id}  — Client cancels booking → status "cancelled"
 """
 
 import logging
@@ -70,7 +74,7 @@ async def handle_done_yes(callback: CallbackQuery):
 
     if booking.get("status") in ("done", "no_show", "cancelled"):
         await callback.answer(
-            t("notify:done:already_processed", lang), show_alert=True
+            t(f"notify:status:{booking.get('status')}", lang), show_alert=True
         )
         return
 
@@ -98,7 +102,7 @@ async def handle_done_no(callback: CallbackQuery):
 
     if booking.get("status") in ("done", "no_show", "cancelled"):
         await callback.answer(
-            t("notify:done:already_processed", lang), show_alert=True
+            t(f"notify:status:{booking.get('status')}", lang), show_alert=True
         )
         return
 
@@ -175,3 +179,70 @@ def _build_notify_keyboard(booking_id: int, lang: str = DEFAULT_LANG) -> InlineK
             ),
         ]
     ])
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Client reminder callbacks (bkr:*)
+# ─────────────────────────────────────────────────────────────────────────────
+
+client_notify_router = Router(name="client_booking_notify")
+
+
+@client_notify_router.callback_query(F.data.startswith("bkr:confirm:"))
+async def handle_reminder_confirm(callback: CallbackQuery):
+    """Client confirms attendance → status 'confirmed'."""
+    booking_id = int(callback.data.split(":")[2])
+    lang = DEFAULT_LANG
+
+    booking = await api.get_booking(booking_id)
+    if not booking:
+        await callback.answer(t("common:error", lang), show_alert=True)
+        return
+
+    if booking.get("status") in ("done", "no_show", "cancelled"):
+        await callback.answer(
+            t(f"notify:status:{booking.get('status')}", lang), show_alert=True
+        )
+        return
+
+    result = await api.update_booking(booking_id, status="confirmed")
+    if result:
+        await callback.answer(
+            t("notify:reminder:confirmed", lang), show_alert=True
+        )
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+    else:
+        await callback.answer(t("common:error", lang), show_alert=True)
+
+
+@client_notify_router.callback_query(F.data.startswith("bkr:cancel:"))
+async def handle_reminder_cancel(callback: CallbackQuery):
+    """Client cancels booking → status 'cancelled'."""
+    booking_id = int(callback.data.split(":")[2])
+    lang = DEFAULT_LANG
+
+    booking = await api.get_booking(booking_id)
+    if not booking:
+        await callback.answer(t("common:error", lang), show_alert=True)
+        return
+
+    if booking.get("status") in ("done", "no_show", "cancelled"):
+        await callback.answer(
+            t(f"notify:status:{booking.get('status')}", lang), show_alert=True
+        )
+        return
+
+    result = await api.update_booking(booking_id, status="cancelled")
+    if result:
+        await callback.answer(
+            t("notify:reminder:cancelled", lang), show_alert=True
+        )
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+    else:
+        await callback.answer(t("common:error", lang), show_alert=True)

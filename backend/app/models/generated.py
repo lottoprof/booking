@@ -55,6 +55,7 @@ class Locations(Base):
     office = Column(Text)
     postal_code = Column(Text)
     notes = Column(Text)
+    remind_before_minutes = Column(Integer, nullable=False, server_default=text('120'))
 
     company = relationship('Company', back_populates='locations')
     rooms = relationship('Rooms', back_populates='location')
