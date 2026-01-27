@@ -110,7 +110,7 @@ def _build_keyboard(
     """Build inline keyboard for the notification."""
     booking_id = booking.get("id")
 
-    if event_type == "booking_done" and recipient_role == "admin":
+    if event_type == "booking_done" and recipient_role in ("admin", "manager"):
         return InlineKeyboardMarkup(inline_keyboard=[
             [
                 InlineKeyboardButton(

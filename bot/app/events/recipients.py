@@ -79,6 +79,19 @@ async def resolve_recipients(
                 push_subscriptions=[],
             ))
 
+    # Resolve manager recipients
+    if "manager" in enabled_roles:
+        managers = await api.get_users_by_role("manager")
+        for user in managers:
+            if user["id"] == initiator_user_id:
+                continue
+            recipients.append(Recipient(
+                user_id=user["id"],
+                tg_id=user.get("tg_id"),
+                role="manager",
+                push_subscriptions=[],
+            ))
+
     # Resolve specialist recipient (the specialist assigned to this booking)
     if "specialist" in enabled_roles and booking.get("specialist_id"):
         specialist = await api.get_specialist(booking["specialist_id"])

@@ -20,7 +20,7 @@ from .events import emit_event
 logger = logging.getLogger(__name__)
 
 CHECK_INTERVAL = 60  # seconds between checks
-SENT_KEY_TTL = 86400  # 24 hours — prevent re-sending
+SENT_KEY_TTL = 900  # 15 minutes — re-send until admin confirms
 
 
 async def completion_checker_loop() -> None:

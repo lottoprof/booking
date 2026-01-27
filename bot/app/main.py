@@ -84,15 +84,15 @@ def get_user_role(tg_id: int) -> str:
 # ===============================
 
 class RoleFilter(BaseFilter):
-    """Фильтр по роли пользователя."""
-    
-    def __init__(self, role: str):
-        self.role = role
-    
+    """Фильтр по роли пользователя. Принимает одну или несколько ролей."""
+
+    def __init__(self, *roles: str):
+        self.roles = set(roles)
+
     async def __call__(self, event: Message | CallbackQuery) -> bool:
         tg_id = event.from_user.id
         user_role = get_user_role(tg_id)
-        return user_role == self.role
+        return user_role in self.roles
 
 
 # ===============================
@@ -307,9 +307,9 @@ client_router.message.filter(RoleFilter("client"))
 client_router.callback_query.filter(RoleFilter("client"))
 dp.include_router(client_router)
 
-# Booking notification callbacks — admin only
+# Booking notification callbacks — admin + manager
 notify_router = booking_notify.router
-notify_router.callback_query.filter(RoleFilter("admin"))
+notify_router.callback_query.filter(RoleFilter("admin", "manager"))
 dp.include_router(notify_router)
 
 # Booking edit module — all roles (bke:* callbacks)
