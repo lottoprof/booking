@@ -199,9 +199,9 @@ async def handle_reminder_confirm(callback: CallbackQuery):
         await callback.answer(t("common:error", lang), show_alert=True)
         return
 
-    if booking.get("status") in ("done", "no_show", "cancelled"):
+    if booking.get("status") in ("confirmed", "done", "no_show", "cancelled"):
         await callback.answer(
-            t(f"notify:status:{booking.get('status')}", lang), show_alert=True
+            t("notify:reminder:processed", lang), show_alert=True
         )
         return
 
@@ -231,7 +231,7 @@ async def handle_reminder_cancel(callback: CallbackQuery):
 
     if booking.get("status") in ("done", "no_show", "cancelled"):
         await callback.answer(
-            t(f"notify:status:{booking.get('status')}", lang), show_alert=True
+            t("notify:reminder:processed", lang), show_alert=True
         )
         return
 

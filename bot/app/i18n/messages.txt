@@ -851,8 +851,8 @@ ru:notify:status:cancelled | "Запись отменена"
 en:notify:status:cancelled | "Booking cancelled"
 ru:notify:status:done | "Услуга оказана"
 en:notify:status:done | "Booking completed"
-ru:notify:status:no_show | "Клиент не пришёл"
-en:notify:status:no_show | "Client no-show"
+ru:notify:status:no_show | "Визит не состоялся"
+en:notify:status:no_show | "Visit did not take place"
 
 # --- booking reminder ---
 ru:notify:reminder:title | "🔔 Напоминание о записи"
@@ -865,6 +865,8 @@ ru:notify:reminder:confirmed | "✅ Визит подтверждён"
 en:notify:reminder:confirmed | "✅ Visit confirmed"
 ru:notify:reminder:cancelled | "❌ Запись отменена"
 en:notify:reminder:cancelled | "❌ Booking cancelled"
+ru:notify:reminder:processed | "Запись обработана"
+en:notify:reminder:processed | "Booking processed"
 
 # --- common: additional buttons ---
 ru:common:edit              | "✏️ Редактировать"
