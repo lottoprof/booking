@@ -13,6 +13,7 @@ import hashlib
 import time
 import json
 import logging
+import asyncio
 from urllib.parse import parse_qsl
 from typing import Dict, Optional
 from dataclasses import dataclass
@@ -206,10 +207,12 @@ async def _get_user_role(user_id: int) -> str:
 async def _fetch_user_from_backend(tg_id: int) -> Optional[dict]:
     """
     Ищет пользователя по tg_id в backend.
-    
-    Возвращает dict с user_id, company_id, role, is_new=False если найден.
-    Возвращает None если не найден или БД недоступна.
-    
+
+    Возвращает:
+    - dict с user_id, company_id, role — если пользователь найден
+    - {"not_found": True} — если 404 (пользователь не существует)
+    - None — если ошибка/timeout (требуется retry)
+
     НЕ создаёт пользователя — создание происходит в Bot после запроса телефона.
     """
     async with httpx.AsyncClient(timeout=5.0) as client:
@@ -222,18 +225,17 @@ async def _fetch_user_from_backend(tg_id: int) -> Optional[dict]:
                     "user_id": user["id"],
                     "company_id": user["company_id"],
                     "role": role,
-                    "is_new": False,
                 }
             elif resp.status_code == 404:
                 # Пользователь не найден — это нормально, требуется регистрация
                 logger.info(f"[AUTH] User not found by tg_id={tg_id}, registration required")
-                return None
+                return {"not_found": True}
             else:
                 logger.error(f"[AUTH] Unexpected status: {resp.status_code}")
-                return None
+                return None  # Ошибка — требуется retry
         except Exception as e:
             logger.error(f"User lookup failed: {e}")
-            return None
+            return None  # Timeout/error — требуется retry
 
 
 # ============================================================
@@ -275,36 +277,57 @@ async def authenticate_tg_user(update: dict) -> Optional[TgUserContext]:
         )
     
     logger.info(f"[AUTH] Cache miss, fetching from backend...")
-    
-    # 2. Запрос к backend (только поиск)
-    user_data = await _fetch_user_from_backend(tg_id)
-    
-    if user_data:
-        # Пользователь найден — кэшируем
-        cache_data = {
-            "user_id": user_data["user_id"],
-            "company_id": user_data["company_id"],
-            "role": user_data["role"],
-        }
-        _set_cached_user(tg_id, cache_data)
-        
-        logger.info(f"[AUTH] User found: tg_id={tg_id}, role={user_data['role']}")
-        
+
+    # 2. Запрос к backend с retry (3 попытки при ошибках)
+    user_data = None
+    max_retries = 3
+    for attempt in range(max_retries):
+        user_data = await _fetch_user_from_backend(tg_id)
+
+        if user_data is not None:  # Получили ответ (found или not_found)
+            break
+
+        if attempt < max_retries - 1:
+            logger.warning(f"[AUTH] Retry {attempt + 1}/{max_retries} for tg_id={tg_id}")
+            await asyncio.sleep(1)
+
+    # 3. Обработка результата
+    if user_data is None:
+        # Все попытки провалились — возвращаем ошибку, НЕ помечаем как нового
+        logger.error(f"[AUTH] All retries failed for tg_id={tg_id}")
         return TgUserContext(
             tg_id=tg_id,
-            user_id=user_data["user_id"],
-            company_id=user_data["company_id"],
-            role=user_data["role"],
-            is_new=False,
+            user_id=None,
+            company_id=None,
+            role="client",
+            is_new=False,  # НЕ новый — просто ошибка backend
         )
-    
-    # 3. Пользователь не найден — требуется регистрация
-    logger.info(f"[AUTH] User not found, registration required: tg_id={tg_id}")
-    
+
+    if user_data.get("not_found"):
+        # 404 — действительно новый пользователь, требуется регистрация
+        logger.info(f"[AUTH] User not found, registration required: tg_id={tg_id}")
+        return TgUserContext(
+            tg_id=tg_id,
+            user_id=None,
+            company_id=None,
+            role="client",  # дефолтная роль для нового
+            is_new=True,
+        )
+
+    # Пользователь найден — кэшируем
+    cache_data = {
+        "user_id": user_data["user_id"],
+        "company_id": user_data["company_id"],
+        "role": user_data["role"],
+    }
+    _set_cached_user(tg_id, cache_data)
+
+    logger.info(f"[AUTH] User found: tg_id={tg_id}, role={user_data['role']}")
+
     return TgUserContext(
         tg_id=tg_id,
-        user_id=None,
-        company_id=None,
-        role="client",  # дефолтная роль для нового
-        is_new=True,
+        user_id=user_data["user_id"],
+        company_id=user_data["company_id"],
+        role=user_data["role"],
+        is_new=False,
     )
