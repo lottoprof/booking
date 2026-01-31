@@ -52,12 +52,6 @@ def setup(menu_controller, get_user_role, get_user_context):
 
         logger.info(f"[CLIENT_REPLY] Received: tg_id={tg_id}, text='{text}'")
 
-        # FSM активен — пропускаем
-        current_state = await state.get_state()
-        if current_state:
-            logger.info(f"[CLIENT_REPLY] Skipped, FSM active: {current_state}")
-            return
-
         role = get_user_role(tg_id)
         if role != "client":
             return
@@ -65,6 +59,24 @@ def setup(menu_controller, get_user_role, get_user_context):
         lang = user_lang.get(tg_id, DEFAULT_LANG)
         ctx = get_user_context(tg_id)
         user_id = ctx.user_id if ctx else None
+
+        # Проверяем, что это кнопка главного меню
+        menu_buttons = [
+            t("client:main:book", lang),
+            t("client:main:bookings", lang),
+            t("client:main:contact", lang),
+            t("client:main:services", lang),
+        ]
+
+        if text not in menu_buttons:
+            # Не кнопка меню — пропускаем (FSM обработает)
+            return
+
+        # Сбрасываем FSM если активен (пользователь хочет сменить контекст)
+        current_state = await state.get_state()
+        if current_state:
+            logger.info(f"[CLIENT_REPLY] Clearing FSM state: {current_state}")
+            await state.clear()
 
         # 📅 Записаться — сразу в booking flow (phone gate в конце)
         if text == t("client:main:book", lang):

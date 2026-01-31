@@ -96,15 +96,9 @@ def setup(menu_controller, get_user_role):
         tg_id = message.from_user.id
         chat_id = message.chat.id
         text = message.text
-        
+
         logger.info(f"[ADMIN_REPLY] Received: tg_id={tg_id}, text='{text}'")
-        
-        # Если есть активный FSM state — не обрабатываем
-        current_state = await state.get_state()
-        if current_state:
-            logger.info(f"[ADMIN_REPLY] Skipped, FSM active: {current_state}")
-            return
-        
+
         role = get_user_role(tg_id)
         if role != "admin":
             logger.info(f"[ADMIN_REPLY] Skipped, role={role}")
@@ -112,10 +106,40 @@ def setup(menu_controller, get_user_role):
 
         lang = user_lang.get(tg_id, DEFAULT_LANG)
         logger.info(f"[ADMIN_REPLY] Processing: lang={lang}")
-        
-        # Получаем текущий контекст меню
+
+        # Собираем все кнопки меню
+        menu_buttons = [
+            # Main menu
+            t("admin:main:settings", lang),
+            t("admin:main:schedule", lang),
+            t("admin:main:clients", lang),
+            # Back buttons
+            t("admin:settings:back", lang),
+            t("admin:schedule:back", lang),
+            t("admin:clients:back", lang),
+            # Settings submenu
+            t("admin:settings:locations", lang),
+            t("admin:settings:rooms", lang),
+            t("admin:settings:services", lang),
+            t("admin:settings:packages", lang),
+            t("admin:settings:specialists", lang),
+        ]
+
+        # Добавляем context-aware кнопки
         menu_ctx = await mc.get_menu_context(chat_id)
-        logger.info(f"[ADMIN_REPLY] menu_ctx={menu_ctx}")
+        if menu_ctx and menu_ctx in context_handlers:
+            for action in context_handlers[menu_ctx]:
+                menu_buttons.append(t(f"admin:{menu_ctx}:{action}", lang))
+
+        # Если не кнопка меню — пропускаем (FSM обработает)
+        if text not in menu_buttons:
+            return
+
+        # Сбрасываем FSM если активен (пользователь хочет сменить контекст)
+        current_state = await state.get_state()
+        if current_state:
+            logger.info(f"[ADMIN_REPLY] Clearing FSM state: {current_state}")
+            await state.clear()
 
         # ==============================================================
         # CONTEXT-AWARE: проверяем по текущему контексту
