@@ -105,6 +105,7 @@ def kb_client_card(user_id: int, lang: str) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text=t("admin:client:book", lang), callback_data=f"client:book:{user_id}"),
             InlineKeyboardButton(text=t("admin:client:wallet", lang), callback_data=f"wallet:card:{user_id}"),
         ],
+        [InlineKeyboardButton(text=t("admin:client:sell_package", lang), callback_data=f"sellpkg:start:{user_id}")],
         [InlineKeyboardButton(text=t("admin:client:to_list", lang), callback_data="client:back_list")]
     ])
 

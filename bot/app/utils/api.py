@@ -1065,6 +1065,35 @@ class ApiClient:
         result = await self._request("GET", f"/client_packages/user/{user_id}", params=params)
         return result or []
 
+    async def create_client_package(
+        self,
+        user_id: int,
+        package_id: int,
+        valid_to: str = None,
+        notes: str = None,
+    ) -> Optional[dict]:
+        """
+        POST /client_packages/ — sell a package to a client.
+
+        Args:
+            user_id: Client user ID
+            package_id: Service package ID
+            valid_to: Optional expiration date (YYYY-MM-DD HH:MM:SS)
+            notes: Optional notes
+
+        Returns:
+            Created client package or None on error
+        """
+        data = {
+            "user_id": user_id,
+            "package_id": package_id,
+        }
+        if valid_to:
+            data["valid_to"] = valid_to
+        if notes:
+            data["notes"] = notes
+        return await self._request("POST", "/client_packages/", json=data)
+
 
 # Singleton
 api = ApiClient()
