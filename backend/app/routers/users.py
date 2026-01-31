@@ -7,7 +7,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import text, func
+from sqlalchemy import text, func, or_
 from urllib.parse import unquote
 
 from ..database import get_db
@@ -50,28 +50,34 @@ def search_users(
 ):
     """
     Search users by phone, first_name, or last_name.
-    
+
     Returns only active users, ordered by last_name, first_name.
+
+    Note: SQLite's lower() doesn't handle Cyrillic, so we search
+    with multiple case variants (original, lowercase, title case).
     """
-    q_lower = q.lower()
-    q_pattern = f"%{q}%"
-    q_lower_pattern = f"%{q_lower}%"
-    
+    # Generate case variants for Cyrillic support
+    q_variants = {q, q.lower(), q.title(), q.capitalize()}
+
+    # Build OR conditions for each variant
+    filter_conditions = []
+    for variant in q_variants:
+        pattern = f"%{variant}%"
+        filter_conditions.extend([
+            DBUsers.phone.like(pattern),
+            DBUsers.first_name.like(pattern),
+            DBUsers.last_name.like(pattern),
+        ])
+
     results = (
         db.query(DBUsers)
-        .filter(
-            DBUsers.is_active == 1,
-            (
-                DBUsers.phone.like(q_pattern)
-                | func.lower(DBUsers.first_name).like(q_lower_pattern)
-                | func.lower(DBUsers.last_name).like(q_lower_pattern)
-            )
-        )
+        .filter(DBUsers.is_active == 1)
+        .filter(or_(*filter_conditions))
         .order_by(DBUsers.last_name, DBUsers.first_name)
         .limit(limit)
         .all()
     )
-    
+
     return results
 
 
