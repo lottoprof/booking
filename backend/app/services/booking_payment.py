@@ -258,7 +258,7 @@ def process_booking_payment(
             amount=price,
             tx_type="deposit",
             booking_id=booking_id,
-            description=f"Услуга: {service.name}",
+            description=service.name,
             created_by=created_by,
         )
         transactions.append(tx_deposit)
@@ -271,7 +271,7 @@ def process_booking_payment(
             amount=-price,
             tx_type="withdraw",
             booking_id=booking_id,
-            description=f"Оплата: {service.name}",
+            description=service.name,
             created_by=created_by,
         )
         transactions.append(tx_withdraw)
