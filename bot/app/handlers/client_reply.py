@@ -16,6 +16,7 @@ from bot.app.flows.client.menu import ClientMenuFlow
 from bot.app.flows.client.booking import setup as setup_booking
 from bot.app.flows.client.contact import setup as setup_contact
 from bot.app.flows.client.my_bookings import setup as setup_my_bookings
+from bot.app.flows.client.my_packages import setup as setup_my_packages
 
 import logging
 logger = logging.getLogger(__name__)
@@ -37,7 +38,10 @@ def setup(menu_controller, get_user_role, get_user_context):
     
     # Просмотр букирования
     my_bookings_router = setup_my_bookings(menu_controller)
-    
+
+    # Просмотр пакетов
+    my_packages_router = setup_my_packages(menu_controller)
+
     # Reply роутер
     reply_router = Router(name="client_reply")
 
@@ -99,13 +103,16 @@ def setup(menu_controller, get_user_role, get_user_context):
                 return
             await contact_router.flow.start(message, state, user_id)
 
-        # 📋 Услуги
+        # 📦 Мои пакеты
         elif text == t("client:main:services", lang):
-            logger.info("[CLIENT] services")
-            await message.answer("📋 Услуги (в разработке)")
+            if not user_id:
+                await message.answer(t("registration:error", lang))
+                return
+            await my_packages_router.show_my_packages(message, user_id, lang)
 
     # Порядок роутеров: FSM первые, reply последний
     router.include_router(my_bookings_router)
+    router.include_router(my_packages_router)
     router.include_router(contact_router)
     router.include_router(booking_router)
     router.include_router(reply_router)

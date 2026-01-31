@@ -1048,6 +1048,23 @@ class ApiClient:
             return []
         return [s for s in all_subs if s.get("user_id") == user_id]
 
+    # ------------------------------------------------------------------
+    # Client Packages (purchased packages)
+    # ------------------------------------------------------------------
+
+    async def get_user_packages(self, user_id: int, include_closed: bool = False) -> list[dict]:
+        """
+        GET /client_packages/user/{user_id} — packages purchased by user.
+
+        Returns packages with remaining service counts.
+        By default excludes closed packages.
+        """
+        params = {}
+        if include_closed:
+            params["include_closed"] = "true"
+        result = await self._request("GET", f"/client_packages/user/{user_id}", params=params)
+        return result or []
+
 
 # Singleton
 api = ApiClient()
