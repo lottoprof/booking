@@ -1,111 +1,209 @@
-# Ключевой принцип
+# Кошелёк клиента
 
-У клиента один кошелёк → он должен видеть все свои операции.
-Но транзакции не CRUD, они создаются ТОЛЬКО через бизнес-операции.
+У клиента один кошелёк → он видит все свои операции.
+Транзакции создаются ТОЛЬКО через бизнес-операции (не CRUD).
 
-## МОДЕЛЬ доступа
-> Wallet API (domain-level) описан отдельно и работает поверх foundation CRUD.
+---
 
+## Таблицы
 
-Таблица:
+| Таблица | Назначение |
+|---------|------------|
+| `client_wallets` | Кошелёк (balance, currency, is_blocked) |
+| `wallet_transactions` | История операций (read-only для клиента) |
+| `client_packages` | Купленные пакеты услуг |
+| `service_packages` | Шаблоны пакетов (что продаём) |
 
-- client_wallets — объект кошелька
-- wallet_transactions — операции (read-only для клиента)
+---
 
-Логика:
-клиент может:
-- смотреть баланс
-- смотреть историю операций
-- сервер может:
-списывать
-- пополнять
-- проводить оплату записи
-- делать возврат
-- корректировать баланс
+## Типы транзакций
 
-## СВЯЗЫВАЕМ транзакции с client_wallets 
+| Тип | Сумма | Описание |
+|-----|-------|----------|
+| `deposit` | + | Пополнение (покупка пакета, начисление за услугу) |
+| `withdraw` | − | Списание (использование пакета, оплата услуги, возврат пакета) |
+| `payment` | − | Оплата конкретной записи |
+| `refund` | + | Возврат средств |
+| `correction` | ± | Ручная корректировка (только админ) |
 
-Структура:
+---
 
-`client_wallets`
-   ↓ (1 ко многим)
-`wallet_transactions`
+## API кошелька
 
+### Базовые операции
 
-API должен работать через кошелёк, а НЕ напрямую через транзакции.
+```
+GET  /wallets/{user_id}              → WalletRead
+GET  /wallets/{user_id}/transactions → list[WalletTransactionRead]
+POST /wallets/{user_id}/deposit      → WalletOperationResponse
+POST /wallets/{user_id}/withdraw     → WalletOperationResponse
+POST /wallets/{user_id}/payment      → WalletOperationResponse
+POST /wallets/{user_id}/refund       → WalletOperationResponse
+POST /wallets/{user_id}/correction   → WalletOperationResponse
+```
 
-## Итоговое дерево API (универсальное, строго по домену кошелька)
-1. Получить кошелёк клиента
-GET /wallets/{user_id}
+### Операции с пакетами
 
-2. Получить историю операций клиента
-GET /wallets/{user_id}/transactions
+```
+POST /wallets/{user_id}/package-purchase → WalletPackagePurchaseResponse
+POST /wallets/{user_id}/package-refund   → WalletPackageRefundResponse
+```
 
-Возвращает список WalletTransactionRead.
+### Просмотр пакетов клиента
 
-3. Пополнить кошелёк
-POST /wallets/{user_id}/deposit
+```
+GET /client_packages/user/{user_id}  → list[ClientPackageWithRemaining]
+GET /client_packages/{id}/remaining  → детальный остаток по услугам
+```
 
-Тело: WalletDeposit
+---
 
-4. Списать с кошелька
-POST /wallets/{user_id}/withdraw
+## Пакеты услуг
 
-Тело: WalletWithdraw
+### Структура пакета
 
-5. Оплатить запись
-POST /wallets/{user_id}/payment
+**service_packages** (шаблон):
+```json
+{
+  "id": 2,
+  "name": "LPG 10 сеансов",
+  "package_items": [{"service_id": 1, "quantity": 10}],
+  "package_price": 10000.0
+}
+```
 
-Тело: WalletPayment
+**client_packages** (покупка клиента):
+```json
+{
+  "id": 1,
+  "user_id": 4,
+  "package_id": 2,
+  "used_items": {"1": 3},
+  "is_closed": false,
+  "valid_to": "2026-06-01"
+}
+```
 
-6. Вернуть деньги
-POST /wallets/{user_id}/refund
+### Цена за единицу
 
-Тело: WalletRefund
+```
+unit_price = package_price / sum(quantities)
+```
 
-7. Корректировка (только админ/система)
-POST /wallets/{user_id}/correction
+Пример: пакет 10×LPG за 10000₽ → 1000₽/сеанс
 
-Тело: WalletCorrection
+---
 
-## Та же самая таблица wallet_transactions, но API через client_wallets
-API	Pydantic	Заполняет таблицу?
-/wallets/{id}/deposit	WalletDeposit	✔
-/wallets/{id}/withdraw	WalletWithdraw	✔
-/wallets/{id}/payment	WalletPayment	✔
-/wallets/{id}/refund	WalletRefund	✔
-/wallets/{id}/correction	WalletCorrection	✔
-/wallets/{id}/transactions	WalletTransactionRead	✖ (только просмотр)
+## Бизнес-процессы
 
- Клиент видит ВСЕ поступления и списания
+### 1. Продажа пакета
 
-Потому что:
+**Триггер:** Админ продаёт пакет клиенту
 
-GET /wallets/{user_id}/transactions
-возвращает:
-deposit
-withdraw
-payment
-refund
-correction
+```
+POST /wallets/{user_id}/package-purchase
+{
+  "package_id": 2,
+  "valid_to": "2026-06-01",
+  "created_by": 1
+}
+```
 
-в одном списке, отсортированном по времени.
+**Результат:**
+- Создаётся `client_packages` (used_items = {})
+- Создаётся `deposit` транзакция на `package_price`
+- Баланс увеличивается
 
-1. API становится безопасным и прозрачным
+### 2. Подтверждение записи (status=done)
 
-клиент ничего не может испортить.
+**Триггер:** Админ подтверждает оказание услуги
 
-2. Финансовая логика централизована
+```
+PATCH /bookings/{id}
+{"status": "done"}
+```
 
-в одном месте на backend.
+**Алгоритм:**
 
-3. UI и Telegram-бот получают единый интерфейс:
-Баланс: 1500 ₽
-История:
-+500 пополнение
--300 запись №15
--200 запись №18
-+300 возврат
+```
+1. Найти активный пакет клиента с этой услугой
+   - is_closed = 0
+   - valid_to IS NULL OR valid_to >= today
+   - remaining > 0
+   - ORDER BY valid_to ASC (сначала истекающие)
 
-4. Расхождение данных становится невозможным
-все операции проходят через один маршрут.
+2. ЕСЛИ пакет найден:
+   - used_items[service_id]++
+   - withdraw на unit_price
+   - booking.client_package_id = пакет
+
+3. ЕСЛИ пакет НЕ найден (одиночная услуга):
+   - deposit + withdraw на service.price
+   - booking.client_package_id = NULL
+```
+
+### 3. Возврат остатка пакета
+
+**Триггер:** Клиент хочет вернуть неиспользованные услуги
+
+```
+POST /wallets/{user_id}/package-refund
+{
+  "client_package_id": 1,
+  "reason": "Клиент переезжает",
+  "created_by": 1
+}
+```
+
+**Результат:**
+- Рассчитывается `remaining × unit_price`
+- Создаётся `withdraw` транзакция
+- Пакет закрывается (`is_closed = 1`)
+
+---
+
+## Примеры транзакций
+
+### Сценарий: пакет 10×LPG за 10000₽
+
+| # | amount | type | description |
+|---|--------|------|-------------|
+| 1 | +10000 | deposit | Покупка пакета: LPG |
+| 2 | −1000 | withdraw | Пакет «LPG»: LPG |
+| 3 | −1000 | withdraw | Пакет «LPG»: LPG |
+| 4 | −8000 | withdraw | Возврат: LPG (8 услуг) |
+
+Итого: 0₽
+
+### Сценарий: одиночная услуга 1500₽
+
+| # | amount | type | description |
+|---|--------|------|-------------|
+| 1 | +1500 | deposit | Прессотерапия |
+| 2 | −1500 | withdraw | Прессотерапия |
+
+Итого: 0₽ (баланс не меняется, но есть аудит)
+
+---
+
+## Связи
+
+```
+client_wallets
+    ↓ 1:N
+wallet_transactions ← booking_id → bookings
+                                      ↓
+                              client_package_id
+                                      ↓
+                              client_packages ← package_id → service_packages
+```
+
+---
+
+## Принципы
+
+1. **Централизация** — вся финансовая логика в backend
+2. **Аудит** — каждая операция создаёт транзакцию
+3. **Безопасность** — клиент только смотрит, не редактирует
+4. **Приоритет пакетов** — сначала используются истекающие пакеты
+5. **Атомарность** — покупка/списание/возврат в одной транзакции БД
