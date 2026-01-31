@@ -6,6 +6,8 @@ Wallet Domain API — финансовые операции с кошелька�
 CRUD для client_wallets и wallet_transactions запрещён (read-only через другие роуты).
 """
 
+import json
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -17,6 +19,8 @@ from ..models.generated import (
     WalletTransactions as DBTransaction,
     Users as DBUser,
     Bookings as DBBooking,
+    ServicePackages as DBServicePackage,
+    ClientPackages as DBClientPackage,
 )
 from ..schemas.wallets import (
     WalletRead,
@@ -27,6 +31,10 @@ from ..schemas.wallets import (
     WalletRefund,
     WalletCorrection,
     WalletOperationResponse,
+    WalletPackagePurchase,
+    WalletPackagePurchaseResponse,
+    WalletPackageRefund,
+    WalletPackageRefundResponse,
 )
 
 router = APIRouter(prefix="/wallets", tags=["wallets"])
@@ -374,5 +382,208 @@ def correction(
         new_balance=wallet.balance,
         transaction_id=tx.id,
         message=f"Correction {sign}{data.amount:.2f}: {data.description}",
+    )
+
+
+@router.post("/{user_id}/package-purchase", response_model=WalletPackagePurchaseResponse)
+def package_purchase(
+    user_id: int,
+    data: WalletPackagePurchase,
+    db: Session = Depends(get_db),
+):
+    """
+    Purchase a service package for a client.
+
+    Creates a client_packages record and deposits package_price to wallet.
+    This represents selling a prepaid package to the client.
+    """
+    wallet = get_or_create_wallet(user_id, db)
+    check_wallet_not_blocked(wallet)
+
+    # Get service package
+    package = db.get(DBServicePackage, data.package_id)
+    if not package:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Service package {data.package_id} not found"
+        )
+
+    if not package.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Service package {data.package_id} is not active"
+        )
+
+    # Create client_packages record
+    client_package = DBClientPackage(
+        user_id=user_id,
+        package_id=data.package_id,
+        used_items="{}",
+        is_closed=0,
+        valid_to=data.valid_to,
+        notes=data.notes,
+    )
+    db.add(client_package)
+    db.flush()  # Get the ID
+
+    # Create deposit transaction for package price
+    tx = create_transaction(
+        db=db,
+        wallet_id=wallet.id,
+        amount=package.package_price,
+        tx_type="deposit",
+        description=f"Покупка пакета: {package.name}",
+        created_by=data.created_by,
+    )
+
+    # Update balance
+    wallet.balance += package.package_price
+
+    db.commit()
+    db.refresh(client_package)
+    db.refresh(wallet)
+    db.refresh(tx)
+
+    return WalletPackagePurchaseResponse(
+        success=True,
+        client_package_id=client_package.id,
+        wallet_transaction_id=tx.id,
+        new_balance=wallet.balance,
+        package_name=package.name,
+        package_price=package.package_price,
+    )
+
+
+def _calculate_package_remaining(
+    package_items: str,
+    used_items: str,
+) -> tuple[dict, int, int]:
+    """
+    Calculate remaining services in a package.
+
+    Returns:
+        (remaining_items, total_quantity, total_remaining)
+        remaining_items: {service_id: remaining_count}
+    """
+    items = json.loads(package_items) if package_items else []
+    used = json.loads(used_items) if used_items else {}
+
+    remaining_items = {}
+    total_quantity = 0
+    total_remaining = 0
+
+    for item in items:
+        service_id = str(item["service_id"])
+        quantity = item["quantity"]
+        used_count = used.get(service_id, 0)
+        remaining = quantity - used_count
+
+        remaining_items[service_id] = remaining
+        total_quantity += quantity
+        total_remaining += remaining
+
+    return remaining_items, total_quantity, total_remaining
+
+
+def _calculate_unit_price(package_price: float, package_items: str) -> float:
+    """Calculate price per service unit in a package."""
+    items = json.loads(package_items) if package_items else []
+    total_qty = sum(item["quantity"] for item in items)
+    return package_price / total_qty if total_qty > 0 else 0
+
+
+@router.post("/{user_id}/package-refund", response_model=WalletPackageRefundResponse)
+def package_refund(
+    user_id: int,
+    data: WalletPackageRefund,
+    db: Session = Depends(get_db),
+):
+    """
+    Refund remaining services from a client package.
+
+    Calculates refund amount based on unused services and withdraws from wallet.
+    Marks the package as closed.
+    """
+    wallet = get_or_create_wallet(user_id, db)
+    check_wallet_not_blocked(wallet)
+
+    # Get client package
+    client_package = db.get(DBClientPackage, data.client_package_id)
+    if not client_package:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Client package {data.client_package_id} not found"
+        )
+
+    if client_package.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Client package {data.client_package_id} does not belong to user {user_id}"
+        )
+
+    if client_package.is_closed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Client package {data.client_package_id} is already closed"
+        )
+
+    # Get service package for pricing
+    service_package = db.get(DBServicePackage, client_package.package_id)
+    if not service_package:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Service package {client_package.package_id} not found"
+        )
+
+    # Calculate remaining
+    _, total_quantity, total_remaining = _calculate_package_remaining(
+        service_package.package_items,
+        client_package.used_items,
+    )
+
+    if total_remaining <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No remaining services to refund"
+        )
+
+    # Calculate refund amount
+    unit_price = _calculate_unit_price(
+        service_package.package_price,
+        service_package.package_items,
+    )
+    refund_amount = unit_price * total_remaining
+
+    # Check sufficient balance
+    check_sufficient_balance(wallet, refund_amount)
+
+    # Create withdraw transaction (negative amount)
+    reason = data.reason or "Возврат остатка пакета"
+    tx = create_transaction(
+        db=db,
+        wallet_id=wallet.id,
+        amount=-refund_amount,
+        tx_type="withdraw",
+        description=f"{reason}: {service_package.name} ({total_remaining} услуг)",
+        created_by=data.created_by,
+    )
+
+    # Update balance
+    wallet.balance -= refund_amount
+
+    # Mark package as closed
+    client_package.is_closed = 1
+    client_package.valid_to = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    db.commit()
+    db.refresh(wallet)
+    db.refresh(tx)
+
+    return WalletPackageRefundResponse(
+        success=True,
+        refund_amount=refund_amount,
+        remaining_services=total_remaining,
+        new_balance=wallet.balance,
+        transaction_id=tx.id,
     )
 

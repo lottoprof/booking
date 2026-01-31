@@ -1,7 +1,7 @@
 # Booking & Slots Module — Architecture
 
-## Версия документа: 1.4
-## Статус: Утверждено
+## Версия документа: 1.5
+## Статус: Актуализировано 2026-01-30
 
 ---
 
@@ -103,94 +103,127 @@ class BookingConfig:
 │                         Redis                                   │
 ├─────────────────────────────────────────────────────────────────┤
 │ LEVEL 1 (базовая сетка локации):                               │
-│   slots:location:{location_id}:{date}    │ Сетка дня локации   │
-│   slots:location:version:{location_id}   │ Версия для инвалид. │
+│   slots:day:{location_id}:{date}  ZSET   │ Sorted Set слотов   │
+│     member = "HH:MM", score = expire_ts  │ (время, timestamp)  │
 ├─────────────────────────────────────────────────────────────────┤
 │ LOCKS (при бронировании):                                       │
-│   slots:lock:{location_id}:{date}        │ Lock на день        │
+│   slots:lock:{specialist_id}:{date}      │ Lock на специалиста │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 **Примечание:** Level 2 (гранулярный расчёт) НЕ кешируется в Redis.
-Он вычисляется на лету, так как зависит от конкретной услуги и 
+Он вычисляется на лету, так как зависит от конкретной услуги и
 комбинации специалистов/кабинетов.
 
 ## 4. Формат данных в Redis
 
-### 4.1. Выбранный формат: String "0"/"1"
+### 4.1. Выбранный формат: Sorted Set (ZSET)
 
-**Ключ:** `slots:location:{location_id}:{YYYY-MM-DD}`
+**Ключ:** `slots:day:{location_id}:{YYYY-MM-DD}`
 
-**Значение:** Строка 96 символов
+**Значение:** Sorted Set где:
+- **Member** = "HH:MM" (время слота)
+- **Score** = expire_ts (unix timestamp когда слот перестаёт быть доступным)
 
 ```
-"000000000000000000000000111111111111111111111111111111111111111111110000000000000000000000000000"
- └─ 00:00              └─ 06:00                              └─ 18:00              └─ 23:45
- 
-Индекс = (час × 4) + (минута ÷ 15)
+ZRANGE slots:day:1:2026-02-03 0 -1 WITHSCORES
+→ "10:00" 1770058800
+→ "10:30" 1770060600
+→ "11:00" 1770062400
+...
 
-Значения:
-- "0" = недоступен (закрыто / занято / override / min_advance)
-- "1" = потенциально доступен (требуется Level 2 для точного расчёта)
+expire_ts = (slot_datetime − min_advance_hours).timestamp()
 ```
+
+**Sentinel для пустых дней:** `__empty__` с score=0 означает "день рассчитан, слотов нет"
+
+**Запрос живых слотов:**
+```
+ZRANGEBYSCORE slots:day:{loc}:{date} {now_ts} +inf
+```
+Возвращает только слоты, которые ещё можно забронировать.
 
 ### 4.2. Обоснование выбора
 
-| Критерий | String "0/1" | Packed bytes | JSON |
-|----------|--------------|--------------|------|
-| Память (100 лок.) | 1 MB | 450 KB | 1.5 MB |
-| Debug в redis-cli | ✅ Читаемо | ❌ Бинарно | ✅ Читаемо |
-| Парсинг | `grid[i]` | Битовые операции | `json.loads()` |
+| Критерий | Sorted Set | String "0/1" | JSON |
+|----------|------------|--------------|------|
+| Автоматическое истечение слотов | ✅ ZRANGEBYSCORE | ❌ Ручная фильтрация | ❌ Ручная |
+| Debug в redis-cli | ✅ ZRANGE | ✅ GET | ✅ GET |
+| Память | ~2 KB/день | ~96 B/день | ~500 B/день |
+| Сложность фильтрации | O(log N) | O(N) | O(N) |
 | **Выбор** | ✅ | — | — |
 
-**Память не критична:** 1 MB для 100 локаций × 60 дней — ничто для Redis.
+**Преимущество Sorted Set:** слоты автоматически "истекают" без удаления — `ZRANGEBYSCORE` фильтрует по score.
 
-### 4.3. Работа со строкой в Python
+### 4.3. Работа с Sorted Set в Python
 
 ```python
-# Проверка одного слота
-is_available = grid[slot_index] == "1"
+# backend/app/services/slots/redis_store.py
 
-# Проверка диапазона (для услуги N слотов)
-def is_range_available(grid: str, start: int, length: int) -> bool:
-    return all(c == "1" for c in grid[start:start + length])
+class SlotsRedisStore:
+    KEY_PREFIX = "slots:day"
 
-# Время → индекс
-def time_to_slot(hour: int, minute: int) -> int:
-    return hour * 4 + minute // 15
+    def _key(self, location_id: int, dt: date) -> str:
+        return f"{self.KEY_PREFIX}:{location_id}:{dt.isoformat()}"
 
-# Индекс → время
-def slot_to_time(slot: int) -> tuple[int, int]:
-    return slot // 4, (slot % 4) * 15
+    def store_day_slots(self, location_id, dt, slots: list[tuple[str, float]]):
+        """Store slots as (time_str, expire_ts) pairs."""
+        key = self._key(location_id, dt)
+        pipe = self.redis.pipeline()
+        pipe.delete(key)
+
+        if slots:
+            mapping = {time_str: expire_ts for time_str, expire_ts in slots}
+            pipe.zadd(key, mapping)
+            max_expire = max(exp for _, exp in slots)
+            pipe.expireat(key, int(max_expire) + 60)
+        else:
+            pipe.zadd(key, {"__empty__": 0})
+
+        pipe.execute()
+
+    def get_available_slots(self, location_id, dt, now) -> list[str] | None:
+        """Get slots where expire_ts > now."""
+        key = self._key(location_id, dt)
+        if not self.redis.exists(key):
+            return None  # Cache miss
+
+        now_ts = now.timestamp()
+        members = self.redis.zrangebyscore(key, now_ts, "+inf")
+        return [m for m in members if m != "__empty__"]
 ```
 
 ### 4.4. TTL и инвалидация
 
 | Ключ | TTL | Инвалидация |
 |------|-----|-------------|
-| `slots:location:{id}:{date}` | 24 часа | При изменении данных |
-| `slots:location:version:{id}` | Без TTL | INCR при изменении |
+| `slots:day:{id}:{date}` | До max(expire_ts) + 60 сек | При изменении schedule/override |
 | `slots:lock:{id}:{date}` | 30 секунд | Автоматически |
 
-### 4.5. Оптимизация: MGET для календаря
+**Автоматический TTL:** ключ живёт пока последний слот не истечёт.
+
+### 4.5. Оптимизация: Batch операции
 
 ```python
-# ❌ Плохо: 60 запросов
-for date in dates:
-    grid = redis.get(f"slots:location:{loc_id}:{date}")
+# Batch подсчёт для календаря
+def mget_counts(location_id, dates, now) -> dict[date, int | None]:
+    now_ts = now.timestamp()
+    pipe = redis.pipeline()
 
-# ✅ Хорошо: 1 запрос
-keys = [f"slots:location:{loc_id}:{date}" for date in dates]
-grids = redis.mget(keys)  # batch
+    for dt in dates:
+        key = f"slots:day:{location_id}:{dt}"
+        pipe.zcount(key, now_ts, "+inf")
+
+    return dict(zip(dates, pipe.execute()))
 ```
 
 ### 4.6. Оценка нагрузки
 
 | Сценарий | Локации | Память | IOPS (пик) |
 |----------|---------|--------|------------|
-| Small | 10 | ~100 KB | ~6 ops/s |
-| Medium | 100 | ~1 MB | ~57 ops/s |
-| Large | 1000 | ~10 MB | ~570 ops/s |
+| Small | 10 | ~200 KB | ~6 ops/s |
+| Medium | 100 | ~2 MB | ~57 ops/s |
+| Large | 1000 | ~20 MB | ~570 ops/s |
 
 **Redis легко справляется** — типичный Redis обрабатывает 100,000+ ops/s.
 
@@ -249,17 +282,22 @@ grids = redis.mget(keys)  # batch
 
 **Входные данные:**
 ```python
-def calculate_location_grid(
+def calculate_day_slots(
+    db: Session,
     location_id: int,
-    date: date,
-    config: BookingConfig
-) -> str:
+    target_date: date,
+    config: BookingConfig,
+    now: datetime,
+) -> list[tuple[str, float]]:
     """
     Базовая сетка локации на день.
-    Возвращает строку из 96 символов "0"/"1".
-    
-    "1" = локация ОТКРЫТА (работает в этот слот)
-    "0" = локация ЗАКРЫТА
+    Возвращает список (time_str, expire_ts).
+
+    time_str = "HH:MM" — время слота
+    expire_ts = unix timestamp когда слот истекает
+                (slot_datetime − min_advance_hours)
+
+    Пустой список = локация закрыта в этот день.
     """
 ```
 
@@ -267,50 +305,50 @@ def calculate_location_grid(
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ STEP 1: Инициализация                                        │
-│         grid = "1" × 96  (всё доступно)                      │
-└──────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌──────────────────────────────────────────────────────────────┐
-│ STEP 2: Применить min_advance_hours                          │
-│         Если date == today:                                  │
-│           Закрыть слоты до (now + min_advance_hours)         │
-│         Округление вверх до 15 минут                         │
-└──────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌──────────────────────────────────────────────────────────────┐
-│ STEP 3: Применить график локации                             │
-│         location.work_schedule[weekday]                      │
-│         Закрыть слоты ВНЕ рабочих часов локации             │
-└──────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌──────────────────────────────────────────────────────────────┐
-│ STEP 4: Применить calendar_overrides локации                 │
+│ STEP 1: Проверить calendar_overrides                         │
 │         WHERE target_type = 'location'                       │
 │         AND target_id = location_id                          │
 │         AND date BETWEEN date_start AND date_end             │
+│         Если есть override → вернуть []                      │
 └──────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌──────────────────────────────────────────────────────────────┐
-│ RESULT: location_grid = "000000...111111...000000"           │
-│         "Локация открыта в этих слотах"                      │
+│ STEP 2: Получить рабочие интервалы из work_schedule          │
+│         location.work_schedule[weekday]                      │
+│         Если нет интервалов → вернуть []                     │
+└──────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────┐
+│ STEP 3: Генерировать слоты с expire_ts                       │
+│         Для каждого интервала [start, end]:                  │
+│           t = start                                          │
+│           while t < end:                                     │
+│             expire_ts = (slot_dt − min_advance_hours).ts     │
+│             if expire_ts > now_ts:                           │
+│               slots.append((time_str, expire_ts))            │
+│             t += 15 min                                      │
+└──────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────┐
+│ RESULT: [("10:00", 1770037200), ("10:15", 1770038100), ...]  │
+│         Слоты с их expire timestamps                         │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 **Пример min_advance_hours:**
 ```python
 # Сейчас 2025-01-20 14:35, min_advance_hours = 6
-# Первый доступный слот: 20:35 → округляем до 20:45 (индекс 83)
+# Слот 10:00 → expire_ts = 04:00 (уже прошло) → не включаем
+# Слот 21:00 → expire_ts = 15:00 (ещё впереди) → включаем
 
-if date == today:
-    cutoff_time = now + timedelta(hours=config.min_advance_hours)
-    cutoff_slot = ceil_to_slot(cutoff_time)  # округление вверх
-    for i in range(cutoff_slot):
-        grid[i] = "0"
+for t in range(start_min, end_min, step):
+    slot_dt = datetime.combine(date, time(0)) + timedelta(minutes=t)
+    expire_ts = (slot_dt - timedelta(hours=min_advance_hours)).timestamp()
+    if expire_ts > now.timestamp():
+        slots.append((minutes_to_time_str(t), expire_ts))
 ```
 
 ---
@@ -844,12 +882,11 @@ return 0
 
 ```
 1. При изменении schedule/override локации:
-   - DEL slots:location:{location_id}:{affected_dates}
-   - INCR slots:location:version:{location_id}
+   - DEL slots:day:{location_id}:{affected_dates}
 
-2. При запросе:
-   - Если ключ есть в Redis → вернуть
-   - Если нет → пересчитать Level 1 → записать в Redis → вернуть
+2. При запросе /slots/calendar:
+   - ZCOUNT для проверки наличия в кеше
+   - Если нет → calculate_day_slots() → ZADD в Redis → вернуть
 ```
 
 ### 8.3. Callback для инвалидации
@@ -857,26 +894,29 @@ return 0
 ```python
 # services/slots/invalidator.py
 
-async def invalidate_location_cache(
+def invalidate_location_cache(
     redis: Redis,
     location_id: int,
     dates: list[date] | None = None
-):
+) -> int:
     """
     Инвалидация базовой сетки локации.
-    
+
     Args:
         location_id: ID локации
         dates: список дат или None для всего горизонта
+
+    Returns:
+        Количество удалённых ключей
     """
     if dates:
-        keys = [f"slots:location:{location_id}:{d}" for d in dates]
+        keys = [f"slots:day:{location_id}:{d.isoformat()}" for d in dates]
     else:
-        keys = await redis.keys(f"slots:location:{location_id}:*")
-    
+        keys = redis.keys(f"slots:day:{location_id}:*")
+
     if keys:
-        await redis.delete(*keys)
-        await redis.incr(f"slots:location:version:{location_id}")
+        return redis.delete(*keys)
+    return 0
 ```
 
 **Использование в роутерах:**
@@ -1025,7 +1065,7 @@ logger.info(
 | 2 | Архитектура | ✅ **Двухуровневая** — Level 1 (локация) + Level 2 (услуга/специалист) |
 | 3 | Кеширование | ✅ **Level 1 в Redis**, Level 2 на лету |
 | 4 | Конфигурация | ✅ **Настраиваемые**: horizon_days, min_advance_hours |
-| 5 | Формат Redis | ✅ **String "0"/"1"** — 96 символов, простота debug |
+| 5 | Формат Redis | ✅ **Sorted Set** — (time, expire_ts), автоистечение |
 | 6 | Bookings в базовой сетке | ✅ **НЕТ** — bookings только на Level 2 |
 | 7 | Комнаты | ✅ Привязаны к УСЛУГЕ (service_rooms), не к специалисту |
 
@@ -1097,4 +1137,5 @@ backend/app/
 | 1.2 | 2025-01-19 | Capacity planning. Выбран формат Redis: String "0"/"1". MGET оптимизация. |
 | 1.3 | 2025-01-19 | Bookings убраны из Level 1. Комнаты привязаны к услуге (service_rooms). |
 | 1.4 | 2025-01-19 | Internal API заменён на callback-функцию `invalidate_location_cache()`. |
+| 1.5 | 2026-01-30 | **АКТУАЛИЗАЦИЯ:** Формат Redis изменён на Sorted Set (ZSET). Ключ: `slots:day:{loc}:{date}`, значение: `(time_str, expire_ts)`. Автоматическое истечение слотов через ZRANGEBYSCORE. |
 

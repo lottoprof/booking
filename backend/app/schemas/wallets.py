@@ -75,6 +75,40 @@ class WalletCorrection(BaseModel):
     created_by: int = Field(..., description="Admin user ID (required)")
 
 
+class WalletPackagePurchase(BaseModel):
+    """Request body for POST /wallets/{user_id}/package-purchase"""
+    package_id: int = Field(..., description="Service package ID to purchase")
+    valid_to: Optional[str] = Field(None, description="Expiration date (YYYY-MM-DD), optional")
+    notes: Optional[str] = Field(None, description="Additional notes")
+    created_by: Optional[int] = Field(None, description="Admin user ID who processed the purchase")
+
+
+class WalletPackagePurchaseResponse(BaseModel):
+    """Response for POST /wallets/{user_id}/package-purchase"""
+    success: bool
+    client_package_id: int
+    wallet_transaction_id: int
+    new_balance: float
+    package_name: str
+    package_price: float
+
+
+class WalletPackageRefund(BaseModel):
+    """Request body for POST /wallets/{user_id}/package-refund"""
+    client_package_id: int = Field(..., description="Client package ID to refund")
+    reason: Optional[str] = Field(None, description="Reason for refund")
+    created_by: Optional[int] = Field(None, description="Admin user ID who processed the refund")
+
+
+class WalletPackageRefundResponse(BaseModel):
+    """Response for POST /wallets/{user_id}/package-refund"""
+    success: bool
+    refund_amount: float
+    remaining_services: int
+    new_balance: float
+    transaction_id: int
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Operation Response Schema
 # ──────────────────────────────────────────────────────────────────────────────

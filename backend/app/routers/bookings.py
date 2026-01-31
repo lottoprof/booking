@@ -17,6 +17,7 @@ from ..schemas.bookings import (
     BookingRead,
 )
 from ..services.events import emit_event
+from ..services.booking_payment import process_booking_payment
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +196,25 @@ def update_booking(
             "new_datetime": str(new_date_start),
             "initiated_by": initiated_by,
         })
+
+    # Process payment when status changes to done
+    if new_status == "done" and old_status != "done":
+        try:
+            payment_result = process_booking_payment(
+                db=db,
+                booking_id=obj.id,
+                created_by=x_initiated_by_user_id,
+            )
+            db.commit()
+            db.refresh(obj)
+            logger.info(
+                f"Booking {obj.id} payment processed: "
+                f"source={payment_result['source']}, "
+                f"amount={payment_result['amount']}"
+            )
+        except Exception as e:
+            logger.exception(f"Failed to process payment for booking {obj.id}: {e}")
+            # Don't fail the status update, just log the error
 
     return obj
 

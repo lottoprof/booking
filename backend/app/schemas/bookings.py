@@ -62,6 +62,7 @@ class BookingRead(BaseModel):
     client_id: int
     specialist_id: int
     room_id: Optional[int] = None
+    client_package_id: Optional[int] = None
 
     date_start: datetime
     date_end: datetime

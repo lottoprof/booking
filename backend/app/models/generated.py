@@ -167,9 +167,12 @@ class ClientPackages(Base):
     id = Column(Integer, primary_key=True)
     valid_to = Column(Text)
     notes = Column(Text)
+    used_items = Column(Text, nullable=False, server_default=text("'{}'"))
+    is_closed = Column(Integer, nullable=False, server_default=text('0'))
 
     package = relationship('ServicePackages', back_populates='client_packages')
     user = relationship('Users', back_populates='client_packages')
+    bookings = relationship('Bookings', back_populates='client_package')
 
 
 class ClientWallets(Base):
@@ -267,6 +270,7 @@ class Bookings(Base):
     final_price = Column(Float)
     notes = Column(Text)
     cancel_reason = Column(Text)
+    client_package_id = Column(ForeignKey('client_packages.id', ondelete='SET NULL'))
 
     client = relationship('Users', back_populates='bookings')
     company = relationship('Company', back_populates='bookings')
@@ -276,6 +280,7 @@ class Bookings(Base):
     specialist = relationship('Specialists', back_populates='bookings')
     booking_discounts = relationship('BookingDiscounts', back_populates='booking')
     wallet_transactions = relationship('WalletTransactions', back_populates='booking')
+    client_package = relationship('ClientPackages', back_populates='bookings')
 
 
 class ServiceRooms(Base):
