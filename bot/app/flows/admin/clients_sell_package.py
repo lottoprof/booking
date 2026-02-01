@@ -64,12 +64,9 @@ def kb_packages_list(packages: list, page: int, total: int, user_id: int, lang: 
 def kb_validity_select(user_id: int, package_id: int, lang: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text=t("admin:sellpkg:days_30", lang), callback_data=f"sellpkg:valid:{user_id}:{package_id}:30"),
             InlineKeyboardButton(text=t("admin:sellpkg:days_60", lang), callback_data=f"sellpkg:valid:{user_id}:{package_id}:60"),
-        ],
-        [
             InlineKeyboardButton(text=t("admin:sellpkg:days_90", lang), callback_data=f"sellpkg:valid:{user_id}:{package_id}:90"),
-            InlineKeyboardButton(text=t("admin:sellpkg:unlimited", lang), callback_data=f"sellpkg:valid:{user_id}:{package_id}:0"),
+            InlineKeyboardButton(text=t("admin:sellpkg:days_180", lang), callback_data=f"sellpkg:valid:{user_id}:{package_id}:180"),
         ],
         [InlineKeyboardButton(text=t("common:back", lang), callback_data=f"sellpkg:start:{user_id}")]
     ])
@@ -194,14 +191,8 @@ def setup(menu_controller, api):
 
         name = _format_name(user)
 
-        if days > 0:
-            valid_to = (datetime.utcnow() + timedelta(days=days)).strftime("%d.%m.%Y")
-            validity_text = f"{days} " + (t("admin:sellpkg:days_30", lang).split()[1] if days == 30 else
-                                          t("admin:sellpkg:days_60", lang).split()[1] if days == 60 else
-                                          t("admin:sellpkg:days_90", lang).split()[1])
-            validity_text = f"до {valid_to}"
-        else:
-            validity_text = t("admin:sellpkg:unlimited", lang)
+        valid_to = (datetime.utcnow() + timedelta(days=days)).strftime("%d.%m.%Y")
+        validity_text = f"до {valid_to}"
 
         lines = [
             t("admin:sellpkg:confirm", lang),
@@ -229,9 +220,7 @@ def setup(menu_controller, api):
         days = int(parts[4])
 
         # Calculate valid_to
-        valid_to = None
-        if days > 0:
-            valid_to = (datetime.utcnow() + timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+        valid_to = (datetime.utcnow() + timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
 
         # Create client package
         result = await api.create_client_package(
