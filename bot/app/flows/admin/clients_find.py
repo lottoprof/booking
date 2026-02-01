@@ -102,7 +102,7 @@ def kb_client_card(user_id: int, lang: str) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text=t("admin:client:deactivate", lang), callback_data=f"client:deact:{user_id}"),
         ],
         [
-            InlineKeyboardButton(text=t("admin:client:book", lang), callback_data=f"client:book:{user_id}"),
+            InlineKeyboardButton(text=t("admin:client:book", lang), callback_data=f"adminbook:start:{user_id}"),
             InlineKeyboardButton(text=t("admin:client:wallet", lang), callback_data=f"wallet:card:{user_id}"),
         ],
         [InlineKeyboardButton(text=t("admin:client:sell_package", lang), callback_data=f"sellpkg:start:{user_id}")],
@@ -335,12 +335,6 @@ def setup(menu_controller, api):
         
         await callback.answer(t("admin:client:deactivated", lang), show_alert=True)
         await back_to_list(callback, state)
-
-    @router.callback_query(F.data.startswith("client:book:"))
-    async def book_for_client(callback: CallbackQuery, state: FSMContext):
-        user_id = int(callback.data.split(":")[2])
-        await state.update_data(booking_for_client_id=user_id)
-        await callback.answer("TODO: Запись от имени клиента", show_alert=True)
 
     return router
 
