@@ -1095,6 +1095,73 @@ class ApiClient:
         return await self._request("POST", "/client_packages/", json=data)
 
 
+    # ------------------------------------------------------------------
+    # Calendar Overrides
+    # ------------------------------------------------------------------
+
+    async def get_calendar_overrides(
+        self,
+        target_type: str = None,
+        target_id: int = None,
+    ) -> list[dict]:
+        """
+        GET /calendar_overrides/ — список исключений расписания.
+
+        Args:
+            target_type: "location" или "specialist"
+            target_id: ID локации или специалиста
+        """
+        result = await self._request("GET", "/calendar_overrides/")
+        if not result:
+            return []
+        # Фильтрация на клиенте (backend не поддерживает query params)
+        if target_type:
+            result = [o for o in result if o.get("target_type") == target_type]
+        if target_id:
+            result = [o for o in result if o.get("target_id") == target_id]
+        return result
+
+    async def create_calendar_override(
+        self,
+        target_type: str,
+        target_id: int,
+        date_start: str,
+        date_end: str,
+        override_kind: str,
+        reason: str = None,
+        created_by: int = None,
+    ) -> Optional[dict]:
+        """
+        POST /calendar_overrides/ — создание исключения.
+
+        Args:
+            target_type: "location" или "specialist"
+            target_id: ID локации или специалиста
+            date_start: Дата начала (YYYY-MM-DD)
+            date_end: Дата окончания (YYYY-MM-DD)
+            override_kind: "day_off", "block", "custom_hours"
+            reason: Описание/время работы (для custom_hours: "09:00-18:00")
+            created_by: ID создателя
+        """
+        data = {
+            "target_type": target_type,
+            "target_id": target_id,
+            "date_start": date_start,
+            "date_end": date_end,
+            "override_kind": override_kind,
+        }
+        if reason:
+            data["reason"] = reason
+        if created_by:
+            data["created_by"] = created_by
+        return await self._request("POST", "/calendar_overrides/", json=data)
+
+    async def delete_calendar_override(self, override_id: int) -> bool:
+        """DELETE /calendar_overrides/{id} — удаление исключения."""
+        result = await self._request("DELETE", f"/calendar_overrides/{override_id}")
+        return result is None
+
+
 # Singleton
 api = ApiClient()
 

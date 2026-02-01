@@ -17,6 +17,7 @@ from bot.app.flows.admin import rooms as rooms_flow
 from bot.app.flows.admin import specialists as specialists_flow
 from bot.app.flows.admin import packages as packages_flow
 from bot.app.flows.admin import clients as clients_flow
+from bot.app.flows.admin import schedule as schedule_flow
 
 
 import logging
@@ -42,6 +43,7 @@ def setup(menu_controller, get_user_role):
     room_router = rooms_flow.setup(menu_controller, get_user_role)
     spec_router = specialists_flow.setup(menu_controller, get_user_role)
     clients_router = clients_flow.setup(menu_controller, get_user_role)
+    schedule_router = schedule_flow.setup(menu_controller, get_user_role)
 
     # ==========================================================
     # CONTEXT HANDLERS: menu_context → {action → handler}
@@ -80,7 +82,8 @@ def setup(menu_controller, get_user_role):
             "back": lambda msg, st, lang: flow.back_to_settings(msg, lang),
         },
         "schedule": {
-            # "overrides": lambda msg, st: ...,  # TODO
+            "bookings": lambda msg, st: schedule_router.show_bookings(msg),
+            "overrides": lambda msg, st: schedule_router.show_overrides(msg, st),
             "back": lambda msg, st, lang: flow.back_to_main(msg, lang),
         },
         "clients": {
@@ -214,6 +217,7 @@ def setup(menu_controller, get_user_role):
     router.include_router(room_router)
     router.include_router(spec_router)
     router.include_router(clients_router)
+    router.include_router(schedule_router)
     router.include_router(reply_router)  # Catch-all последний
 
 

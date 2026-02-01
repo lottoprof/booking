@@ -63,6 +63,7 @@ def admin_schedule(lang: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [
+                KeyboardButton(text=t("admin:schedule:bookings", lang)),
                 KeyboardButton(text=t("admin:schedule:overrides", lang)),
             ],
             [
