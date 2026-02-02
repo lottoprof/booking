@@ -240,6 +240,12 @@ en:admin:clients:wallets  | "💰 Wallets"
 ru:admin:clients:back     | "⬅️ Назад"
 en:admin:clients:back     | "⬅️ Back"
 
+# --- admin / clients bookings list ---
+ru:admin:bookings_list:title | "📖 Записи: %d"
+en:admin:bookings_list:title | "📖 Bookings: %d"
+ru:admin:bookings_list:empty | "📭 Нет активных записей"
+en:admin:bookings_list:empty | "📭 No active bookings"
+
 # --- admin / locations menu (Reply) ---
 ru:admin:locations:title | "📍 Локации"
 en:admin:locations:title | "📍 Locations"

@@ -88,8 +88,7 @@ def setup(menu_controller, get_user_role):
         },
         "clients": {
             "find": lambda msg, st: clients_router.start_search(msg, st),
-            # "bookings": lambda msg, st: ...,   # TODO: Phase 2
-            # "wallets": lambda msg, st: ...,    # TODO: список всех кошельков
+            "bookings": lambda msg, st: clients_router.show_bookings_list(msg),
             "back": lambda msg, st, lang: flow.back_to_main(msg, lang),
         },
     }

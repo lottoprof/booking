@@ -18,6 +18,7 @@ from bot.app.flows.admin import clients_edit
 from bot.app.flows.admin import clients_wallets
 from bot.app.flows.admin import clients_sell_package
 from bot.app.flows.admin import clients_booking
+from bot.app.flows.admin import clients_bookings_list
 from bot.app.utils.api import api  # Singleton API client
 
 
@@ -40,6 +41,7 @@ def setup(menu_controller, get_user_role):
     wallets_router = clients_wallets.setup(menu_controller, api)
     sell_package_router = clients_sell_package.setup(menu_controller, api)
     booking_router = clients_booking.setup(menu_controller, api)
+    bookings_list_router = clients_bookings_list.setup(menu_controller, api)
 
     # Связываем роутеры для делегирования
     find_router.edit_router = edit_router
@@ -51,9 +53,11 @@ def setup(menu_controller, get_user_role):
     main_router.include_router(wallets_router)
     main_router.include_router(sell_package_router)
     main_router.include_router(booking_router)
+    main_router.include_router(bookings_list_router)
 
-    # Экспортируем start_search для context_handlers
+    # Экспортируем start_search и show_bookings_list для context_handlers
     main_router.start_search = find_router.start_search
+    main_router.show_bookings_list = bookings_list_router.show_bookings_list
 
     return main_router
 
