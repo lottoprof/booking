@@ -227,22 +227,54 @@ def kb_time_input(lang: str) -> InlineKeyboardMarkup:
     ])
 
 
+def kb_choose_reason(
+    target_type: str,
+    target_id: int,
+    date_str: str,
+    time_str: str,
+    lang: str,
+) -> InlineKeyboardMarkup:
+    """Клавиатура выбора причины изменения."""
+    # Заменяем : на . в времени, чтобы не ломать split(":")
+    encoded_time = time_str.replace(":", ".") if time_str else ""
+    # callback: schovr:reason:{target_type}:{target_id}:{date}:{time}:{kind}
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text=t("admin:schovr:reason_cleaning", lang),
+            callback_data=f"schovr:reason:{target_type}:{target_id}:{date_str}:{encoded_time}:cleaning"
+        )],
+        [InlineKeyboardButton(
+            text=t("admin:schovr:reason_maintenance", lang),
+            callback_data=f"schovr:reason:{target_type}:{target_id}:{date_str}:{encoded_time}:maintenance"
+        )],
+        [InlineKeyboardButton(
+            text=t("admin:schovr:reason_other", lang),
+            callback_data=f"schovr:reason:{target_type}:{target_id}:{date_str}:{encoded_time}:block"
+        )],
+        [InlineKeyboardButton(
+            text=t("common:cancel", lang),
+            callback_data=f"schovr:day:{target_type}:{target_id}:{date_str}"
+        )],
+    ])
+
+
 def kb_confirm_override(
     target_type: str,
     target_id: int,
     date_str: str,
-    is_day_off: bool,
+    override_kind: str,
     time_str: str,
     lang: str,
 ) -> InlineKeyboardMarkup:
     """Клавиатура подтверждения изменения."""
     # Заменяем : на . в времени, чтобы не ломать split(":")
     encoded_time = time_str.replace(":", ".") if time_str else ""
+    # callback: schovr:confirm:{target_type}:{target_id}:{date}:{kind}:{time}
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
                 text=t("common:yes", lang),
-                callback_data=f"schovr:confirm:{target_type}:{target_id}:{date_str}:{'off' if is_day_off else encoded_time}"
+                callback_data=f"schovr:confirm:{target_type}:{target_id}:{date_str}:{override_kind}:{encoded_time}"
             ),
             InlineKeyboardButton(
                 text=t("common:no", lang),
@@ -534,20 +566,49 @@ def setup(menu_controller, api):
 
         await state.clear()
 
-        # Показываем подтверждение
+        selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        day_key = WEEKDAY_KEYS[selected_date.weekday()]
+        day_name = t(f"day:{day_key}:full", lang)
+
         if is_day_off:
+            # Выходной — сразу подтверждение
             change_text = t("admin:schovr:day_off", lang)
+            confirm_text = f"{t('admin:schovr:confirm', lang)}\n\n{day_name} {selected_date.strftime('%d.%m')}: {change_text}"
+            kb = kb_confirm_override(target_type, target_id, date_str, "day_off", "", lang)
+            await mc.send_inline_in_flow(message.bot, message.chat.id, confirm_text, kb)
         else:
-            change_text = time_str
+            # Кастомные часы — выбор причины
+            reason_text = f"{day_name} {selected_date.strftime('%d.%m')}: {time_str}\n\n{t('admin:schovr:choose_reason', lang)}"
+            kb = kb_choose_reason(target_type, target_id, date_str, time_str, lang)
+            await mc.send_inline_in_flow(message.bot, message.chat.id, reason_text, kb)
+
+    # ----------------------------------------------------------
+    # Callbacks: выбор причины -> подтверждение
+    # ----------------------------------------------------------
+
+    @router.callback_query(F.data.startswith("schovr:reason:"))
+    async def select_reason(callback: CallbackQuery, state: FSMContext):
+        """Обработка выбора причины -> показ подтверждения."""
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+        # schovr:reason:{target_type}:{target_id}:{date}:{time}:{kind}
+        parts = callback.data.split(":")
+        target_type = parts[2]
+        target_id = int(parts[3])
+        date_str = parts[4]
+        encoded_time = parts[5]
+        override_kind = parts[6]
+
+        # Декодируем время (. -> :)
+        time_str = encoded_time.replace(".", ":")
 
         selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         day_key = WEEKDAY_KEYS[selected_date.weekday()]
         day_name = t(f"day:{day_key}:full", lang)
 
-        confirm_text = f"{t('admin:schovr:confirm', lang)}\n\n{day_name} {selected_date.strftime('%d.%m')}: {change_text}"
-        kb = kb_confirm_override(target_type, target_id, date_str, is_day_off, time_str or "", lang)
-
-        await mc.send_inline_in_flow(message.bot, message.chat.id, confirm_text, kb)
+        confirm_text = f"{t('admin:schovr:confirm', lang)}\n\n{day_name} {selected_date.strftime('%d.%m')}: {time_str}"
+        kb = kb_confirm_override(target_type, target_id, date_str, override_kind, time_str, lang)
+        await mc.edit_inline(callback.message, confirm_text, kb)
+        await callback.answer()
 
     # ----------------------------------------------------------
     # Callbacks: подтверждение
@@ -556,17 +617,16 @@ def setup(menu_controller, api):
     @router.callback_query(F.data.startswith("schovr:confirm:"))
     async def confirm_override(callback: CallbackQuery, state: FSMContext):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+        # schovr:confirm:{target_type}:{target_id}:{date}:{kind}:{time}
         parts = callback.data.split(":")
         target_type = parts[2]  # loc или spec
         target_id = int(parts[3])
         date_str = parts[4]
-        time_or_off = parts[5] if len(parts) > 5 else "off"
-
-        is_day_off = time_or_off == "off"
+        override_kind = parts[5]
+        encoded_time = parts[6] if len(parts) > 6 else ""
 
         # Декодируем время (. -> :)
-        if not is_day_off:
-            time_or_off = time_or_off.replace(".", ":")
+        time_str = encoded_time.replace(".", ":") if encoded_time else None
 
         # Определяем target_type для API
         api_target_type = "location" if target_type == "loc" else "specialist"
@@ -592,9 +652,7 @@ def setup(menu_controller, api):
                 logger.warning(f"Failed to delete override {ovr.get('id')}: {e}")
 
         # Создаём новый override
-        # block с reason = время (day_off, block — допустимые значения)
-        override_kind = "day_off" if is_day_off else "block"
-        reason = None if is_day_off else time_or_off
+        reason = time_str if override_kind != "day_off" else None
 
         result = await api.create_calendar_override(
             target_type=api_target_type,
