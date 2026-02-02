@@ -236,11 +236,13 @@ def kb_confirm_override(
     lang: str,
 ) -> InlineKeyboardMarkup:
     """Клавиатура подтверждения изменения."""
+    # Заменяем : на . в времени, чтобы не ломать split(":")
+    encoded_time = time_str.replace(":", ".") if time_str else ""
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
                 text=t("common:yes", lang),
-                callback_data=f"schovr:confirm:{target_type}:{target_id}:{date_str}:{'off' if is_day_off else time_str}"
+                callback_data=f"schovr:confirm:{target_type}:{target_id}:{date_str}:{'off' if is_day_off else encoded_time}"
             ),
             InlineKeyboardButton(
                 text=t("common:no", lang),
@@ -562,6 +564,10 @@ def setup(menu_controller, api):
 
         is_day_off = time_or_off == "off"
 
+        # Декодируем время (. -> :)
+        if not is_day_off:
+            time_or_off = time_or_off.replace(".", ":")
+
         # Определяем target_type для API
         api_target_type = "location" if target_type == "loc" else "specialist"
 
@@ -586,7 +592,8 @@ def setup(menu_controller, api):
                 logger.warning(f"Failed to delete override {ovr.get('id')}: {e}")
 
         # Создаём новый override
-        override_kind = "day_off" if is_day_off else "custom_hours"
+        # block с reason = время (day_off, block — допустимые значения)
+        override_kind = "day_off" if is_day_off else "block"
         reason = None if is_day_off else time_or_off
 
         result = await api.create_calendar_override(
