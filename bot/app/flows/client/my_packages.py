@@ -40,27 +40,30 @@ def setup(menu_controller):
         services = await api.get_services()
         service_names = {str(s["id"]): s["name"] for s in services}
 
-        # 5. Format packages
-        lines = [t("client:packages:title", lang), ""]
-
+        # 5. Each package as a separate message
         for pkg in active:
-            pkg_id = pkg["id"]
-            lines.append(f"📦 {pkg['package_name']}")
+            remaining_data = await _get_package_remaining(pkg["id"])
+            breakdown = remaining_data.get("breakdown", []) if remaining_data else []
 
-            # Get breakdown for this package
-            remaining_data = await _get_package_remaining(pkg_id)
+            lines = [f"📦 {pkg['package_name']}"]
 
-            if remaining_data and remaining_data.get("breakdown"):
-                breakdown = remaining_data["breakdown"]
-                for i, item in enumerate(breakdown):
-                    service_id = str(item["service_id"])
-                    service_name = service_names.get(service_id, f"#{service_id}")
-                    remaining = item["remaining"]
-                    total = item["quantity"]
-
-                    remaining_text = t("client:packages:remaining", lang) % (remaining, total)
-                    prefix = "├" if i < len(breakdown) - 1 or pkg.get("valid_to") else "└"
-                    lines.append(f"{prefix} {service_name}: {remaining_text}")
+            if len(breakdown) == 1:
+                # Simple package (1 service)
+                item = breakdown[0]
+                used = item["quantity"] - item["remaining"]
+                lines.append(f"Сделано: {used}")
+                lines.append(f"Осталось: {item['remaining']}")
+            elif len(breakdown) > 1:
+                # Complex package (multiple services)
+                used_parts = []
+                remaining_parts = []
+                for item in breakdown:
+                    name = service_names.get(str(item["service_id"]), "?")
+                    used = item["quantity"] - item["remaining"]
+                    used_parts.append(f"{name} {used}")
+                    remaining_parts.append(f"{name} {item['remaining']}")
+                lines.append(f"Сделано: {', '.join(used_parts)}")
+                lines.append(f"Осталось: {', '.join(remaining_parts)}")
 
             # Valid to
             valid_to = pkg.get("valid_to")
@@ -68,19 +71,15 @@ def setup(menu_controller):
                 date_str = str(valid_to)[:10]
                 try:
                     formatted = datetime.strptime(date_str, "%Y-%m-%d").strftime("%d.%m.%Y")
-                    lines.append("└ " + t("client:packages:valid_until", lang) % formatted)
+                    lines.append(f"⏳ до {formatted}")
                 except ValueError:
-                    lines.append("└ " + t("client:packages:valid_until", lang) % date_str)
-            else:
-                lines.append("└ " + t("client:packages:unlimited", lang))
+                    lines.append(f"⏳ до {date_str}")
 
-            lines.append("")
-
-        text = "\n".join(lines)
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=t("common:hide", lang), callback_data="mypkg:hide")]
-        ])
-        await mc.show_inline_readonly(message, text, kb)
+            text = "\n".join(lines)
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text=t("common:hide", lang), callback_data="mypkg:hide")]
+            ])
+            await mc.show_inline_readonly(message, text, kb)
 
     async def _get_package_remaining(package_id: int) -> dict | None:
         """Get remaining breakdown for a client package."""
