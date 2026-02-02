@@ -88,7 +88,33 @@ def calculate_service_availability(
         # Check specialist overrides
         overrides = _get_specialist_overrides(db, spec.id, target_date)
         if overrides:
-            times = set()
+            has_day_off = False
+            custom_times = None
+
+            for ovr in overrides:
+                if ovr.override_kind == "day_off":
+                    has_day_off = True
+                    break
+                # Check custom hours in reason (e.g., "10:00-14:00")
+                if ovr.reason and "-" in ovr.reason:
+                    parts = ovr.reason.split("-")
+                    if len(parts) == 2 and ":" in parts[0] and ":" in parts[1]:
+                        start_min = time_str_to_minutes(parts[0].strip())
+                        end_min = time_str_to_minutes(parts[1].strip())
+                        custom_times = set()
+                        t = start_min
+                        while t < end_min:
+                            custom_times.add(minutes_to_time_str(t))
+                            t += config.slot_step_minutes
+                        break
+
+            if has_day_off:
+                times = set()
+            elif custom_times is not None:
+                times &= custom_times
+            else:
+                # Other override without custom hours - block all
+                times = set()
 
         # Subtract booked times
         bookings = _get_specialist_bookings(db, spec.id, target_date)
