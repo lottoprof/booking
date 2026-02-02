@@ -53,13 +53,23 @@ def format_day_schedule(schedule: dict, day: date) -> str:
     if not day_schedule:
         return ""
 
-    # Расписание может быть строкой "09:00-18:00" или списком ["09:00", "18:00"]
+    # Dict: {'start': '10:00', 'end': '20:00'}
+    if isinstance(day_schedule, dict):
+        start = day_schedule.get("start", "")
+        end = day_schedule.get("end", "")
+        if start and end:
+            return f"{start}-{end}"
+        return ""
+
+    # Строка: "09:00-18:00"
     if isinstance(day_schedule, str):
         return day_schedule
-    elif isinstance(day_schedule, list) and len(day_schedule) >= 2:
+
+    # Список: ["09:00", "18:00"]
+    if isinstance(day_schedule, list) and len(day_schedule) >= 2:
         return f"{day_schedule[0]}-{day_schedule[1]}"
 
-    return str(day_schedule)
+    return ""
 
 
 def parse_time_input(text: str) -> tuple[bool, str]:
@@ -155,7 +165,7 @@ def kb_week_calendar(
     lang: str,
 ) -> InlineKeyboardMarkup:
     """7-дневный календарь с текущим расписанием."""
-    rows = []
+    buttons = []
 
     for day in days:
         day_key = WEEKDAY_KEYS[day.weekday()]
@@ -180,24 +190,25 @@ def kb_week_calendar(
                 except Exception:
                     pass
 
-        # Определяем текст кнопки
-        if override:
-            if override.get("override_kind") == "day_off":
-                text = f"{t('admin:schovr:day_off', lang)} {day_name} {day_date}"
-            else:
-                time_str = override.get("reason", "")
-                text = f"{day_name} {day_date} {time_str}"
-        elif is_working_day(day, schedule):
-            time_str = format_day_schedule(schedule, day)
-            text = f"{day_name} {day_date} {time_str}"
+        # Определяем текст кнопки — БЕЗ времени
+        if override and override.get("override_kind") == "day_off":
+            text = f"😴 {day_name} {day_date}"
+        elif not is_working_day(day, schedule) and not override:
+            text = f"😴 {day_name} {day_date}"
         else:
-            text = f"{t('admin:schovr:day_off', lang)} {day_name} {day_date}"
+            text = f"{day_name} {day_date}"
 
-        rows.append([InlineKeyboardButton(
+        buttons.append(InlineKeyboardButton(
             text=text,
             callback_data=f"schovr:day:{target_type}:{target_id}:{day.isoformat()}"
-        )])
+        ))
 
+    # Группируем по 2 в ряд
+    rows = []
+    for i in range(0, len(buttons), 2):
+        rows.append(buttons[i:i+2])
+
+    # Кнопка "Назад"
     rows.append([InlineKeyboardButton(
         text=t("common:back", lang),
         callback_data=f"schovr:back_{target_type}"
