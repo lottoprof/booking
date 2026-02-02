@@ -5,6 +5,7 @@ bot/app/flows/admin/schedule_overrides.py
 """
 
 import re
+import math
 import logging
 from datetime import datetime, date, timedelta
 from aiogram import Router, F
@@ -23,6 +24,10 @@ TIME_PATTERN = re.compile(r"^(\d{2}):(\d{2})-(\d{2}):(\d{2})$")
 # Ключи дней недели
 WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
+# Пагинация календаря
+DAYS_PER_PAGE = 7
+HORIZON_DAYS = 60  # из BookingConfig
+
 
 class ScheduleOverride(StatesGroup):
     time_input = State()
@@ -32,10 +37,10 @@ class ScheduleOverride(StatesGroup):
 # Helpers
 # ==============================================================
 
-def get_next_week_days() -> list[date]:
-    """Возвращает следующие 7 дней начиная с сегодня."""
+def get_calendar_days(horizon_days: int = HORIZON_DAYS) -> list[date]:
+    """Возвращает дни от сегодня до horizon_days."""
     today = date.today()
-    return [today + timedelta(days=i) for i in range(7)]
+    return [today + timedelta(days=i) for i in range(horizon_days)]
 
 
 def is_working_day(day: date, schedule: dict) -> bool:
@@ -163,11 +168,18 @@ def kb_week_calendar(
     target_type: str,
     target_id: int,
     lang: str,
+    page: int = 0,
 ) -> InlineKeyboardMarkup:
-    """7-дневный календарь с текущим расписанием."""
+    """Календарь с пагинацией."""
+    # Пагинация
+    total_pages = max(1, math.ceil(len(days) / DAYS_PER_PAGE))
+    page = max(0, min(page, total_pages - 1))
+    start = page * DAYS_PER_PAGE
+    page_days = days[start:start + DAYS_PER_PAGE]
+
     buttons = []
 
-    for day in days:
+    for day in page_days:
         day_key = WEEKDAY_KEYS[day.weekday()]
         day_name = t(f"day:{day_key}", lang)
         day_date = day.strftime("%d.%m")
@@ -207,6 +219,29 @@ def kb_week_calendar(
     rows = []
     for i in range(0, len(buttons), 2):
         rows.append(buttons[i:i+2])
+
+    # Навигация ◀️ page/total ▶️
+    if total_pages > 1:
+        nav = []
+        if page > 0:
+            nav.append(InlineKeyboardButton(
+                text="◀️",
+                callback_data=f"schovr:page:{target_type}:{target_id}:{page-1}"
+            ))
+        else:
+            nav.append(InlineKeyboardButton(text=" ", callback_data="schovr:noop"))
+        nav.append(InlineKeyboardButton(
+            text=f"{page+1}/{total_pages}",
+            callback_data="schovr:noop"
+        ))
+        if page < total_pages - 1:
+            nav.append(InlineKeyboardButton(
+                text="▶️",
+                callback_data=f"schovr:page:{target_type}:{target_id}:{page+1}"
+            ))
+        else:
+            nav.append(InlineKeyboardButton(text=" ", callback_data="schovr:noop"))
+        rows.append(nav)
 
     # Кнопка "Назад"
     rows.append([InlineKeyboardButton(
@@ -382,7 +417,7 @@ def setup(menu_controller, api):
     # Callbacks: выбор локации/специалиста -> календарь
     # ----------------------------------------------------------
 
-    async def _show_location_calendar(callback: CallbackQuery, location_id: int, skip_answer: bool = False):
+    async def _show_location_calendar(callback: CallbackQuery, location_id: int, skip_answer: bool = False, page: int = 0):
         """Показывает календарь локации."""
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
@@ -405,7 +440,7 @@ def setup(menu_controller, api):
             target_id=location_id
         )
 
-        days = get_next_week_days()
+        days = get_calendar_days(HORIZON_DAYS)
 
         # Кэшируем для повторного использования
         cache_key = callback.message.chat.id
@@ -417,12 +452,12 @@ def setup(menu_controller, api):
         }
 
         text = t("admin:schovr:calendar_title", lang)
-        kb = kb_week_calendar(days, schedule, overrides, "loc", location_id, lang)
+        kb = kb_week_calendar(days, schedule, overrides, "loc", location_id, lang, page)
         await mc.edit_inline(callback.message, text, kb)
         if not skip_answer:
             await callback.answer()
 
-    async def _show_specialist_calendar(callback: CallbackQuery, specialist_id: int, skip_answer: bool = False):
+    async def _show_specialist_calendar(callback: CallbackQuery, specialist_id: int, skip_answer: bool = False, page: int = 0):
         """Показывает календарь специалиста."""
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
@@ -445,7 +480,7 @@ def setup(menu_controller, api):
             target_id=specialist_id
         )
 
-        days = get_next_week_days()
+        days = get_calendar_days(HORIZON_DAYS)
 
         # Получаем имя
         if specialist.get("display_name"):
@@ -464,7 +499,7 @@ def setup(menu_controller, api):
         }
 
         text = t("admin:schovr:calendar_title", lang)
-        kb = kb_week_calendar(days, schedule, overrides, "spec", specialist_id, lang)
+        kb = kb_week_calendar(days, schedule, overrides, "spec", specialist_id, lang, page)
         await mc.edit_inline(callback.message, text, kb)
         if not skip_answer:
             await callback.answer()
@@ -486,6 +521,29 @@ def setup(menu_controller, api):
     @router.callback_query(F.data == "schovr:back_spec")
     async def back_to_spec_list(callback: CallbackQuery, state: FSMContext):
         await choose_specialist(callback, state)
+
+    # ----------------------------------------------------------
+    # Callbacks: пагинация календаря
+    # ----------------------------------------------------------
+
+    @router.callback_query(F.data.startswith("schovr:page:"))
+    async def handle_calendar_page(callback: CallbackQuery, state: FSMContext):
+        """Обработка переключения страницы календаря."""
+        # schovr:page:{target_type}:{target_id}:{page}
+        parts = callback.data.split(":")
+        target_type = parts[2]
+        target_id = int(parts[3])
+        page = int(parts[4])
+
+        if target_type == "loc":
+            await _show_location_calendar(callback, target_id, page=page)
+        else:
+            await _show_specialist_calendar(callback, target_id, page=page)
+
+    @router.callback_query(F.data == "schovr:noop")
+    async def handle_noop(callback: CallbackQuery):
+        """Обработка нажатия на номер страницы (noop)."""
+        await callback.answer()
 
     # ----------------------------------------------------------
     # Callbacks: выбор дня -> ввод времени
