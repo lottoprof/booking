@@ -50,16 +50,32 @@ def calculate_day_slots(
 
     # Step 2: Check calendar overrides (day_off, block, etc.)
     overrides = _get_location_overrides(db, location_id, target_date)
+    custom_intervals = None
+
     if overrides:
-        return []
+        for ovr in overrides:
+            if ovr.override_kind == "day_off":
+                return []
+            # Check if override has custom hours in reason (e.g., "10:00-15:00")
+            if ovr.reason and "-" in ovr.reason:
+                parts = ovr.reason.split("-")
+                if len(parts) == 2 and ":" in parts[0] and ":" in parts[1]:
+                    custom_intervals = [[parts[0].strip(), parts[1].strip()]]
+                    break
+
+        # If override exists but no custom hours, block the day
+        if custom_intervals is None:
+            return []
 
     # Step 3: Get working intervals for the day
-    try:
-        schedule = json.loads(location.work_schedule) if location.work_schedule else {}
-    except json.JSONDecodeError:
-        schedule = {}
-
-    intervals = _get_day_intervals(schedule, target_date)
+    if custom_intervals:
+        intervals = custom_intervals
+    else:
+        try:
+            schedule = json.loads(location.work_schedule) if location.work_schedule else {}
+        except json.JSONDecodeError:
+            schedule = {}
+        intervals = _get_day_intervals(schedule, target_date)
     if not intervals:
         return []
 
