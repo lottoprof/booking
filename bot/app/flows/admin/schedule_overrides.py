@@ -596,7 +596,6 @@ def setup(menu_controller, api):
             date_end=date_str,
             override_kind=override_kind,
             reason=reason,
-            created_by=callback.from_user.id,
         )
 
         if result:
