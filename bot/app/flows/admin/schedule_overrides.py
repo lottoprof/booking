@@ -28,6 +28,9 @@ WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 DAYS_PER_PAGE = 7
 HORIZON_DAYS = 60  # из BookingConfig
 
+# Пагинация списков локаций/специалистов
+LIST_PAGE_SIZE = 5
+
 
 class ScheduleOverride(StatesGroup):
     time_input = State()
@@ -130,14 +133,43 @@ def kb_choose_target(lang: str) -> InlineKeyboardMarkup:
     ])
 
 
-def kb_locations_list(locations: list[dict], lang: str) -> InlineKeyboardMarkup:
-    """Клавиатура списка локаций."""
+def kb_locations_list(locations: list[dict], lang: str, page: int = 0) -> InlineKeyboardMarkup:
+    """Клавиатура списка локаций с пагинацией."""
     rows = []
-    for loc in locations:
+    total_pages = max(1, math.ceil(len(locations) / LIST_PAGE_SIZE))
+    page = max(0, min(page, total_pages - 1))
+    start = page * LIST_PAGE_SIZE
+    page_locations = locations[start:start + LIST_PAGE_SIZE]
+
+    for loc in page_locations:
         rows.append([InlineKeyboardButton(
             text=f"📍 {loc['name']}",
             callback_data=f"schovr:loc:{loc['id']}"
         )])
+
+    # Навигация если >5 локаций
+    if total_pages > 1:
+        nav = []
+        if page > 0:
+            nav.append(InlineKeyboardButton(
+                text="◀️",
+                callback_data=f"schovr:locpage:{page-1}"
+            ))
+        else:
+            nav.append(InlineKeyboardButton(text=" ", callback_data="schovr:noop"))
+        nav.append(InlineKeyboardButton(
+            text=f"{page+1}/{total_pages}",
+            callback_data="schovr:noop"
+        ))
+        if page < total_pages - 1:
+            nav.append(InlineKeyboardButton(
+                text="▶️",
+                callback_data=f"schovr:locpage:{page+1}"
+            ))
+        else:
+            nav.append(InlineKeyboardButton(text=" ", callback_data="schovr:noop"))
+        rows.append(nav)
+
     rows.append([InlineKeyboardButton(
         text=t("common:back", lang),
         callback_data="schovr:back_type"
@@ -145,15 +177,44 @@ def kb_locations_list(locations: list[dict], lang: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def kb_specialists_list(specialists: list[dict], lang: str) -> InlineKeyboardMarkup:
-    """Клавиатура списка специалистов."""
+def kb_specialists_list(specialists: list[dict], lang: str, page: int = 0) -> InlineKeyboardMarkup:
+    """Клавиатура списка специалистов с пагинацией."""
     rows = []
-    for spec in specialists:
+    total_pages = max(1, math.ceil(len(specialists) / LIST_PAGE_SIZE))
+    page = max(0, min(page, total_pages - 1))
+    start = page * LIST_PAGE_SIZE
+    page_specialists = specialists[start:start + LIST_PAGE_SIZE]
+
+    for spec in page_specialists:
         name = spec.get("_display_name", spec.get("display_name", "—"))
         rows.append([InlineKeyboardButton(
             text=f"👤 {name}",
             callback_data=f"schovr:spec:{spec['id']}"
         )])
+
+    # Навигация если >5 специалистов
+    if total_pages > 1:
+        nav = []
+        if page > 0:
+            nav.append(InlineKeyboardButton(
+                text="◀️",
+                callback_data=f"schovr:specpage:{page-1}"
+            ))
+        else:
+            nav.append(InlineKeyboardButton(text=" ", callback_data="schovr:noop"))
+        nav.append(InlineKeyboardButton(
+            text=f"{page+1}/{total_pages}",
+            callback_data="schovr:noop"
+        ))
+        if page < total_pages - 1:
+            nav.append(InlineKeyboardButton(
+                text="▶️",
+                callback_data=f"schovr:specpage:{page+1}"
+            ))
+        else:
+            nav.append(InlineKeyboardButton(text=" ", callback_data="schovr:noop"))
+        rows.append(nav)
+
     rows.append([InlineKeyboardButton(
         text=t("common:back", lang),
         callback_data="schovr:back_type"
@@ -521,6 +582,50 @@ def setup(menu_controller, api):
     @router.callback_query(F.data == "schovr:back_spec")
     async def back_to_spec_list(callback: CallbackQuery, state: FSMContext):
         await choose_specialist(callback, state)
+
+    # ----------------------------------------------------------
+    # Callbacks: пагинация списков локаций/специалистов
+    # ----------------------------------------------------------
+
+    @router.callback_query(F.data.startswith("schovr:locpage:"))
+    async def handle_loc_page(callback: CallbackQuery, state: FSMContext):
+        """Пагинация списка локаций."""
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+        page = int(callback.data.split(":")[2])
+
+        locations = await api.get_locations()
+        if not locations:
+            await callback.answer(t("admin:schovr:no_locations", lang), show_alert=True)
+            return
+
+        text = t("admin:schovr:select_location", lang)
+        kb = kb_locations_list(locations, lang, page)
+        await mc.edit_inline(callback.message, text, kb)
+        await callback.answer()
+
+    @router.callback_query(F.data.startswith("schovr:specpage:"))
+    async def handle_spec_page(callback: CallbackQuery, state: FSMContext):
+        """Пагинация списка специалистов."""
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+        page = int(callback.data.split(":")[2])
+
+        specialists = await api.get_specialists()
+        if not specialists:
+            await callback.answer(t("admin:schovr:no_specialists", lang), show_alert=True)
+            return
+
+        # Добавляем имена
+        for spec in specialists:
+            if spec.get("display_name"):
+                spec["_display_name"] = spec["display_name"]
+            else:
+                user = await api.get_user(spec.get("user_id"))
+                spec["_display_name"] = _format_name(user) if user else "—"
+
+        text = t("admin:schovr:select_specialist", lang)
+        kb = kb_specialists_list(specialists, lang, page)
+        await mc.edit_inline(callback.message, text, kb)
+        await callback.answer()
 
     # ----------------------------------------------------------
     # Callbacks: пагинация календаря
