@@ -79,21 +79,15 @@ def calculate_service_availability(
     for spec in specialists:
         times = set(base_set)
 
-        # Intersect with specialist working times
-        working = _get_specialist_working_times(
-            spec.work_schedule, target_date, config
-        )
-        times &= working
-
-        # Check specialist overrides
+        # Check specialist overrides FIRST (they override regular schedule)
         overrides = _get_specialist_overrides(db, spec.id, target_date)
-        if overrides:
-            has_day_off = False
-            custom_times = None
+        use_regular_schedule = True
 
+        if overrides:
             for ovr in overrides:
                 if ovr.override_kind == "day_off":
-                    has_day_off = True
+                    times = set()
+                    use_regular_schedule = False
                     break
                 # Check custom hours in reason (e.g., "10:00-14:00")
                 if ovr.reason and "-" in ovr.reason:
@@ -106,15 +100,20 @@ def calculate_service_availability(
                         while t < end_min:
                             custom_times.add(minutes_to_time_str(t))
                             t += config.slot_step_minutes
+                        times &= custom_times
+                        use_regular_schedule = False
                         break
-
-            if has_day_off:
-                times = set()
-            elif custom_times is not None:
-                times &= custom_times
             else:
-                # Other override without custom hours - block all
+                # Override exists but no custom hours - block all
                 times = set()
+                use_regular_schedule = False
+
+        # Apply regular schedule only if no override
+        if use_regular_schedule:
+            working = _get_specialist_working_times(
+                spec.work_schedule, target_date, config
+            )
+            times &= working
 
         # Subtract booked times
         bookings = _get_specialist_bookings(db, spec.id, target_date)
