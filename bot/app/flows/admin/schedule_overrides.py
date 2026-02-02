@@ -348,14 +348,14 @@ def setup(menu_controller, api):
     # Callbacks: выбор локации/специалиста -> календарь
     # ----------------------------------------------------------
 
-    @router.callback_query(F.data.startswith("schovr:loc:"))
-    async def show_location_calendar(callback: CallbackQuery, state: FSMContext):
+    async def _show_location_calendar(callback: CallbackQuery, location_id: int, skip_answer: bool = False):
+        """Показывает календарь локации."""
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
-        location_id = int(callback.data.split(":")[2])
 
         location = await api.get_location(location_id)
         if not location:
-            await callback.answer(t("common:not_found", lang), show_alert=True)
+            if not skip_answer:
+                await callback.answer(t("common:not_found", lang), show_alert=True)
             return
 
         schedule = location.get("work_schedule", {})
@@ -385,16 +385,17 @@ def setup(menu_controller, api):
         text = t("admin:schovr:calendar_title", lang)
         kb = kb_week_calendar(days, schedule, overrides, "loc", location_id, lang)
         await mc.edit_inline(callback.message, text, kb)
-        await callback.answer()
+        if not skip_answer:
+            await callback.answer()
 
-    @router.callback_query(F.data.startswith("schovr:spec:"))
-    async def show_specialist_calendar(callback: CallbackQuery, state: FSMContext):
+    async def _show_specialist_calendar(callback: CallbackQuery, specialist_id: int, skip_answer: bool = False):
+        """Показывает календарь специалиста."""
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
-        specialist_id = int(callback.data.split(":")[2])
 
         specialist = await api.get_specialist(specialist_id)
         if not specialist:
-            await callback.answer(t("common:not_found", lang), show_alert=True)
+            if not skip_answer:
+                await callback.answer(t("common:not_found", lang), show_alert=True)
             return
 
         schedule = specialist.get("work_schedule", {})
@@ -431,7 +432,18 @@ def setup(menu_controller, api):
         text = t("admin:schovr:calendar_title", lang)
         kb = kb_week_calendar(days, schedule, overrides, "spec", specialist_id, lang)
         await mc.edit_inline(callback.message, text, kb)
-        await callback.answer()
+        if not skip_answer:
+            await callback.answer()
+
+    @router.callback_query(F.data.startswith("schovr:loc:"))
+    async def show_location_calendar(callback: CallbackQuery, state: FSMContext):
+        location_id = int(callback.data.split(":")[2])
+        await _show_location_calendar(callback, location_id)
+
+    @router.callback_query(F.data.startswith("schovr:spec:"))
+    async def show_specialist_calendar(callback: CallbackQuery, state: FSMContext):
+        specialist_id = int(callback.data.split(":")[2])
+        await _show_specialist_calendar(callback, specialist_id)
 
     @router.callback_query(F.data == "schovr:back_loc")
     async def back_to_loc_list(callback: CallbackQuery, state: FSMContext):
@@ -485,11 +497,9 @@ def setup(menu_controller, api):
         await state.clear()
 
         if target_type == "loc" and target_id:
-            callback.data = f"schovr:loc:{target_id}"
-            await show_location_calendar(callback, state)
+            await _show_location_calendar(callback, target_id)
         elif target_type == "spec" and target_id:
-            callback.data = f"schovr:spec:{target_id}"
-            await show_specialist_calendar(callback, state)
+            await _show_specialist_calendar(callback, target_id)
         else:
             await back_to_type(callback, state)
 
@@ -596,10 +606,8 @@ def setup(menu_controller, api):
 
         # Возвращаемся к календарю
         if target_type == "loc":
-            callback.data = f"schovr:loc:{target_id}"
-            await show_location_calendar(callback, state)
+            await _show_location_calendar(callback, target_id, skip_answer=True)
         else:
-            callback.data = f"schovr:spec:{target_id}"
-            await show_specialist_calendar(callback, state)
+            await _show_specialist_calendar(callback, target_id, skip_answer=True)
 
     return router
