@@ -183,7 +183,6 @@ def setup(menu_controller, api):
             kb = kb_bookings_list(all_bookings[:PAGE_SIZE], 0, len(all_bookings), lang)
 
         # Сохраняем в FSM для пагинации
-        from bot.app.utils.state import user_lang
         # Храним данные в Redis через FSMContext - нужно получить state
         # Так как это entry point из Reply кнопки, храним локально
         router._bookings_cache = {
