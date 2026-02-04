@@ -126,6 +126,7 @@ class Users(Base):
     user_roles = relationship('UserRoles', back_populates='user')
     bookings = relationship('Bookings', back_populates='client')
     wallet_transactions = relationship('WalletTransactions', back_populates='users')
+    integrations = relationship('SpecialistIntegrations', back_populates='user')
 
 
 class CalendarOverrides(Base):
@@ -403,18 +404,23 @@ class SpecialistIntegrations(Base):
     )
 
     id = Column(Integer, primary_key=True)
-    specialist_id = Column(ForeignKey('specialists.id', ondelete='CASCADE'), nullable=False)
+    specialist_id = Column(ForeignKey('specialists.id', ondelete='CASCADE'))
+    user_id = Column(ForeignKey('users.id', ondelete='CASCADE'))
     provider = Column(Text, nullable=False, server_default=text("'google_calendar'"))
     access_token = Column(Text)
     refresh_token = Column(Text)
     token_expires_at = Column(Text)
     calendar_id = Column(Text, server_default=text("'primary'"))
     sync_enabled = Column(Integer, server_default=text('1'))
+    sync_scope = Column(Text, server_default=text("'own'"))
+    location_id = Column(ForeignKey('locations.id', ondelete='CASCADE'))
     last_sync_at = Column(Text)
     created_at = Column(Text, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(Text, server_default=text('CURRENT_TIMESTAMP'))
 
     specialist = relationship('Specialists', back_populates='integrations')
+    user = relationship('Users', back_populates='integrations')
+    location = relationship('Locations')
     booking_external_events = relationship('BookingExternalEvents', back_populates='specialist_integration')
 
 

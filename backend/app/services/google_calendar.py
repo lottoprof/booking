@@ -48,29 +48,61 @@ def _get_client_config() -> dict:
     }
 
 
-def _encode_state(specialist_id: int) -> str:
-    """Encode specialist_id into OAuth state parameter."""
+def _encode_state(
+    specialist_id: int = None,
+    user_id: int = None,
+    sync_scope: str = "own"
+) -> str:
+    """Encode IDs into OAuth state parameter.
+
+    Format: s:{specialist_id}:u:{user_id}:sc:{sync_scope}:{nonce}
+    """
     nonce = secrets.token_hex(8)
-    return f"{specialist_id}:{nonce}"
+    parts = []
+    if specialist_id:
+        parts.append(f"s:{specialist_id}")
+    if user_id:
+        parts.append(f"u:{user_id}")
+    parts.append(f"sc:{sync_scope}")
+    parts.append(nonce)
+    return ":".join(parts)
 
 
-def _decode_state(state: str) -> Optional[int]:
-    """Decode specialist_id from OAuth state parameter."""
+def _decode_state(state: str) -> dict:
+    """Decode state parameter into dict with specialist_id, user_id, sync_scope."""
+    result = {"specialist_id": None, "user_id": None, "sync_scope": "own"}
     try:
         parts = state.split(":")
-        if len(parts) >= 1:
-            return int(parts[0])
-    except (ValueError, AttributeError):
+        i = 0
+        while i < len(parts):
+            if parts[i] == "s" and i + 1 < len(parts):
+                result["specialist_id"] = int(parts[i + 1])
+                i += 2
+            elif parts[i] == "u" and i + 1 < len(parts):
+                result["user_id"] = int(parts[i + 1])
+                i += 2
+            elif parts[i] == "sc" and i + 1 < len(parts):
+                result["sync_scope"] = parts[i + 1]
+                i += 2
+            else:
+                i += 1
+    except (ValueError, AttributeError, IndexError):
         pass
-    return None
+    return result
 
 
-def get_oauth_url(specialist_id: int) -> str:
+def get_oauth_url(
+    specialist_id: int = None,
+    user_id: int = None,
+    sync_scope: str = "own"
+) -> str:
     """
     Generate OAuth URL for Google Calendar authorization.
 
     Args:
         specialist_id: ID of the specialist requesting authorization
+        user_id: ID of the user (admin/manager) requesting authorization
+        sync_scope: Scope for sync - 'own', 'location', or 'all'
 
     Returns:
         Authorization URL to redirect the user to
@@ -81,7 +113,7 @@ def get_oauth_url(specialist_id: int) -> str:
         redirect_uri=GOOGLE_REDIRECT_URI,
     )
 
-    state = _encode_state(specialist_id)
+    state = _encode_state(specialist_id=specialist_id, user_id=user_id, sync_scope=sync_scope)
 
     authorization_url, _ = flow.authorization_url(
         access_type="offline",
@@ -99,22 +131,24 @@ def exchange_code_for_tokens(code: str, state: str) -> dict:
 
     Args:
         code: Authorization code from Google OAuth callback
-        state: State parameter containing encoded specialist_id
+        state: State parameter containing encoded IDs
 
     Returns:
-        Dictionary with tokens and specialist_id:
+        Dictionary with tokens and IDs:
         {
-            "specialist_id": int,
+            "specialist_id": int or None,
+            "user_id": int or None,
+            "sync_scope": str,
             "access_token": str,
             "refresh_token": str,
-            "token_expires_at": str,  # ISO format timestamp
+            "token_expires_at": str,
         }
 
     Raises:
         ValueError: If state is invalid or token exchange fails
     """
-    specialist_id = _decode_state(state)
-    if specialist_id is None:
+    state_data = _decode_state(state)
+    if not state_data.get("specialist_id") and not state_data.get("user_id"):
         raise ValueError("Invalid state parameter")
 
     flow = Flow.from_client_config(
@@ -133,7 +167,9 @@ def exchange_code_for_tokens(code: str, state: str) -> dict:
             expires_at = credentials.expiry.strftime("%Y-%m-%d %H:%M:%S")
 
         return {
-            "specialist_id": specialist_id,
+            "specialist_id": state_data.get("specialist_id"),
+            "user_id": state_data.get("user_id"),
+            "sync_scope": state_data.get("sync_scope", "own"),
             "access_token": credentials.token,
             "refresh_token": credentials.refresh_token,
             "token_expires_at": expires_at,

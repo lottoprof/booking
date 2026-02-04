@@ -1165,17 +1165,34 @@ class ApiClient:
     # Integrations (Google Calendar)
     # ------------------------------------------------------------------
 
-    async def get_google_auth_url(self, specialist_id: int) -> Optional[str]:
+    async def get_google_auth_url(
+        self,
+        specialist_id: int = None,
+        user_id: int = None,
+        sync_scope: str = "own"
+    ) -> Optional[str]:
         """
         GET /integrations/google/auth-url — get OAuth URL for Google Calendar.
+
+        Args:
+            specialist_id: For specialist integration
+            user_id: For admin/manager integration
+            sync_scope: 'own', 'location', or 'all'
 
         Returns:
             OAuth authorization URL or None on error
         """
+        params = {}
+        if specialist_id:
+            params["specialist_id"] = specialist_id
+        if user_id:
+            params["user_id"] = user_id
+            params["sync_scope"] = sync_scope
+
         result = await self._request(
             "GET",
             "/integrations/google/auth-url",
-            params={"specialist_id": specialist_id}
+            params=params
         )
         if result:
             return result.get("auth_url")
@@ -1228,6 +1245,44 @@ class ApiClient:
         result = await self._request(
             "DELETE",
             f"/integrations/specialist/{specialist_id}/google"
+        )
+        return result is None
+
+    # User-level (admin/manager) integration methods
+
+    async def get_user_integration_status(self, user_id: int) -> Optional[dict]:
+        """
+        GET /integrations/user/{id}/status — get admin/manager integration status.
+        """
+        return await self._request("GET", f"/integrations/user/{user_id}/status")
+
+    async def update_user_integration(
+        self,
+        user_id: int,
+        sync_enabled: bool = None,
+        calendar_id: str = None,
+    ) -> Optional[dict]:
+        """
+        PATCH /integrations/user/{id}/google — update admin/manager integration.
+        """
+        data = {}
+        if sync_enabled is not None:
+            data["sync_enabled"] = 1 if sync_enabled else 0
+        if calendar_id is not None:
+            data["calendar_id"] = calendar_id
+        return await self._request(
+            "PATCH",
+            f"/integrations/user/{user_id}/google",
+            json=data
+        )
+
+    async def disconnect_user_google_calendar(self, user_id: int) -> bool:
+        """
+        DELETE /integrations/user/{id}/google — disconnect admin/manager integration.
+        """
+        result = await self._request(
+            "DELETE",
+            f"/integrations/user/{user_id}/google"
         )
         return result is None
 

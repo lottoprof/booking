@@ -48,6 +48,7 @@ def admin_settings(lang: str) -> ReplyKeyboardMarkup:
             ],
             [
                 KeyboardButton(text=t("admin:settings:specialists", lang)),
+                KeyboardButton(text=t("admin:settings:gcal", lang)),
             ],
             [
                 KeyboardButton(text=t("admin:settings:back", lang)),

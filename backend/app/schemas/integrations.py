@@ -11,6 +11,7 @@ class IntegrationStatusRead(BaseModel):
     provider: str
     is_connected: bool
     sync_enabled: bool
+    sync_scope: Optional[str] = "own"
     calendar_id: Optional[str] = None
     last_sync_at: Optional[datetime] = None
     created_at: Optional[datetime] = None

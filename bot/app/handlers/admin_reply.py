@@ -18,6 +18,7 @@ from bot.app.flows.admin import specialists as specialists_flow
 from bot.app.flows.admin import packages as packages_flow
 from bot.app.flows.admin import clients as clients_flow
 from bot.app.flows.admin import schedule as schedule_flow
+from bot.app.flows.admin import google_calendar as gcal_flow
 
 
 import logging
@@ -44,6 +45,7 @@ def setup(menu_controller, get_user_role):
     spec_router = specialists_flow.setup(menu_controller, get_user_role)
     clients_router = clients_flow.setup(menu_controller, get_user_role)
     schedule_router = schedule_flow.setup(menu_controller, get_user_role)
+    gcal_router = gcal_flow.setup(menu_controller, get_user_role)
 
     # ==========================================================
     # CONTEXT HANDLERS: menu_context → {action → handler}
@@ -125,6 +127,7 @@ def setup(menu_controller, get_user_role):
             t("admin:settings:services", lang),
             t("admin:settings:packages", lang),
             t("admin:settings:specialists", lang),
+            t("admin:settings:gcal", lang),
         ]
 
         # Добавляем context-aware кнопки
@@ -207,6 +210,9 @@ def setup(menu_controller, get_user_role):
         elif text == t("admin:settings:specialists", lang):
             await flow.to_specialists(message, lang)
 
+        elif text == t("admin:settings:gcal", lang):
+            await gcal_router.show_status(message)
+
     # =====================================================
     # ПОРЯДОК ВАЖЕН! FSM роутеры ПЕРВЫЕ, reply ПОСЛЕДНИЙ
     # =====================================================
@@ -217,6 +223,7 @@ def setup(menu_controller, get_user_role):
     router.include_router(spec_router)
     router.include_router(clients_router)
     router.include_router(schedule_router)
+    router.include_router(gcal_router)
     router.include_router(reply_router)  # Catch-all последний
 
 
