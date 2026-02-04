@@ -224,6 +224,56 @@ def refresh_access_token(
         raise ValueError(f"Token refresh failed: {e}")
 
 
+# Google Calendar color IDs mapping
+# https://developers.google.com/calendar/api/v3/reference/colors
+GCAL_COLORS = {
+    1: "#7986cb",   # Lavender
+    2: "#33b679",   # Sage (Green)
+    3: "#8e24aa",   # Grape (Purple)
+    4: "#e67c73",   # Flamingo (Pink)
+    5: "#f6c026",   # Banana (Yellow)
+    6: "#f5511d",   # Tangerine (Orange)
+    7: "#039be5",   # Peacock (Blue)
+    8: "#616161",   # Graphite (Gray)
+    9: "#3f51b5",   # Blueberry (Blue)
+    10: "#0b8043",  # Basil (Green)
+    11: "#d60000",  # Tomato (Red)
+}
+
+
+def _hex_to_rgb(hex_color: str) -> tuple:
+    """Convert hex color to RGB tuple."""
+    hex_color = hex_color.lstrip("#")
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+
+def _color_distance(c1: tuple, c2: tuple) -> float:
+    """Calculate Euclidean distance between two RGB colors."""
+    return sum((a - b) ** 2 for a, b in zip(c1, c2)) ** 0.5
+
+
+def _map_color_to_gcal(hex_color: str) -> Optional[str]:
+    """Map hex color code to closest Google Calendar colorId."""
+    if not hex_color:
+        return None
+
+    try:
+        target_rgb = _hex_to_rgb(hex_color)
+        closest_id = None
+        min_distance = float("inf")
+
+        for color_id, gcal_hex in GCAL_COLORS.items():
+            gcal_rgb = _hex_to_rgb(gcal_hex)
+            distance = _color_distance(target_rgb, gcal_rgb)
+            if distance < min_distance:
+                min_distance = distance
+                closest_id = color_id
+
+        return str(closest_id) if closest_id else None
+    except (ValueError, AttributeError):
+        return None
+
+
 def _get_calendar_service(access_token: str, refresh_token: str):
     """Build Google Calendar API service client."""
     credentials = Credentials(
@@ -318,6 +368,11 @@ def create_event(
         },
     }
 
+    # Add color if service has color_code
+    color_id = _map_color_to_gcal(booking.get("color_code"))
+    if color_id:
+        event["colorId"] = color_id
+
     try:
         created_event = service.events().insert(
             calendarId=calendar_id,
@@ -400,6 +455,11 @@ def update_event(
             "timeZone": "Europe/Moscow",
         },
     }
+
+    # Add color if service has color_code
+    color_id = _map_color_to_gcal(booking.get("color_code"))
+    if color_id:
+        event["colorId"] = color_id
 
     try:
         updated_event = service.events().update(
