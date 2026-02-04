@@ -1161,6 +1161,113 @@ class ApiClient:
         result = await self._request("DELETE", f"/calendar_overrides/{override_id}")
         return result is None
 
+    # ------------------------------------------------------------------
+    # Integrations (Google Calendar)
+    # ------------------------------------------------------------------
+
+    async def get_google_auth_url(self, specialist_id: int) -> Optional[str]:
+        """
+        GET /integrations/google/auth-url — get OAuth URL for Google Calendar.
+
+        Returns:
+            OAuth authorization URL or None on error
+        """
+        result = await self._request(
+            "GET",
+            "/integrations/google/auth-url",
+            params={"specialist_id": specialist_id}
+        )
+        if result:
+            return result.get("auth_url")
+        return None
+
+    async def get_integration_status(self, specialist_id: int) -> Optional[dict]:
+        """
+        GET /integrations/specialist/{id}/status — get integration status.
+
+        Returns:
+            {
+                "specialist_id": 1,
+                "provider": "google_calendar",
+                "is_connected": true,
+                "sync_enabled": true,
+                "calendar_id": "primary",
+                "last_sync_at": "2026-01-20 10:00:00",
+                "created_at": "2026-01-15 10:00:00"
+            }
+        """
+        return await self._request("GET", f"/integrations/specialist/{specialist_id}/status")
+
+    async def update_integration(
+        self,
+        specialist_id: int,
+        sync_enabled: bool = None,
+        calendar_id: str = None,
+    ) -> Optional[dict]:
+        """
+        PATCH /integrations/specialist/{id}/google — update integration settings.
+        """
+        data = {}
+        if sync_enabled is not None:
+            data["sync_enabled"] = 1 if sync_enabled else 0
+        if calendar_id is not None:
+            data["calendar_id"] = calendar_id
+        return await self._request(
+            "PATCH",
+            f"/integrations/specialist/{specialist_id}/google",
+            json=data
+        )
+
+    async def disconnect_google_calendar(self, specialist_id: int) -> bool:
+        """
+        DELETE /integrations/specialist/{id}/google — disconnect integration.
+
+        Returns:
+            True if successful
+        """
+        result = await self._request(
+            "DELETE",
+            f"/integrations/specialist/{specialist_id}/google"
+        )
+        return result is None
+
+    async def sync_booking_to_calendar(
+        self,
+        booking_id: int,
+        action: str = "create"
+    ) -> Optional[dict]:
+        """
+        POST /integrations/booking/{id}/sync — sync booking to Google Calendar.
+
+        Args:
+            booking_id: Booking ID
+            action: "create", "update", or "delete"
+
+        Returns:
+            {
+                "synced": true,
+                "event_id": "abc123",
+                "action": "created"
+            }
+        """
+        return await self._request(
+            "POST",
+            f"/integrations/booking/{booking_id}/sync",
+            params={"action": action}
+        )
+
+    async def get_specialist_by_user_id(self, user_id: int) -> Optional[dict]:
+        """
+        Get specialist by user_id.
+
+        Fetches all specialists and finds one with matching user_id.
+        """
+        specialists = await self.get_specialists()
+        for spec in specialists:
+            if spec.get("user_id") == user_id:
+                return spec
+        return None
+
 
 # Singleton
 api = ApiClient()

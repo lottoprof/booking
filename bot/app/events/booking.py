@@ -2,11 +2,14 @@
 Booking event handlers.
 
 Handles: booking_created, booking_cancelled, booking_rescheduled, booking_done, booking_reminder.
+
+Includes Google Calendar sync for specialists with connected integrations.
 """
 
 import logging
 
 from . import register_event
+from bot.app.services.google_calendar_sync import sync_booking_to_google
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,9 @@ async def handle_booking_created(data: dict) -> None:
 
     await deliver_booking_event("booking_created", data)
 
+    # Google Calendar sync
+    await sync_booking_to_google(booking_id, "create")
+
 
 @register_event("booking_cancelled")
 async def handle_booking_cancelled(data: dict) -> None:
@@ -36,6 +42,9 @@ async def handle_booking_cancelled(data: dict) -> None:
 
     await deliver_booking_event("booking_cancelled", data)
 
+    # Google Calendar sync - delete event
+    await sync_booking_to_google(booking_id, "delete")
+
 
 @register_event("booking_rescheduled")
 async def handle_booking_rescheduled(data: dict) -> None:
@@ -48,6 +57,9 @@ async def handle_booking_rescheduled(data: dict) -> None:
         return
 
     await deliver_booking_event("booking_rescheduled", data)
+
+    # Google Calendar sync - update event
+    await sync_booking_to_google(booking_id, "update")
 
 
 @register_event("booking_done")

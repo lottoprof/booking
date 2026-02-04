@@ -30,6 +30,7 @@ from .routers import (
     ad_templates,
     wallets,
     slots,
+    integrations,
 )
 from .services.completion_checker import completion_checker_loop
 from .services.reminder_checker import reminder_checker_loop
@@ -86,5 +87,6 @@ app.include_router(audit_log.router)
 # ──────────────────────────────────────────────────────────────────────────────
 # Domain API Routers
 # ──────────────────────────────────────────────────────────────────────────────
-app.include_router(wallets.router) 
+app.include_router(wallets.router)
 app.include_router(slots.router)
+app.include_router(integrations.router)

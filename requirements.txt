@@ -23,3 +23,8 @@ aiogram==3.23.0
 # ==== Push ====
 pywebpush
 
+# ==== Google Calendar ====
+google-auth>=2.26.0
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.100.0
+

@@ -1,12 +1,12 @@
 # gateway/app/main.py
 
-from fastapi import FastAPI, Request, Header, HTTPException
-from fastapi.responses import Response
+from fastapi import FastAPI, Request, Header, HTTPException, Query
+from fastapi.responses import Response, HTMLResponse
 from contextlib import asynccontextmanager
 import logging
 import asyncio
 
-from app.config import TG_WEBHOOK_SECRET, REDIS_URL
+from app.config import TG_WEBHOOK_SECRET, REDIS_URL, DOMAIN_API_URL
 from app.middleware.auth import auth_middleware
 from app.middleware.rate_limit import rate_limit_middleware, check_tg_rate_limit
 from app.middleware.access_policy import access_policy_middleware
@@ -129,6 +129,161 @@ async def _safe_process_update(update: dict, user_context):
         await process_update(update, user_context)
     except Exception:
         logger.exception("Failed to process Telegram update")
+
+
+# ===== OAuth callback (public route) =====
+@app.get("/oauth/google/callback")
+async def google_oauth_callback(
+    code: str = Query(..., description="Authorization code from Google"),
+    state: str = Query(..., description="State parameter with encoded specialist_id"),
+) -> HTMLResponse:
+    """
+    Handle OAuth callback from Google.
+
+    This is a public endpoint that Google redirects to after authorization.
+    It proxies the request to the backend for token exchange.
+    """
+    import httpx
+
+    backend_url = f"{DOMAIN_API_URL}/integrations/google/callback"
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                backend_url,
+                params={"code": code, "state": state},
+                timeout=30.0,
+            )
+
+        if response.status_code == 200:
+            # Success - show nice page
+            html_content = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>Google Calendar Connected</title>
+                <style>
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 100vh;
+                        margin: 0;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    }
+                    .card {
+                        background: white;
+                        padding: 40px;
+                        border-radius: 16px;
+                        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                        text-align: center;
+                        max-width: 400px;
+                    }
+                    .icon { font-size: 64px; margin-bottom: 20px; }
+                    h1 { color: #333; margin: 0 0 10px; font-size: 24px; }
+                    p { color: #666; margin: 0; line-height: 1.6; }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <div class="icon">✅</div>
+                    <h1>Google Calendar Connected!</h1>
+                    <p>You can now close this window and return to Telegram.</p>
+                </div>
+            </body>
+            </html>
+            """
+            return HTMLResponse(content=html_content)
+        else:
+            # Error from backend
+            error_detail = response.text
+            logger.error(f"OAuth callback failed: {error_detail}")
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>Connection Failed</title>
+                <style>
+                    body {{
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 100vh;
+                        margin: 0;
+                        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                    }}
+                    .card {{
+                        background: white;
+                        padding: 40px;
+                        border-radius: 16px;
+                        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                        text-align: center;
+                        max-width: 400px;
+                    }}
+                    .icon {{ font-size: 64px; margin-bottom: 20px; }}
+                    h1 {{ color: #333; margin: 0 0 10px; font-size: 24px; }}
+                    p {{ color: #666; margin: 0; line-height: 1.6; }}
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <div class="icon">❌</div>
+                    <h1>Connection Failed</h1>
+                    <p>Please try again from the Telegram bot.</p>
+                </div>
+            </body>
+            </html>
+            """
+            return HTMLResponse(content=html_content, status_code=400)
+
+    except Exception as e:
+        logger.exception(f"OAuth callback error: {e}")
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Error</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                }
+                .card {
+                    background: white;
+                    padding: 40px;
+                    border-radius: 16px;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                    text-align: center;
+                    max-width: 400px;
+                }
+                .icon { font-size: 64px; margin-bottom: 20px; }
+                h1 { color: #333; margin: 0 0 10px; font-size: 24px; }
+                p { color: #666; margin: 0; line-height: 1.6; }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <div class="icon">⚠️</div>
+                <h1>Something Went Wrong</h1>
+                <p>Please try again later.</p>
+            </div>
+        </body>
+        </html>
+        """
+        return HTMLResponse(content=html_content, status_code=500)
 
 
 # ===== Catch-all proxy =====

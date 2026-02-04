@@ -232,6 +232,7 @@ class Specialists(Base):
 
     user = relationship('Users', back_populates='specialists')
     bookings = relationship('Bookings', back_populates='specialist')
+    integrations = relationship('SpecialistIntegrations', back_populates='specialist')
 
 
 class UserRoles(Base):
@@ -281,6 +282,7 @@ class Bookings(Base):
     booking_discounts = relationship('BookingDiscounts', back_populates='booking')
     wallet_transactions = relationship('WalletTransactions', back_populates='booking')
     client_package = relationship('ClientPackages', back_populates='bookings')
+    external_events = relationship('BookingExternalEvents', back_populates='booking')
 
 
 class ServiceRooms(Base):
@@ -392,4 +394,43 @@ class AuditLog(Base):
         'Users',
         foreign_keys=[target_user_id]
     )
+
+
+class SpecialistIntegrations(Base):
+    __tablename__ = 'specialist_integrations'
+    __table_args__ = (
+        UniqueConstraint('specialist_id', 'provider'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    specialist_id = Column(ForeignKey('specialists.id', ondelete='CASCADE'), nullable=False)
+    provider = Column(Text, nullable=False, server_default=text("'google_calendar'"))
+    access_token = Column(Text)
+    refresh_token = Column(Text)
+    token_expires_at = Column(Text)
+    calendar_id = Column(Text, server_default=text("'primary'"))
+    sync_enabled = Column(Integer, server_default=text('1'))
+    last_sync_at = Column(Text)
+    created_at = Column(Text, server_default=text('CURRENT_TIMESTAMP'))
+    updated_at = Column(Text, server_default=text('CURRENT_TIMESTAMP'))
+
+    specialist = relationship('Specialists', back_populates='integrations')
+    booking_external_events = relationship('BookingExternalEvents', back_populates='specialist_integration')
+
+
+class BookingExternalEvents(Base):
+    __tablename__ = 'booking_external_events'
+    __table_args__ = (
+        UniqueConstraint('booking_id', 'specialist_integration_id'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    booking_id = Column(ForeignKey('bookings.id', ondelete='CASCADE'), nullable=False)
+    provider = Column(Text, nullable=False, server_default=text("'google_calendar'"))
+    external_event_id = Column(Text, nullable=False)
+    specialist_integration_id = Column(ForeignKey('specialist_integrations.id', ondelete='CASCADE'), nullable=False)
+    created_at = Column(Text, server_default=text('CURRENT_TIMESTAMP'))
+
+    booking = relationship('Bookings', back_populates='external_events')
+    specialist_integration = relationship('SpecialistIntegrations', back_populates='booking_external_events')
 

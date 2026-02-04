@@ -47,3 +47,4 @@ async def process_event(data: dict) -> None:
 
 # Import handlers to trigger registration via decorators
 from . import booking  # noqa: E402, F401
+from . import google_calendar  # noqa: E402, F401
