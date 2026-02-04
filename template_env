@@ -2,22 +2,22 @@
 DATABASE_URL=sqlite:///./data/sqlite/booking.db
 
 # init_admin (ТОЛЬКО init_admin.py)
-ADMIN_TG_ID=123456789
-COMPANY_NAME=Default Company
+ADMIN_TG_ID=1234567890
+COMPANY_NAME=Company
 
 
 # Telegram
 
 # Токен Telegram-бота (BotFather)
-TG_BOT_TOKEN=123456:ABCDEF
+TG_BOT_TOKEN=87654321:AAAAAAAAAAAAAAAA
 
 # Секрет для проверки webhook
 # Проверяется в gateway по заголовку:
 # X-Telegram-Bot-Api-Secret-Token
-TG_WEBHOOK_SECRET=super-secret-webhook-token
+TG_WEBHOOK_SECRET=AAAAAAAAAAAAAAAAAAAAAAAA
 
 # Telegram Webhook
-WEBHOOK_URL=https://example.site/tg/webhook
+WEBHOOK_URL=https://example.com/tg/webhook
 
 # Redis
 #REDIS_URL=redis://redis:6379/1
@@ -25,8 +25,22 @@ REDIS_URL=redis://127.0.0.1:6379/1
 
 
 # Backend
-DOMAIN_API_URL=http://backend:8000
+# для Docker
+#DOMAIN_API_URL=http://backend:8000
+#для локального запуска
+DOMAIN_API_URL=http://127.0.0.1:8000
 
 # bot API
-GATEWAY_URL=http://gateway:8080
-INTERNAL_TOKEN=123456 #openssl rand -hex 32
+#GATEWAY_URL=http://gateway:8080
+#для локального запуска
+GATEWAY_URL=http://127.0.0.1:8080
+#openssl rand -hex 32
+INTERNAL_TOKEN=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+SUPPORT_TG_ID=9876543210
+CHANNEL_URL=https://t.me/channel
+
+# Google Calendar OAuth
+GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=xxx
+GOOGLE_REDIRECT_URI=https://example.com/oauth/google/callback
