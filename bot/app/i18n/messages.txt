@@ -876,8 +876,8 @@ ru:client:packages:remaining | "осталось %d из %d"
 en:client:packages:remaining | "%d of %d left"
 
 # --- client / contact ---
-ru:client:contact:subscribe | "📢 Подписаться"
-en:client:contact:subscribe | "📢 Subscribe"
+ru:client:contact:subscribe | "📢 Канал"
+en:client:contact:subscribe | "📢 Channel"
 
 # --- client / booking ---
 ru:client:booking:select_service | "🛎 Выберите услугу:"
