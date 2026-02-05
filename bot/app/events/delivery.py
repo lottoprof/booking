@@ -148,8 +148,8 @@ def _build_keyboard(
         return InlineKeyboardMarkup(inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=t("notify:reminder:cancel", lang),
-                    callback_data=f"bkr:cancel:{booking_id}",
+                    text=t("common:hide", lang),
+                    callback_data=f"bkr:hide:{booking_id}",
                 ),
                 InlineKeyboardButton(
                     text=t("notify:reminder:confirm", lang),

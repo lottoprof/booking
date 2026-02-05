@@ -977,8 +977,8 @@ ru:notify:cancelled:title:client   | "❌ Ваша запись отменена
 en:notify:cancelled:title:client   | "❌ Your booking has been cancelled"
 ru:notify:cancelled:title          | "❌ Запись отменена"
 en:notify:cancelled:title          | "❌ Booking cancelled"
-ru:notify:cancelled:new_booking    | "Для новой записи используйте /start"
-en:notify:cancelled:new_booking    | "To make a new booking use /start"
+ru:notify:cancelled:new_booking    | "Для новой записи нажмите 📅 Записаться"
+en:notify:cancelled:new_booking    | "To make a new booking tap 📅 Book"
 
 # --- notify: booking rescheduled ---
 ru:notify:rescheduled:title:client | "🔄 Ваша запись перенесена"

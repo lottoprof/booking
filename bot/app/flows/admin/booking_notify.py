@@ -10,7 +10,8 @@ Admin/manager callbacks (bkn:*):
 
 Client callbacks (bkr:*):
 - bkr:confirm:{booking_id} — Client confirms attendance → status "confirmed"
-- bkr:cancel:{booking_id}  — Client cancels booking → status "cancelled"
+- bkr:hide:{booking_id}    — Client hides reminder notification (no status change)
+- bkr:cancel:{booking_id}  — Client cancels booking → status "cancelled" (legacy)
 """
 
 import logging
@@ -186,6 +187,16 @@ def _build_notify_keyboard(booking_id: int, lang: str = DEFAULT_LANG) -> InlineK
 # ─────────────────────────────────────────────────────────────────────────────
 
 client_notify_router = Router(name="client_booking_notify")
+
+
+@client_notify_router.callback_query(F.data.startswith("bkr:hide:"))
+async def handle_reminder_hide(callback: CallbackQuery):
+    """Client hides reminder notification."""
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+    await callback.answer(t("common:hidden", DEFAULT_LANG))
 
 
 @client_notify_router.callback_query(F.data.startswith("bkr:confirm:"))
