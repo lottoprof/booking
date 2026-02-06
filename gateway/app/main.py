@@ -1,10 +1,13 @@
 # gateway/app/main.py
 
-from fastapi import FastAPI, Request, Header, HTTPException, Query
-from fastapi.responses import Response, HTMLResponse
-from contextlib import asynccontextmanager
 import logging
 import asyncio
+from pathlib import Path
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request, Header, HTTPException, Query
+from fastapi.responses import Response, HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import TG_WEBHOOK_SECRET, REDIS_URL, DOMAIN_API_URL
 from app.middleware.auth import auth_middleware
@@ -12,6 +15,7 @@ from app.middleware.rate_limit import rate_limit_middleware, check_tg_rate_limit
 from app.middleware.access_policy import access_policy_middleware
 from app.middleware.audit import audit_middleware
 from app.proxy import proxy_request
+from app.routers.web_booking import router as web_booking_router
 
 from app.utils.telegram import (
     authenticate_tg_user,
@@ -26,6 +30,7 @@ from bot.app.events.consumer import (
     broadcast_consumer_loop,
     retry_consumer_loop,
 )
+from app.events.web_booking_consumer import web_booking_consumer_loop
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +62,10 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(
             retry_consumer_loop(REDIS_URL), name="retry_consumer"
         ),
+        asyncio.create_task(
+            web_booking_consumer_loop(REDIS_URL, DOMAIN_API_URL),
+            name="web_booking_consumer"
+        ),
     ]
     logger.info("Event consumer loops started")
 
@@ -80,6 +89,58 @@ app.middleware("http")(audit_middleware)
 app.middleware("http")(access_policy_middleware)
 app.middleware("http")(rate_limit_middleware)
 app.middleware("http")(auth_middleware)
+
+# ===== Web booking routes (Redis only, no auth required) =====
+app.include_router(web_booking_router)
+
+
+# ===== Static files for frontend =====
+FRONTEND_DIR = Path(__file__).parent.parent.parent / "frontend"
+
+# Mount static directories (if they exist)
+if (FRONTEND_DIR / "dist").exists():
+    app.mount("/dist", StaticFiles(directory=FRONTEND_DIR / "dist"), name="dist")
+if (FRONTEND_DIR / "css").exists():
+    app.mount("/css", StaticFiles(directory=FRONTEND_DIR / "css"), name="css")
+if (FRONTEND_DIR / "images").exists():
+    app.mount("/images", StaticFiles(directory=FRONTEND_DIR / "images"), name="images")
+
+
+# ===== HTML page routes =====
+@app.get("/", include_in_schema=False)
+async def serve_home():
+    """Serve landing page."""
+    html_path = FRONTEND_DIR / "index.html"
+    if html_path.exists():
+        return FileResponse(html_path, media_type="text/html")
+    return HTMLResponse("<h1>Coming Soon</h1>", status_code=200)
+
+
+@app.get("/book", include_in_schema=False)
+async def serve_booking():
+    """Serve booking page."""
+    html_path = FRONTEND_DIR / "book.html"
+    if html_path.exists():
+        return FileResponse(html_path, media_type="text/html")
+    return HTMLResponse("<h1>Booking - Coming Soon</h1>", status_code=200)
+
+
+@app.get("/pricing", include_in_schema=False)
+async def serve_pricing():
+    """Serve pricing page."""
+    html_path = FRONTEND_DIR / "pricing.html"
+    if html_path.exists():
+        return FileResponse(html_path, media_type="text/html")
+    return HTMLResponse("<h1>Pricing - Coming Soon</h1>", status_code=200)
+
+
+@app.get("/miniapp", include_in_schema=False)
+async def serve_miniapp():
+    """Serve Telegram Mini App page."""
+    html_path = FRONTEND_DIR / "miniapp.html"
+    if html_path.exists():
+        return FileResponse(html_path, media_type="text/html")
+    return HTMLResponse("<h1>Mini App - Coming Soon</h1>", status_code=200)
 
 
 # ===== Telegram webhook =====

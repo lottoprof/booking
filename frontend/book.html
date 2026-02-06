@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Онлайн запись на услуги">
+    <title>Онлайн запись</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div id="booking-app" class="max-w-lg mx-auto px-4 py-6">
+
+        <!-- Progress Bar -->
+        <div class="progress-bar" id="progress-bar">
+            <div class="progress-step" data-step="1"></div>
+            <div class="progress-step" data-step="2"></div>
+            <div class="progress-step" data-step="3"></div>
+            <div class="progress-step" data-step="4"></div>
+            <div class="progress-step" data-step="5"></div>
+        </div>
+
+        <!-- Step 1: Service Selection -->
+        <div id="step-service" class="step">
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Выберите услугу</h1>
+            <p class="text-gray-500 mb-6">Укажите, какую услугу вы хотите заказать</p>
+
+            <div id="services-list" class="space-y-3">
+                <!-- Services loaded dynamically -->
+                <div class="text-center py-8 text-gray-400">
+                    <div class="spinner mx-auto mb-4" style="width:32px;height:32px;border:3px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite;"></div>
+                    Загрузка услуг...
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Specialist Selection -->
+        <div id="step-specialist" class="step">
+            <a class="back-link" data-back="service">&larr; Назад</a>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Выберите специалиста</h1>
+            <p class="text-gray-500 mb-6">Или оставьте выбор системе</p>
+
+            <div id="specialists-list" class="space-y-3">
+                <!-- Specialists loaded dynamically -->
+            </div>
+
+            <button id="any-specialist-btn" class="btn btn-secondary btn-full mt-4">
+                Любой свободный специалист
+            </button>
+        </div>
+
+        <!-- Step 3: Calendar Selection -->
+        <div id="step-calendar" class="step">
+            <a class="back-link" data-back="specialist">&larr; Назад</a>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Выберите дату</h1>
+            <p class="text-gray-500 mb-6">Доступные даты для записи</p>
+
+            <div class="calendar-header">
+                <button class="calendar-nav" id="prev-month">&larr;</button>
+                <span class="font-semibold text-gray-800" id="current-month"></span>
+                <button class="calendar-nav" id="next-month">&rarr;</button>
+            </div>
+
+            <div class="calendar-grid mb-4">
+                <div class="calendar-day-header">Пн</div>
+                <div class="calendar-day-header">Вт</div>
+                <div class="calendar-day-header">Ср</div>
+                <div class="calendar-day-header">Чт</div>
+                <div class="calendar-day-header">Пт</div>
+                <div class="calendar-day-header">Сб</div>
+                <div class="calendar-day-header">Вс</div>
+            </div>
+
+            <div id="calendar-days" class="calendar-grid">
+                <!-- Days loaded dynamically -->
+            </div>
+        </div>
+
+        <!-- Step 4: Time Selection -->
+        <div id="step-time" class="step">
+            <a class="back-link" data-back="calendar">&larr; Назад</a>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Выберите время</h1>
+            <p class="text-gray-500 mb-6" id="selected-date-display">Свободные слоты</p>
+
+            <div id="time-slots" class="time-slots-grid">
+                <!-- Time slots loaded dynamically -->
+            </div>
+
+            <div id="no-slots-message" class="text-center py-8 text-gray-400 hidden">
+                Нет свободных слотов на эту дату
+            </div>
+        </div>
+
+        <!-- Step 5: Contact Form -->
+        <div id="step-phone" class="step">
+            <a class="back-link" data-back="time">&larr; Назад</a>
+
+            <!-- Reserve Timer -->
+            <div class="reserve-timer" id="reserve-timer">
+                Слот зарезервирован на <span class="time" id="timer-display">5:00</span>
+            </div>
+
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Контактные данные</h1>
+            <p class="text-gray-500 mb-6">Для подтверждения записи</p>
+
+            <form id="contact-form" class="space-y-4">
+                <div>
+                    <label class="form-label" for="phone-input">Телефон *</label>
+                    <input
+                        type="tel"
+                        id="phone-input"
+                        class="form-input"
+                        placeholder="+7 (___) ___-__-__"
+                        required
+                        autocomplete="tel"
+                    >
+                    <p class="form-hint">На этот номер придёт подтверждение</p>
+                </div>
+
+                <div>
+                    <label class="form-label" for="name-input">Ваше имя</label>
+                    <input
+                        type="text"
+                        id="name-input"
+                        class="form-input"
+                        placeholder="Как к вам обращаться?"
+                        autocomplete="name"
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full" id="submit-btn">
+                    Записаться
+                </button>
+            </form>
+        </div>
+
+        <!-- Step 6: Confirmation / Result -->
+        <div id="step-confirm" class="step">
+            <!-- Pending State -->
+            <div id="status-pending" class="status-pending">
+                <div class="spinner"></div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-2">Обрабатываем запись...</h2>
+                <p class="text-gray-500">Это займёт несколько секунд</p>
+            </div>
+
+            <!-- Success State -->
+            <div id="status-success" class="status-success hidden">
+                <div class="icon">&#10003;</div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-2">Запись подтверждена!</h2>
+                <p class="text-gray-500 mb-6">Вам придёт SMS с подтверждением</p>
+
+                <div class="summary-card mb-6" id="booking-summary">
+                    <!-- Summary filled dynamically -->
+                </div>
+
+                <a href="/" class="btn btn-primary btn-full">На главную</a>
+            </div>
+
+            <!-- Error State -->
+            <div id="status-error" class="status-error hidden">
+                <div class="icon">&#10007;</div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-2">Не удалось записаться</h2>
+                <p class="text-gray-500 mb-2" id="error-message">Произошла ошибка</p>
+
+                <button class="btn btn-secondary btn-full mt-4" id="try-again-btn">
+                    Попробовать снова
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module" src="/dist/booking.js"></script>
+</body>
+</html>

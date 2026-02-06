@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Онлайн запись</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        /* Telegram theme variables */
+        :root {
+            --tg-theme-bg-color: var(--tg-theme-bg-color, #ffffff);
+            --tg-theme-text-color: var(--tg-theme-text-color, #000000);
+            --tg-theme-hint-color: var(--tg-theme-hint-color, #999999);
+            --tg-theme-link-color: var(--tg-theme-link-color, #2481cc);
+            --tg-theme-button-color: var(--tg-theme-button-color, #3b82f6);
+            --tg-theme-button-text-color: var(--tg-theme-button-text-color, #ffffff);
+            --tg-theme-secondary-bg-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
+        }
+
+        body {
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+        }
+
+        .btn-tg {
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+        }
+
+        .text-hint {
+            color: var(--tg-theme-hint-color);
+        }
+
+        .text-link {
+            color: var(--tg-theme-link-color);
+        }
+
+        .bg-secondary {
+            background-color: var(--tg-theme-secondary-bg-color);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div id="miniapp" class="max-w-lg mx-auto px-4 py-4">
+
+        <!-- Loading State -->
+        <div id="loading-screen" class="flex flex-col items-center justify-center min-h-[60vh]">
+            <div class="spinner mb-4" style="width:40px;height:40px;"></div>
+            <p class="text-hint">Загрузка...</p>
+        </div>
+
+        <!-- Main App (hidden until loaded) -->
+        <div id="app-container" class="hidden">
+
+            <!-- Progress Bar -->
+            <div class="progress-bar mb-4" id="progress-bar">
+                <div class="progress-step" data-step="1"></div>
+                <div class="progress-step" data-step="2"></div>
+                <div class="progress-step" data-step="3"></div>
+                <div class="progress-step" data-step="4"></div>
+            </div>
+
+            <!-- Step 1: Service Selection -->
+            <div id="step-service" class="step">
+                <h1 class="text-xl font-bold mb-2">Выберите услугу</h1>
+                <p class="text-hint text-sm mb-4">Укажите, какую услугу вы хотите заказать</p>
+                <div id="services-list" class="space-y-3"></div>
+            </div>
+
+            <!-- Step 2: Calendar Selection -->
+            <div id="step-calendar" class="step">
+                <h1 class="text-xl font-bold mb-2">Выберите дату</h1>
+                <p class="text-hint text-sm mb-4">Доступные даты для записи</p>
+
+                <div class="flex justify-between items-center mb-4">
+                    <button class="calendar-nav p-2" id="prev-month">&larr;</button>
+                    <span class="font-semibold" id="current-month"></span>
+                    <button class="calendar-nav p-2" id="next-month">&rarr;</button>
+                </div>
+
+                <div class="calendar-grid mb-2">
+                    <div class="calendar-day-header">Пн</div>
+                    <div class="calendar-day-header">Вт</div>
+                    <div class="calendar-day-header">Ср</div>
+                    <div class="calendar-day-header">Чт</div>
+                    <div class="calendar-day-header">Пт</div>
+                    <div class="calendar-day-header">Сб</div>
+                    <div class="calendar-day-header">Вс</div>
+                </div>
+                <div id="calendar-days" class="calendar-grid"></div>
+            </div>
+
+            <!-- Step 3: Time Selection -->
+            <div id="step-time" class="step">
+                <h1 class="text-xl font-bold mb-2">Выберите время</h1>
+                <p class="text-hint text-sm mb-4" id="selected-date-display"></p>
+                <div id="time-slots" class="time-slots-grid"></div>
+                <div id="no-slots-message" class="text-center py-8 text-hint hidden">
+                    Нет свободных слотов
+                </div>
+            </div>
+
+            <!-- Step 4: Confirmation -->
+            <div id="step-confirm" class="step">
+                <!-- Pending -->
+                <div id="status-pending" class="status-pending">
+                    <div class="spinner"></div>
+                    <h2 class="text-lg font-semibold mb-2">Обрабатываем запись...</h2>
+                    <p class="text-hint text-sm">Это займёт несколько секунд</p>
+                </div>
+
+                <!-- Success -->
+                <div id="status-success" class="status-success hidden">
+                    <div class="icon">&#10003;</div>
+                    <h2 class="text-lg font-semibold mb-2">Запись подтверждена!</h2>
+                    <p class="text-hint text-sm mb-6">Мы пришлём напоминание</p>
+                    <div class="summary-card mb-6 bg-secondary rounded-xl p-4" id="booking-summary"></div>
+                </div>
+
+                <!-- Error -->
+                <div id="status-error" class="status-error hidden">
+                    <div class="icon">&#10007;</div>
+                    <h2 class="text-lg font-semibold mb-2">Не удалось записаться</h2>
+                    <p class="text-hint text-sm" id="error-message"></p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Error State (for init errors) -->
+        <div id="error-screen" class="hidden text-center py-12">
+            <p class="text-lg mb-2">Ошибка загрузки</p>
+            <p class="text-hint text-sm" id="init-error-message">Не удалось инициализировать приложение</p>
+        </div>
+
+    </div>
+
+    <script type="module" src="/dist/miniapp.js"></script>
+</body>
+</html>

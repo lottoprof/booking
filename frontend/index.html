@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Онлайн запись на услуги. Удобное бронирование в любое время.">
+    <meta name="keywords" content="запись, бронирование, услуги, онлайн">
+    <title>Онлайн запись на услуги</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="bg-white">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-100">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="/" class="text-xl font-bold text-gray-800">BookingApp</a>
+            <nav class="flex items-center gap-6">
+                <a href="/pricing" class="text-gray-600 hover:text-gray-900">Услуги и цены</a>
+                <a href="/book" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+                    Записаться
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-br from-blue-50 to-indigo-100 py-20">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                Онлайн запись на услуги
+            </h1>
+            <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+                Забудьте о звонках и ожидании. Выберите удобное время и запишитесь онлайн за пару минут.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/book" class="bg-blue-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-lg shadow-blue-500/30">
+                    Записаться сейчас
+                </a>
+                <a href="/pricing" class="bg-white text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition border border-gray-200">
+                    Посмотреть услуги
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-20">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">
+                Почему это удобно
+            </h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center p-6">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">24/7 Доступность</h3>
+                    <p class="text-gray-600">
+                        Записывайтесь в любое время, даже ночью. Система работает круглосуточно.
+                    </p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Мгновенное подтверждение</h3>
+                    <p class="text-gray-600">
+                        Получите подтверждение записи сразу после бронирования.
+                    </p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Удобный календарь</h3>
+                    <p class="text-gray-600">
+                        Видите все свободные слоты и выбираете подходящий за секунды.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it Works Section -->
+    <section class="py-20 bg-gray-50">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">
+                Как это работает
+            </h2>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                        1
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-2">Выберите услугу</h3>
+                    <p class="text-sm text-gray-600">Посмотрите список доступных услуг и цены</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                        2
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-2">Выберите дату</h3>
+                    <p class="text-sm text-gray-600">Найдите удобный день в календаре</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                        3
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-2">Выберите время</h3>
+                    <p class="text-sm text-gray-600">Укажите удобное время из свободных слотов</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                        4
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-2">Подтвердите</h3>
+                    <p class="text-sm text-gray-600">Введите телефон и получите подтверждение</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">
+                Готовы записаться?
+            </h2>
+            <p class="text-xl text-gray-600 mb-8">
+                Это займёт всего пару минут
+            </p>
+            <a href="/book" class="inline-block bg-blue-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-lg shadow-blue-500/30">
+                Записаться онлайн
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-12">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="text-white font-bold text-xl mb-4 md:mb-0">BookingApp</div>
+                <nav class="flex gap-6">
+                    <a href="/pricing" class="hover:text-white transition">Услуги</a>
+                    <a href="/book" class="hover:text-white transition">Записаться</a>
+                </nav>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
+                &copy; 2024 BookingApp. Все права защищены.
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

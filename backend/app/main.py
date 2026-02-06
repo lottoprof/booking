@@ -34,6 +34,7 @@ from .routers import (
     wallets,
     slots,
     integrations,
+    internal,
 )
 from .services.completion_checker import completion_checker_loop
 from .services.reminder_checker import reminder_checker_loop
@@ -93,3 +94,8 @@ app.include_router(audit_log.router)
 app.include_router(wallets.router)
 app.include_router(slots.router)
 app.include_router(integrations.router)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Internal API (trusted consumers only, not proxied through gateway)
+# ──────────────────────────────────────────────────────────────────────────────
+app.include_router(internal.router)
