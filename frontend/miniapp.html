@@ -1,142 +1,859 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Онлайн запись</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/css/styles.css">
-    <style>
-        /* Telegram theme variables */
-        :root {
-            --tg-theme-bg-color: var(--tg-theme-bg-color, #ffffff);
-            --tg-theme-text-color: var(--tg-theme-text-color, #000000);
-            --tg-theme-hint-color: var(--tg-theme-hint-color, #999999);
-            --tg-theme-link-color: var(--tg-theme-link-color, #2481cc);
-            --tg-theme-button-color: var(--tg-theme-button-color, #3b82f6);
-            --tg-theme-button-text-color: var(--tg-theme-button-text-color, #ffffff);
-            --tg-theme-secondary-bg-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Онлайн запись — UPGRADE</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-        body {
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-        }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-        .btn-tg {
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-        }
+  <style>
+    /* ═══════════════════════════════════════
+       DESIGN TOKENS (UPGRADE)
+       ═══════════════════════════════════════ */
+    :root {
+      --teal:        #2BB5B8;
+      --teal-light:  #5DD3D5;
+      --teal-dark:   #1E8E90;
+      --teal-subtle: #E8F7F7;
+      --font-display:'Cormorant Garamond', Georgia, serif;
+      --font-body:   'Manrope', system-ui, sans-serif;
 
-        .text-hint {
-            color: var(--tg-theme-hint-color);
-        }
+      /* Telegram theme integration — fallbacks to UPGRADE palette */
+      --bg:          var(--tg-theme-bg-color, #FFFFFF);
+      --bg-secondary:var(--tg-theme-secondary-bg-color, #F8FBFB);
+      --text:        var(--tg-theme-text-color, #1A2B2B);
+      --text-hint:   var(--tg-theme-hint-color, #8FA5A5);
+      --accent:      var(--tg-theme-button-color, #2BB5B8);
+      --accent-text: var(--tg-theme-button-text-color, #FFFFFF);
+      --link:        var(--tg-theme-link-color, #1E8E90);
+      --border:      #E0EDED;
+      --danger:      #E74C3C;
+      --success:     #27AE60;
 
-        .text-link {
-            color: var(--tg-theme-link-color);
-        }
+      --shadow-sm:   0 1px 3px rgba(43,181,184,0.06);
+      --shadow-md:   0 8px 24px rgba(43,181,184,0.10);
+      --radius:      12px;
+      --radius-sm:   8px;
+    }
 
-        .bg-secondary {
-            background-color: var(--tg-theme-secondary-bg-color);
-        }
-    </style>
+    /* ═══════════════════════════════════════
+       RESET & BASE
+       ═══════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ═══════════════════════════════════════
+       LAYOUT
+       ═══════════════════════════════════════ */
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* ═══════════════════════════════════════
+       PROGRESS BAR
+       ═══════════════════════════════════════ */
+    .progress-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+    }
+    .progress-step {
+      flex: 1;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      transition: background 0.3s;
+    }
+    .progress-step.completed,
+    .progress-step.active {
+      background: var(--teal);
+    }
+
+    /* ═══════════════════════════════════════
+       STEPS
+       ═══════════════════════════════════════ */
+    .step {
+      display: none;
+      animation: fadeIn 0.25s ease;
+    }
+    .step.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-title {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .step-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-hint);
+      margin-bottom: 16px;
+    }
+
+    /* ═══════════════════════════════════════
+       SERVICE CARDS
+       ═══════════════════════════════════════ */
+    .services-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .service-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .service-card:active { transform: scale(0.98); }
+    .service-card.selected {
+      border-color: var(--teal);
+      background: var(--teal-subtle);
+    }
+    .service-card .name {
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+    .service-card .details {
+      font-size: 0.8rem;
+      color: var(--text-hint);
+      margin-top: 2px;
+    }
+    .service-card .price {
+      font-weight: 600;
+      font-size: 1.05rem;
+      color: var(--teal-dark);
+      white-space: nowrap;
+    }
+
+    /* ═══════════════════════════════════════
+       CALENDAR
+       ═══════════════════════════════════════ */
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .calendar-month {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+    .calendar-nav {
+      display: flex; gap: 6px;
+    }
+    .calendar-nav button {
+      width: 32px; height: 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .calendar-nav button:active { background: var(--teal-subtle); }
+    .calendar-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+    .calendar-day-header {
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-hint);
+      padding: 6px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .calendar-day.empty { cursor: default; }
+    .calendar-day.available {
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+    .calendar-day.available:active {
+      border-color: var(--teal);
+      background: var(--teal-subtle);
+    }
+    .calendar-day.unavailable {
+      color: var(--border);
+      cursor: not-allowed;
+    }
+    .calendar-day.selected {
+      background: var(--teal);
+      color: #fff;
+      font-weight: 600;
+      border-color: var(--teal);
+    }
+    .calendar-day.today { font-weight: 600; color: var(--teal-dark); }
+
+    /* ═══════════════════════════════════════
+       TIME SLOTS
+       ═══════════════════════════════════════ */
+    .time-slots-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    @media (max-width: 360px) {
+      .time-slots-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .time-slot {
+      padding: 10px 6px;
+      text-align: center;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .time-slot:active {
+      border-color: var(--teal);
+      background: var(--teal-subtle);
+    }
+    .time-slot.selected {
+      background: var(--teal);
+      color: #fff;
+      border-color: var(--teal);
+    }
+    .time-slot.unavailable {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .no-slots {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--text-hint);
+      font-size: 0.9rem;
+    }
+
+    /* ═══════════════════════════════════════
+       STATUS SCREENS
+       ═══════════════════════════════════════ */
+    .status-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 40px 16px;
+    }
+    .status-icon {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 28px;
+    }
+    .status-icon.pending {
+      border: 3px solid var(--border);
+      border-top-color: var(--teal);
+      animation: spin 0.8s linear infinite;
+    }
+    .status-icon.success { background: #dcfce7; color: var(--success); }
+    .status-icon.error   { background: #fee2e2; color: var(--danger); }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status-title {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .status-text {
+      font-size: 0.85rem;
+      color: var(--text-hint);
+      margin-bottom: 20px;
+    }
+
+    /* ═══════════════════════════════════════
+       SUMMARY CARD
+       ═══════════════════════════════════════ */
+    .summary-card {
+      width: 100%;
+      background: var(--bg-secondary);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-label { color: var(--text-hint); }
+    .summary-value { font-weight: 500; color: var(--text); }
+
+    /* ═══════════════════════════════════════
+       LOADING
+       ═══════════════════════════════════════ */
+    .loading-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--teal);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+    .loading-text {
+      font-size: 0.85rem;
+      color: var(--text-hint);
+    }
+
+    /* ═══════════════════════════════════════
+       ERROR SCREEN
+       ═══════════════════════════════════════ */
+    .error-screen {
+      text-align: center;
+      padding: 48px 16px;
+    }
+    .error-screen p:first-child {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .error-screen .hint {
+      font-size: 0.85rem;
+      color: var(--text-hint);
+    }
+  </style>
 </head>
-<body class="min-h-screen">
-    <div id="miniapp" class="max-w-lg mx-auto px-4 py-4">
+<body>
+  <div class="app" id="miniapp">
 
-        <!-- Loading State -->
-        <div id="loading-screen" class="flex flex-col items-center justify-center min-h-[60vh]">
-            <div class="spinner mb-4" style="width:40px;height:40px;"></div>
-            <p class="text-hint">Загрузка...</p>
+    <!-- Loading State -->
+    <div id="loading-screen" class="loading-screen">
+      <div class="spinner"></div>
+      <span class="loading-text">Загрузка...</span>
+    </div>
+
+    <!-- Main App (hidden until loaded) -->
+    <div id="app-container" class="hidden">
+
+      <!-- Progress Bar -->
+      <div class="progress-bar" id="progress-bar">
+        <div class="progress-step" data-step="1"></div>
+        <div class="progress-step" data-step="2"></div>
+        <div class="progress-step" data-step="3"></div>
+        <div class="progress-step" data-step="4"></div>
+      </div>
+
+      <!-- Step 1: Service Selection -->
+      <div id="step-service" class="step">
+        <h1 class="step-title">Выберите услугу</h1>
+        <p class="step-subtitle">Какую процедуру вы хотите заказать?</p>
+        <div id="services-list" class="services-list"></div>
+      </div>
+
+      <!-- Step 2: Calendar Selection -->
+      <div id="step-calendar" class="step">
+        <h1 class="step-title">Выберите дату</h1>
+        <p class="step-subtitle">Доступные даты для записи</p>
+
+        <div class="calendar-header">
+          <span class="calendar-month" id="current-month"></span>
+          <div class="calendar-nav">
+            <button id="prev-month">&#8249;</button>
+            <button id="next-month">&#8250;</button>
+          </div>
         </div>
 
-        <!-- Main App (hidden until loaded) -->
-        <div id="app-container" class="hidden">
+        <div class="calendar-grid" style="margin-bottom: 4px;">
+          <div class="calendar-day-header">Пн</div>
+          <div class="calendar-day-header">Вт</div>
+          <div class="calendar-day-header">Ср</div>
+          <div class="calendar-day-header">Чт</div>
+          <div class="calendar-day-header">Пт</div>
+          <div class="calendar-day-header">Сб</div>
+          <div class="calendar-day-header">Вс</div>
+        </div>
+        <div id="calendar-days" class="calendar-grid"></div>
+      </div>
 
-            <!-- Progress Bar -->
-            <div class="progress-bar mb-4" id="progress-bar">
-                <div class="progress-step" data-step="1"></div>
-                <div class="progress-step" data-step="2"></div>
-                <div class="progress-step" data-step="3"></div>
-                <div class="progress-step" data-step="4"></div>
-            </div>
+      <!-- Step 3: Time Selection -->
+      <div id="step-time" class="step">
+        <h1 class="step-title">Выберите время</h1>
+        <p class="step-subtitle" id="selected-date-display"></p>
+        <div id="time-slots" class="time-slots-grid"></div>
+        <div id="no-slots-message" class="no-slots hidden">
+          Нет свободных слотов на эту дату
+        </div>
+      </div>
 
-            <!-- Step 1: Service Selection -->
-            <div id="step-service" class="step">
-                <h1 class="text-xl font-bold mb-2">Выберите услугу</h1>
-                <p class="text-hint text-sm mb-4">Укажите, какую услугу вы хотите заказать</p>
-                <div id="services-list" class="space-y-3"></div>
-            </div>
-
-            <!-- Step 2: Calendar Selection -->
-            <div id="step-calendar" class="step">
-                <h1 class="text-xl font-bold mb-2">Выберите дату</h1>
-                <p class="text-hint text-sm mb-4">Доступные даты для записи</p>
-
-                <div class="flex justify-between items-center mb-4">
-                    <button class="calendar-nav p-2" id="prev-month">&larr;</button>
-                    <span class="font-semibold" id="current-month"></span>
-                    <button class="calendar-nav p-2" id="next-month">&rarr;</button>
-                </div>
-
-                <div class="calendar-grid mb-2">
-                    <div class="calendar-day-header">Пн</div>
-                    <div class="calendar-day-header">Вт</div>
-                    <div class="calendar-day-header">Ср</div>
-                    <div class="calendar-day-header">Чт</div>
-                    <div class="calendar-day-header">Пт</div>
-                    <div class="calendar-day-header">Сб</div>
-                    <div class="calendar-day-header">Вс</div>
-                </div>
-                <div id="calendar-days" class="calendar-grid"></div>
-            </div>
-
-            <!-- Step 3: Time Selection -->
-            <div id="step-time" class="step">
-                <h1 class="text-xl font-bold mb-2">Выберите время</h1>
-                <p class="text-hint text-sm mb-4" id="selected-date-display"></p>
-                <div id="time-slots" class="time-slots-grid"></div>
-                <div id="no-slots-message" class="text-center py-8 text-hint hidden">
-                    Нет свободных слотов
-                </div>
-            </div>
-
-            <!-- Step 4: Confirmation -->
-            <div id="step-confirm" class="step">
-                <!-- Pending -->
-                <div id="status-pending" class="status-pending">
-                    <div class="spinner"></div>
-                    <h2 class="text-lg font-semibold mb-2">Обрабатываем запись...</h2>
-                    <p class="text-hint text-sm">Это займёт несколько секунд</p>
-                </div>
-
-                <!-- Success -->
-                <div id="status-success" class="status-success hidden">
-                    <div class="icon">&#10003;</div>
-                    <h2 class="text-lg font-semibold mb-2">Запись подтверждена!</h2>
-                    <p class="text-hint text-sm mb-6">Мы пришлём напоминание</p>
-                    <div class="summary-card mb-6 bg-secondary rounded-xl p-4" id="booking-summary"></div>
-                </div>
-
-                <!-- Error -->
-                <div id="status-error" class="status-error hidden">
-                    <div class="icon">&#10007;</div>
-                    <h2 class="text-lg font-semibold mb-2">Не удалось записаться</h2>
-                    <p class="text-hint text-sm" id="error-message"></p>
-                </div>
-            </div>
-
+      <!-- Step 4: Confirmation -->
+      <div id="step-confirm" class="step">
+        <!-- Pending -->
+        <div id="status-pending" class="status-screen">
+          <div class="status-icon pending"></div>
+          <h2 class="status-title">Обрабатываем запись...</h2>
+          <p class="status-text">Это займёт несколько секунд</p>
         </div>
 
-        <!-- Error State (for init errors) -->
-        <div id="error-screen" class="hidden text-center py-12">
-            <p class="text-lg mb-2">Ошибка загрузки</p>
-            <p class="text-hint text-sm" id="init-error-message">Не удалось инициализировать приложение</p>
+        <!-- Success -->
+        <div id="status-success" class="status-screen hidden">
+          <div class="status-icon success">&#10003;</div>
+          <h2 class="status-title">Запись подтверждена!</h2>
+          <p class="status-text">Мы пришлём напоминание</p>
+          <div class="summary-card" id="booking-summary"></div>
         </div>
+
+        <!-- Error -->
+        <div id="status-error" class="status-screen hidden">
+          <div class="status-icon error">&#10007;</div>
+          <h2 class="status-title">Не удалось записаться</h2>
+          <p class="status-text" id="error-message"></p>
+        </div>
+      </div>
 
     </div>
 
-    <script type="module" src="/dist/miniapp.js"></script>
+    <!-- Error State (for init errors) -->
+    <div id="error-screen" class="error-screen hidden">
+      <p>Ошибка загрузки</p>
+      <p class="hint" id="init-error-message">Не удалось инициализировать приложение</p>
+    </div>
+
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════════
+       MINI APP — Telegram WebApp booking
+       Trusted flow: initData verified by Gateway
+       ═══════════════════════════════════════ */
+
+    class MiniApp {
+      constructor() {
+        this.tg = window.Telegram.WebApp;
+        this.state = {
+          locationId: 1,
+          clientId: 0,
+          service: null,
+          date: '',
+          time: '',
+          specialistId: null,
+        };
+        this.services = [];
+        this.availableDays = new Map();
+        this.timeSlots = [];
+        this.currentMonth = new Date();
+        this.currentStep = 'service';
+        this.mainButtonCallback = null;
+        this.init();
+      }
+
+      async init() {
+        this.tg.ready();
+        this.tg.expand();
+        this.tg.BackButton.onClick(() => this.handleBack());
+
+        try {
+          const userData = await this.verifyUser();
+          this.state.clientId = userData.client_id;
+
+          const locations = await this.fetchAPI('/locations');
+          if (locations.length > 0) this.state.locationId = locations[0].id;
+
+          this.services = await this.fetchAPI('/services');
+
+          this.hideLoading();
+          this.renderServices();
+          this.showStep('service');
+        } catch (error) {
+          console.error('Init error:', error);
+          this.showInitError(error.message || 'Unknown error');
+        }
+      }
+
+      /* ── API ── */
+
+      async fetchAPI(endpoint, options) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.tg.initData) headers['X-Telegram-Init-Data'] = this.tg.initData;
+
+        const res = await fetch(endpoint, { ...options, headers: { ...headers, ...(options?.headers || {}) } });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || `API error: ${res.status}`);
+        }
+        return res.json();
+      }
+
+      async verifyUser() {
+        const user = this.tg.initDataUnsafe.user;
+        if (!user) throw new Error('User not found in initData');
+        const userData = await this.fetchAPI(`/users/by_tg/${user.id}`);
+        return { client_id: userData.id };
+      }
+
+      /* ── Navigation ── */
+
+      hideLoading() {
+        document.getElementById('loading-screen').classList.add('hidden');
+        document.getElementById('app-container').classList.remove('hidden');
+      }
+
+      showInitError(message) {
+        document.getElementById('loading-screen').classList.add('hidden');
+        document.getElementById('error-screen').classList.remove('hidden');
+        document.getElementById('init-error-message').textContent = message;
+      }
+
+      showStep(step) {
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        document.getElementById(`step-${step}`).classList.add('active');
+
+        const steps = ['service', 'calendar', 'time', 'confirm'];
+        const idx = steps.indexOf(step);
+        document.querySelectorAll('.progress-step').forEach((el, i) => {
+          el.classList.remove('completed', 'active');
+          if (i < idx) el.classList.add('completed');
+          else if (i === idx) el.classList.add('active');
+        });
+
+        step === 'service' ? this.tg.BackButton.hide() : this.tg.BackButton.show();
+        this.updateMainButton(step);
+        this.currentStep = step;
+      }
+
+      updateMainButton(step) {
+        if (this.mainButtonCallback) {
+          this.tg.MainButton.offClick(this.mainButtonCallback);
+          this.mainButtonCallback = null;
+        }
+        this.tg.MainButton.hide();
+      }
+
+      handleBack() {
+        this.tg.HapticFeedback.selectionChanged();
+        const map = { calendar: 'service', time: 'calendar', confirm: 'time' };
+        if (map[this.currentStep]) this.showStep(map[this.currentStep]);
+      }
+
+      /* ── Services ── */
+
+      renderServices() {
+        const container = document.getElementById('services-list');
+        container.innerHTML = this.services.map(s => `
+          <div class="service-card" data-id="${s.id}">
+            <div>
+              <div class="name">${this.esc(s.name)}</div>
+              <div class="details">${s.duration_min} мин</div>
+            </div>
+            <div class="price">${this.fmtPrice(s.price)}</div>
+          </div>
+        `).join('');
+
+        container.addEventListener('click', e => {
+          const card = e.target.closest('.service-card');
+          if (card) this.selectService(parseInt(card.dataset.id));
+        });
+      }
+
+      async selectService(id) {
+        const service = this.services.find(s => s.id === id);
+        if (!service) return;
+        this.tg.HapticFeedback.selectionChanged();
+        this.state.service = service;
+
+        document.querySelectorAll('.service-card').forEach(el => {
+          el.classList.toggle('selected', el.dataset.id === String(id));
+        });
+
+        await this.loadCalendar();
+      }
+
+      /* ── Calendar ── */
+
+      async loadCalendar() {
+        if (!this.state.service) return;
+        try {
+          const data = await this.fetchAPI(
+            `/slots/calendar?location_id=${this.state.locationId}&start_date=&end_date=`
+          );
+          this.availableDays.clear();
+          for (const day of data.days) this.availableDays.set(day.date, day.has_slots);
+
+          const first = data.days.find(d => d.has_slots);
+          if (first) this.currentMonth = new Date(first.date);
+
+          this.renderCalendar();
+          this.showStep('calendar');
+        } catch (e) {
+          console.error('Calendar load failed:', e);
+          this.tg.HapticFeedback.notificationOccurred('error');
+        }
+      }
+
+      renderCalendar() {
+        const container = document.getElementById('calendar-days');
+        const monthDisplay = document.getElementById('current-month');
+
+        const year = this.currentMonth.getFullYear();
+        const month = this.currentMonth.getMonth();
+
+        const names = ['Январь','Февраль','Март','Апрель','Май','Июнь',
+                       'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+        monthDisplay.textContent = `${names[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startOffset = (firstDay.getDay() + 6) % 7;
+        const today = new Date(); today.setHours(0,0,0,0);
+
+        let html = '';
+        for (let i = 0; i < startOffset; i++) html += '<div class="calendar-day empty"></div>';
+
+        for (let d = 1; d <= lastDay.getDate(); d++) {
+          const date = new Date(year, month, d);
+          const iso = date.toISOString().split('T')[0];
+          const isPast = date < today;
+          const avail = !isPast && this.availableDays.get(iso);
+          const cls = ['calendar-day'];
+          if (date.getTime() === today.getTime()) cls.push('today');
+          if (avail) cls.push('available'); else cls.push('unavailable');
+          html += `<div class="${cls.join(' ')}" data-date="${iso}">${d}</div>`;
+        }
+
+        container.innerHTML = html;
+        container.onclick = e => {
+          const el = e.target.closest('.calendar-day');
+          if (el?.classList.contains('available')) this.selectDate(el.dataset.date);
+        };
+
+        document.getElementById('prev-month').onclick = () => {
+          this.currentMonth.setMonth(this.currentMonth.getMonth() - 1);
+          this.renderCalendar();
+        };
+        document.getElementById('next-month').onclick = () => {
+          this.currentMonth.setMonth(this.currentMonth.getMonth() + 1);
+          this.renderCalendar();
+        };
+      }
+
+      async selectDate(date) {
+        this.tg.HapticFeedback.selectionChanged();
+        this.state.date = date;
+        document.querySelectorAll('.calendar-day').forEach(el => {
+          el.classList.toggle('selected', el.dataset.date === date);
+        });
+        await this.loadTimeSlots();
+      }
+
+      /* ── Time Slots ── */
+
+      async loadTimeSlots() {
+        if (!this.state.service) return;
+        try {
+          const data = await this.fetchAPI(
+            `/slots/day?location_id=${this.state.locationId}&service_id=${this.state.service.id}&date=${this.state.date}`
+          );
+          this.timeSlots = data.available_times || [];
+          this.renderTimeSlots();
+
+          const d = new Date(this.state.date);
+          document.getElementById('selected-date-display').textContent =
+            d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+
+          this.showStep('time');
+        } catch (e) {
+          console.error('Time slots load failed:', e);
+          this.tg.HapticFeedback.notificationOccurred('error');
+        }
+      }
+
+      renderTimeSlots() {
+        const container = document.getElementById('time-slots');
+        const noMsg = document.getElementById('no-slots-message');
+
+        if (this.timeSlots.length === 0) {
+          container.innerHTML = '';
+          noMsg.classList.remove('hidden');
+          return;
+        }
+
+        noMsg.classList.add('hidden');
+        container.innerHTML = this.timeSlots.map(s =>
+          `<div class="time-slot" data-time="${s.time}">${s.time}</div>`
+        ).join('');
+
+        container.onclick = e => {
+          const el = e.target.closest('.time-slot');
+          if (el) this.selectTime(el.dataset.time);
+        };
+      }
+
+      async selectTime(time) {
+        this.tg.HapticFeedback.selectionChanged();
+        const slot = this.timeSlots.find(s => s.time === time);
+        if (!slot) return;
+
+        this.state.time = time;
+        if (slot.specialists?.length > 0) this.state.specialistId = slot.specialists[0].id;
+
+        document.querySelectorAll('.time-slot').forEach(el => {
+          el.classList.toggle('selected', el.dataset.time === time);
+        });
+
+        await this.createBooking();
+      }
+
+      /* ── Booking ── */
+
+      async createBooking() {
+        if (!this.state.service || !this.state.specialistId) return;
+
+        this.showStep('confirm');
+        this.showPending();
+
+        try {
+          const start = new Date(`${this.state.date}T${this.state.time}:00`);
+          const end = new Date(start.getTime() + this.state.service.duration_min * 60000);
+
+          const result = await this.fetchAPI('/bookings', {
+            method: 'POST',
+            body: JSON.stringify({
+              company_id: 1,
+              location_id: this.state.locationId,
+              service_id: this.state.service.id,
+              client_id: this.state.clientId,
+              specialist_id: this.state.specialistId,
+              date_start: start.toISOString().replace('T', ' ').split('.')[0],
+              date_end: end.toISOString().replace('T', ' ').split('.')[0],
+              duration_minutes: this.state.service.duration_min,
+              break_minutes: this.state.service.break_min || 0,
+            }),
+          });
+
+          this.tg.HapticFeedback.notificationOccurred('success');
+          this.showSuccess(result.id);
+        } catch (e) {
+          console.error('Booking failed:', e);
+          this.tg.HapticFeedback.notificationOccurred('error');
+          this.showError(e.message || 'Unknown error');
+        }
+      }
+
+      showPending() {
+        document.getElementById('status-pending').classList.remove('hidden');
+        document.getElementById('status-success').classList.add('hidden');
+        document.getElementById('status-error').classList.add('hidden');
+      }
+
+      showSuccess(bookingId) {
+        document.getElementById('status-pending').classList.add('hidden');
+        document.getElementById('status-error').classList.add('hidden');
+        document.getElementById('status-success').classList.remove('hidden');
+
+        const summary = document.getElementById('booking-summary');
+        if (summary && this.state.service) {
+          const d = new Date(this.state.date);
+          summary.innerHTML = `
+            <div class="summary-row">
+              <span class="summary-label">Услуга</span>
+              <span class="summary-value">${this.esc(this.state.service.name)}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Дата</span>
+              <span class="summary-value">${d.toLocaleDateString('ru-RU')}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Время</span>
+              <span class="summary-value">${this.state.time}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Стоимость</span>
+              <span class="summary-value">${this.fmtPrice(this.state.service.price)}</span>
+            </div>
+          `;
+        }
+
+        this.tg.MainButton.text = 'Закрыть';
+        this.tg.MainButton.show();
+        this.mainButtonCallback = () => this.tg.close();
+        this.tg.MainButton.onClick(this.mainButtonCallback);
+      }
+
+      showError(message) {
+        document.getElementById('status-pending').classList.add('hidden');
+        document.getElementById('status-success').classList.add('hidden');
+        document.getElementById('status-error').classList.remove('hidden');
+        document.getElementById('error-message').textContent = message;
+
+        this.tg.MainButton.text = 'Попробовать снова';
+        this.tg.MainButton.show();
+        this.mainButtonCallback = () => this.showStep('time');
+        this.tg.MainButton.onClick(this.mainButtonCallback);
+      }
+
+      /* ── Helpers ── */
+
+      esc(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+      }
+
+      fmtPrice(price) {
+        return new Intl.NumberFormat('ru-RU', {
+          style: 'currency', currency: 'RUB', minimumFractionDigits: 0,
+        }).format(price);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => new MiniApp());
+  </script>
 </body>
 </html>
