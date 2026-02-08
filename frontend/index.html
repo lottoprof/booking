@@ -1,160 +1,1308 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Онлайн запись на услуги. Удобное бронирование в любое время.">
-    <meta name="keywords" content="запись, бронирование, услуги, онлайн">
-    <title>Онлайн запись на услуги</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/css/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UPGRADE — Студия аппаратного массажа | LPG, прессотерапия, обёртывание</title>
+  <meta name="description" content="Студия эстетики UPGRADE — аппаратный LPG-массаж, роликовый массаж, прессотерапия, обёртывание. Подтянутое тело за 10 сеансов. Запись онлайн.">
+  <meta name="keywords" content="LPG массаж, аппаратный массаж, прессотерапия, обёртывание, роликовый массаж, индибо, антицеллюлитный массаж, студия эстетики">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="UPGRADE — Студия аппаратного массажа">
+  <meta property="og:description" content="LPG-массаж, прессотерапия, обёртывание. Подтянутое тело за 10 сеансов.">
+  <meta property="og:image" content="/og-image.jpg">
+  <meta property="og:url" content="https://upgrade-studio.ru">
+
+  <!-- Structured Data: LocalBusiness -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HealthAndBeautyBusiness",
+    "name": "UPGRADE",
+    "description": "Студия аппаратного массажа — LPG, прессотерапия, обёртывание",
+    "url": "https://upgrade-studio.ru",
+    "telephone": "+7-XXX-XXX-XX-XX",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Город",
+      "streetAddress": "Улица, дом"
+    },
+    "openingHours": "Mo-Su 09:00-21:00",
+    "priceRange": "₽₽"
+  }
+  </script>
+
+  <!-- Structured Data: FAQPage -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Что такое LPG-массаж?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "LPG-массаж — аппаратная процедура с использованием вакуумно-роликовой технологии. Воздействует на подкожно-жировую клетчатку, улучшает лимфоотток и кровообращение, помогает уменьшить объёмы и проявления целлюлита."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Сколько сеансов нужно для результата?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Первые результаты заметны после 3–4 сеансов. Рекомендуемый курс — 10–15 процедур с частотой 2–3 раза в неделю для достижения устойчивого эффекта."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Есть ли противопоказания?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Да, как у любой аппаратной процедуры. Основные: онкология, тромбофлебит, острые воспаления, беременность. Полный список обсудим на консультации."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Больно ли делать LPG-массаж?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Нет, процедура безболезненная. Вы почувствуете интенсивное, но приятное воздействие — как глубокий разминающий массаж. Интенсивность настраивается индивидуально."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════
+       CSS VARIABLES & THEME
+       ═══════════════════════════════════════ */
+    :root {
+      /* Brand colors from Instagram */
+      --teal:        #2BB5B8;
+      --teal-light:  #5DD3D5;
+      --teal-dark:   #1E8E90;
+      --teal-subtle: #E8F7F7;
+
+      /* Typography */
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-body:    'Manrope', system-ui, sans-serif;
+    }
+
+    [data-theme="light"] {
+      --bg-primary:    #FFFFFF;
+      --bg-secondary:  #F8FBFB;
+      --bg-card:       #FFFFFF;
+      --text-primary:  #1A2B2B;
+      --text-secondary:#5A7070;
+      --text-muted:    #8FA5A5;
+      --border:        #E0EDED;
+      --border-light:  #F0F5F5;
+      --shadow-sm:     0 1px 3px rgba(43,181,184,0.06);
+      --shadow-md:     0 8px 32px rgba(43,181,184,0.08);
+      --shadow-lg:     0 16px 48px rgba(43,181,184,0.12);
+      --hero-overlay:  linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(232,247,247,0.88) 100%);
+      --nav-bg:        rgba(255,255,255,0.85);
+    }
+
+    [data-theme="dark"] {
+      --bg-primary:    #0F1A1A;
+      --bg-secondary:  #162222;
+      --bg-card:       #1A2D2D;
+      --text-primary:  #E8F0F0;
+      --text-secondary:#9BB5B5;
+      --text-muted:    #6A8585;
+      --border:        #253838;
+      --border-light:  #1E3030;
+      --shadow-sm:     0 1px 3px rgba(0,0,0,0.2);
+      --shadow-md:     0 8px 32px rgba(0,0,0,0.3);
+      --shadow-lg:     0 16px 48px rgba(0,0,0,0.4);
+      --hero-overlay:  linear-gradient(135deg, rgba(15,26,26,0.94) 0%, rgba(22,34,34,0.90) 100%);
+      --nav-bg:        rgba(15,26,26,0.9);
+    }
+
+    /* ═══════════════════════════════════════
+       RESET & BASE
+       ═══════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-weight: 400;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    /* ═══════════════════════════════════════
+       NAVIGATION
+       ═══════════════════════════════════════ */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 0 2rem;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--nav-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-light);
+      transition: all 0.3s ease;
+    }
+
+    .nav.scrolled {
+      height: 60px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      line-height: 1;
+    }
+
+    .nav-logo img {
+      height: 48px;
+      width: auto;
+      transition: height 0.3s ease;
+    }
+
+    .nav.scrolled .nav-logo img {
+      height: 38px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--teal); }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      width: 44px;
+      height: 24px;
+      border-radius: 12px;
+      background: var(--border);
+      border: none;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.3s;
+    }
+
+    .theme-toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--teal);
+      transition: transform 0.3s ease;
+    }
+
+    [data-theme="dark"] .theme-toggle::after {
+      transform: translateX(20px);
+    }
+
+    .theme-toggle-icon {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .theme-toggle-icon.sun  { left: 5px; }
+    .theme-toggle-icon.moon { right: 5px; }
+
+    /* Burger */
+    .nav-burger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .nav-burger span {
+      width: 22px;
+      height: 2px;
+      background: var(--text-primary);
+      border-radius: 1px;
+      transition: all 0.3s;
+    }
+
+    /* ═══════════════════════════════════════
+       HERO
+       ═══════════════════════════════════════ */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      /* Placeholder — replace with real photo */
+      background:
+        var(--hero-overlay),
+        linear-gradient(160deg, var(--teal-subtle) 0%, #fff 40%, #f0fafa 100%);
+    }
+
+    /* Decorative organic shape */
+    .hero-bg::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      right: -10%;
+      width: 60vw;
+      height: 60vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(43,181,184,0.08) 0%, transparent 70%);
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .hero-bg::after {
+      content: '';
+      position: absolute;
+      bottom: -10%;
+      left: -5%;
+      width: 40vw;
+      height: 40vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(43,181,184,0.05) 0%, transparent 70%);
+      animation: float 15s ease-in-out infinite reverse;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(30px, -20px) scale(1.05); }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 720px;
+      padding: 120px 2rem 80px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 20px;
+      border-radius: 100px;
+      background: rgba(43,181,184,0.1);
+      color: var(--teal-dark);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+      border: 1px solid rgba(43,181,184,0.2);
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.8rem, 6vw, 4.5rem);
+      font-weight: 400;
+      line-height: 1.1;
+      color: var(--text-primary);
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.01em;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--teal);
+    }
+
+    .hero-sub {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      max-width: 520px;
+      margin: 0 auto 2.5rem;
+      font-weight: 300;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ═══════════════════════════════════════
+       BUTTONS
+       ═══════════════════════════════════════ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 14px 32px;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border-radius: 100px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: var(--teal);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(43,181,184,0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--teal-dark);
+      box-shadow: 0 6px 28px rgba(43,181,184,0.4);
+      transform: translateY(-2px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1.5px solid var(--border);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+
+    /* ═══════════════════════════════════════
+       SECTIONS COMMON
+       ═══════════════════════════════════════ */
+    section {
+      padding: 100px 2rem;
+    }
+
+    .section-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 400;
+      line-height: 1.15;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+    }
+
+    .section-desc {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      max-width: 560px;
+      font-weight: 300;
+      line-height: 1.7;
+      margin-bottom: 3rem;
+    }
+
+    /* ═══════════════════════════════════════
+       ABOUT / TRUST BLOCK
+       ═══════════════════════════════════════ */
+    .about {
+      background: var(--bg-secondary);
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    .about-visual {
+      aspect-ratio: 4/5;
+      border-radius: 24px;
+      background:
+        linear-gradient(135deg, rgba(43,181,184,0.1), rgba(43,181,184,0.03)),
+        var(--bg-card);
+      border: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .about-visual-placeholder {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .about-visual-placeholder svg {
+      display: block;
+      margin: 0 auto 1rem;
+      opacity: 0.3;
+    }
+
+    .about-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 2.5rem;
+    }
+
+    .stat {
+      padding: 1.25rem;
+      border-radius: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+    }
+
+    .stat-number {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 500;
+      color: var(--teal);
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    /* ═══════════════════════════════════════
+       SERVICES
+       ═══════════════════════════════════════ */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .service-card {
+      padding: 2rem;
+      border-radius: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .service-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--teal), var(--teal-light));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .service-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+      border-color: rgba(43,181,184,0.2);
+    }
+
+    .service-card:hover::before { opacity: 1; }
+
+    .service-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: var(--teal-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+      font-size: 1.5rem;
+    }
+
+    [data-theme="dark"] .service-icon {
+      background: rgba(43,181,184,0.15);
+    }
+
+    .service-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .service-card p {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    .service-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-light);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .service-meta span {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    /* ═══════════════════════════════════════
+       SPECIALISTS
+       ═══════════════════════════════════════ */
+    .specialists {
+      background: var(--bg-secondary);
+    }
+
+    .specialists-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .specialist-card {
+      text-align: center;
+      padding: 2.5rem 2rem;
+      border-radius: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      transition: all 0.3s ease;
+    }
+
+    .specialist-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .specialist-avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(43,181,184,0.15), rgba(43,181,184,0.05));
+      margin: 0 auto 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      border: 2px solid var(--border-light);
+    }
+
+    .specialist-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .specialist-role {
+      font-size: 0.82rem;
+      color: var(--teal);
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+    }
+
+    .specialist-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    /* ═══════════════════════════════════════
+       FAQ
+       ═══════════════════════════════════════ */
+    .faq-list {
+      max-width: 720px;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .faq-question {
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 1.5rem 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      text-align: left;
+      transition: color 0.2s;
+    }
+
+    .faq-question:hover { color: var(--teal); }
+
+    .faq-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-left: 1rem;
+      transition: all 0.3s;
+    }
+
+    .faq-icon svg {
+      width: 12px;
+      height: 12px;
+      stroke: var(--text-muted);
+      transition: transform 0.3s;
+    }
+
+    .faq-item.open .faq-icon {
+      background: var(--teal);
+      border-color: var(--teal);
+    }
+
+    .faq-item.open .faq-icon svg {
+      stroke: #fff;
+      transform: rotate(45deg);
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.4s ease;
+    }
+
+    .faq-answer-inner {
+      padding-bottom: 1.5rem;
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+
+    /* ═══════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════ */
+    footer {
+      padding: 3rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+
+    .footer-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      line-height: 1;
+    }
+
+    .footer-logo img {
+      height: 36px;
+      width: auto;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--teal); }
+
+    .footer-copy {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      width: 100%;
+      text-align: center;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-light);
+    }
+
+    /* ═══════════════════════════════════════
+       ANIMATIONS
+       ═══════════════════════════════════════ */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Stagger children */
+    .stagger > * {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .stagger.visible > *:nth-child(1) { transition-delay: 0.0s; }
+    .stagger.visible > *:nth-child(2) { transition-delay: 0.1s; }
+    .stagger.visible > *:nth-child(3) { transition-delay: 0.2s; }
+    .stagger.visible > *:nth-child(4) { transition-delay: 0.3s; }
+    .stagger.visible > *:nth-child(5) { transition-delay: 0.4s; }
+    .stagger.visible > *:nth-child(6) { transition-delay: 0.5s; }
+
+    .stagger.visible > * {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ═══════════════════════════════════════
+       MOBILE MENU
+       ═══════════════════════════════════════ */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 99;
+      background: var(--bg-primary);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+    }
+
+    .mobile-menu.active { display: flex; }
+
+    .mobile-menu a {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .mobile-menu a:hover { color: var(--teal); }
+
+    .mobile-close {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+
+    /* ═══════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-burger { display: flex; }
+
+      .hero-content { padding: 100px 1.5rem 60px; }
+
+      .about-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+
+      .about-visual { display: none; }
+
+      .services-grid,
+      .specialists-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .footer-inner { justify-content: center; text-align: center; }
+      .footer-links { justify-content: center; }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .services-grid { grid-template-columns: repeat(2, 1fr); }
+      .specialists-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
 </head>
-<body class="bg-white">
-    <!-- Header -->
-    <header class="bg-white border-b border-gray-100">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-            <a href="/" class="text-xl font-bold text-gray-800">BookingApp</a>
-            <nav class="flex items-center gap-6">
-                <a href="/pricing" class="text-gray-600 hover:text-gray-900">Услуги и цены</a>
-                <a href="/book" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
-                    Записаться
-                </a>
-            </nav>
-        </div>
-    </header>
+<body>
 
-    <!-- Hero Section -->
-    <section class="bg-gradient-to-br from-blue-50 to-indigo-100 py-20">
-        <div class="max-w-6xl mx-auto px-4 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Онлайн запись на услуги
-            </h1>
-            <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                Забудьте о звонках и ожидании. Выберите удобное время и запишитесь онлайн за пару минут.
-            </p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="/book" class="bg-blue-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-lg shadow-blue-500/30">
-                    Записаться сейчас
-                </a>
-                <a href="/pricing" class="bg-white text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition border border-gray-200">
-                    Посмотреть услуги
-                </a>
-            </div>
-        </div>
-    </section>
+  <!-- ═══ NAVIGATION ═══ -->
+  <nav class="nav" id="nav">
+    <a href="/" class="nav-logo"><img src="data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKIHdpZHRoPSI4NjgiIGhlaWdodD0iNTk1IiB2aWV3Qm94PSIwIDAgODY4IDU5NSIKIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiPgo8ZyBjbGFzcz0ibG9nby1wYXRocyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCw1OTUpIHNjYWxlKDAuMSwtMC4xKSIKZmlsbD0iIzJCQjVCOCIgc3Ryb2tlPSJub25lIj4KPHBhdGggZD0iTTMwNzcgNTkzOCBjLTIgLTcgLTI2OSAtNjQ5IC01OTIgLTE0MjcgLTMyMyAtNzc3IC01ODMgLTE0MTcgLTU3OAotMTQyMSA0IC00IDc4NiAtMzMwIDE3MzggLTcyNCA5NTIgLTM5NSAxNzM0IC03MjEgMTczOCAtNzI1IDUgLTUgLTEzOCAtMzYxCi0zMTcgLTc5MiAtMzAyIC03MzAgLTMyMyAtNzg1IC0zMDUgLTc5MyAxMiAtNiAyMyAtNiAyOCAwIDQgNSAxMzYgMzE4IDI5Mgo2OTcgMTU2IDM3OCAyODYgNjg3IDI4OSA2ODcgMyAwIDE0NyAtMzI0IDMxOSAtNzIwIDE3MyAtMzk2IDMxNyAtNzIwIDMyMAotNzIwIDQgMCAxNCA2IDIzIDEzIDEzIDEwIC0yNCAxMDIgLTMwOCA3NTIgLTE3OCA0MDcgLTMyNCA3NDUgLTMyNCA3NTIgMCAxMgo0OSAxMzMgNjAgMTQ1IDMgNCAxNTggLTM1NiAzNDUgLTgwMCAxODYgLTQ0NCAzNDEgLTgxMCAzNDUgLTgxNSAzIC00IDE0IC0xCjI1IDYgMTcgMTMgLTMgNjMgLTM0NCA4NzQgbC0zNjEgODYxIDU2MSAxMzUxIGMzMDkgNzQ0IDU1OSAxMzU0IDU1OCAxMzU1IC0zCjMgLTMzODUgMTQwOCAtMzQ5NSAxNDUzIC02IDIgLTE0IC0yIC0xNyAtOXogbTE3NTcgLTc0NCBjOTQwIC0zOTAgMTcxMCAtNzE0CjE3MTIgLTcxOSA1IC0xMyAtMTE1MCAtMjgwMCAtMTE2MCAtMjc5OSAtMzAgNCAtMzQ0NiAxNDMwIC0zNDQ2IDE0MzggMCA2IDI2MAo2MzggNTc4IDE0MDQgNDM5IDEwNjAgNTgxIDEzOTIgNTkyIDEzODkgOCAtMiA3ODQgLTMyMyAxNzI0IC03MTN6IE00MjIwIDUyNDYKYy04NSAtMjQgLTE2NiAtODMgLTIxMiAtMTU1IC0zMSAtNTAgLTM1IC04MyAtMTMgLTEyMSA4IC0xNCAxNCAtNDggMTUgLTc2IDAKLTYwIDE1IC0xMTEgNDIgLTE0MCAxNiAtMTkgMTcgLTI2IDcgLTczIC0xMiAtNTkgLTMgLTgxIDM2IC04MSAxMyAwIDI2IC05IDMyCi0yMiA2IC0xMyAyNyAtNDEgNDYgLTYzIDMyIC0zNyAzOCAtNDAgNzYgLTM3IDM1IDMgNDcgMTEgNzcgNDggMjAgMjQgNDAgNDQKNDQgNDQgMTkgMCAxOSAtNTEgMSAtOTQgLTI3IC02MSAtNTQgLTc2IC0xNDggLTgzIC05MSAtNyAtMTIyIC0yMCAtMTgxIC03NwotODEgLTc2IC04NSAtMTAxIC00NiAtMjM5IDMwIC0xMDQgMzggLTEyMSA5OSAtMjE2IDkwIC0xMzkgMTEwIC0yNTEgNTkgLTMyNwotNTEgLTc1IC0xNTAgLTE3OCAtMjU2IC0yNjUgLTE4OCAtMTU2IC0yODggLTMyOSAtMjg4IC01MDAgMCAtOTEgMjggLTIyOSA1NwotMjc5IDM5IC02OSAxMTQgLTEzNSAxNzAgLTE1MSA2OSAtMjAgMTcwIC0xOCAyMTQgNCA0MSAyMCAxMDAgNzIgMTE2IDEwMiAxMQoxOCAxMiAxOCA0MCAtMTEgMzggLTQxIDc3IC02MCAxNTEgLTc0IDc4IC0xNCAxNTEgMyAyNTQgNTcgODEgNDIgMTI4IDkzIDE3MgoxODMgMjkgNjEgMzEgNzEgMjkgMTcwIC0zIDEyNCAtMjMgMTk1IC0xMDkgMzc5IC03MSAxNTQgLTcwIDE2MyAyNyAyNjggNzEgNzcKMTkwIDI0NSAyMzMgMzMxIDEzIDI2IDM4IDg5IDU1IDE0MSA0MSAxMjEgODAgMjA0IDEyMyAyNjQgbDM1IDQ4IDcgLTEwOSBjOAotMTE2IDAgLTE2NCAtMzYgLTIzNSAtMjEgLTQyIC03MiAtMjQxIC04MyAtMzI0IC01IC0zOCAtMSAtNzEgMTUgLTEzMCAyMCAtNjkKMjIgLTk0IDE3IC0yMTMgLTIgLTc0IC0xNSAtMjA1IC0yNyAtMjkyIC0xMyAtODYgLTIwIC0xNzIgLTE2IC0xOTAgMyAtMTkgMTkKLTU1IDM2IC04MSAzNiAtNTggNzUgLTY4IDE2NiAtNDQgNzYgMjEgMTgzIDIyIDIwOSAzIDE3IC0xMiAxNiAtMTQgLTE3IC0yNQotNDcgLTE2IC0xODQgLTMxIC0yODggLTMyIC00NyAwIC05MyAtNCAtMTA0IC04IC0xNyAtNiAtMTUgLTEwIDE1IC0zNiA2MCAtNTAKODcgLTU2IDI2MiAtNTcgMTY2IC0yIDIxMCA0IDIwMSAyNSAtMyA5IC01MiAxMyAtMTgzIDE0IC0xMDcgMSAtMTg3IDUgLTE5OAoxMiAtMTQgOCAtNyAxMCAzNiAxMSA4NCAwIDIzMSAyMCAyNzkgMzcgNDEgMTUgNjMgNDcgNDggNzEgLTI1IDQwIC0xNDggNTQKLTI0OSAyNyAtOTAgLTIzIC0xMTIgLTIwIC0xNDIgMTkgLTM4IDUwIC00MCA4NSAtMTQgMjY3IDMwIDIxNCAzMiA0NDEgNSA1MTEKLTE0IDM3IC0xNyA2MSAtMTIgMTA1IDkgODAgNTggMjY2IDg5IDMzOCAzMyA3NiA0MSAxNDAgMjkgMjM1IC01IDQxIC01IDkwIC0xCjEwOSA1IDIyIDQgMzggLTIgNDIgLTcgNCAtNiAyMSAxIDUxIDE2IDYyIC0xIDExOCAtNTEgMTczIC01MCA1NCAtMTA5IDc5Ci0yNjAgMTEwIC0xNTMgMzEgLTE5MCA0OCAtMjM3IDEwOSAtMzEgNDAgLTMwIDYyIDIgNDEgNDIgLTI4IDE0NiAtMiAxOTQgNDgKNzYgNzkgNjkgMjIwIC0xNSAyOTkgLTUzIDUwIC0yMDQgMTE4IC0yOTUgMTMzIC00NSA4IC0xMDUgMjEgLTEzMiAzMCAtNTggMTgKLTE0MyAxOCAtMjA2IDF6IG0tMzUgLTcyIGMtODEgLTQ5IC0xMTMgLTgwIC0xNDEgLTEzOSAtMjQgLTUwIC0yNCAtNTAgLTI0Ci0xNiAwIDI4IDExIDQ0IDY4IDEwMSA2MCA2MSAxMDEgODUgMTQ3IDg5IDYgMSAtMTcgLTE1IC01MCAtMzV6IG0zNDYgLTE2IGM5MAotNTUgMTIwIC0xMTggMTExIC0yMzcgLTYgLTg0IC0yNCAtOTEgLTI4IC0xMiAtNSAxMDEgLTIzIDE1MCAtNzMgMjAxIC0yNSAyNQotNTkgNTYgLTc2IDY5IC0yOCAyMCAtMjggMjIgLTYgMTUgMTQgLTQgNDYgLTIwIDcyIC0zNnogbS0xMTYgMyBjNzQgLTQzIDEzMgotMTA0IDE0NyAtMTU0IDggLTI4IDEyIC05NCAxMCAtMTk3IC0zIC0xNzcgNSAtMjE3IDYxIC0yOTkgNTggLTg0IDY5IC0xMzcgNzAKLTM0MCAyIC0xNjYgMCAtMTgxIC0yNiAtMjY2IC0zNyAtMTIxIC05MCAtMjI4IC0xNzYgLTM2MCAtNDAgLTYwIC05NyAtMTYwCi0xMjcgLTIyMCAtNTUgLTExMCAtNTYgLTExMiAtNjQgLTIzMCAtMTEgLTE2MiAtNjEgLTMxMyAtMTQzIC00MzUgLTc1IC0xMTAKLTIxOSAtMjYwIC0yNTAgLTI2MCAtNSAwIC03IC05IC00IC0yMCA0IC0xNyAxIC0xOSAtMjEgLTE0IC02OSAxNSAtOTMgMjgKLTEzNSA3MyAtNTggNjIgLTc1IDk2IC05MyAxODggLTQ3IDI0NyAyNiA0MTggMjY3IDYxOSAxMTQgOTUgMjM0IDIyNiAyNjggMjkxCjQ1IDg5IDIxIDIwMSAtNzUgMzUwIC02OSAxMDYgLTEyNCAyNzEgLTExMCAzMjYgMTYgNjcgMTEwIDEzNyAxODMgMTM3IDY0IDEKMTIxIDE1IDE1MiAzOCAzNSAyNiA3MyA5NiA3MyAxMzUgMCAzMiAtNTEgMTQ1IC04MCAxNzkgLTEzIDE1IC0xMiAxOSAyIDMzIDIyCjIyIDIwIDgwIC00IDEzMyAtMTYgMzYgLTIzIDQyIC00OSA0MiAtMzIgMCAtNjEgLTMwIC02MSAtNjQgMCAtMzIgLTEyIC0xMAotMjEgNDAgLTUgMjYgLTE2IDU2IC0yNSA2NiAtMjIgMjQgLTgyIDM0IC0xMDcgMTkgLTE4IC0xMiAtMTkgLTExIC0xMyAxNiAxNwo2OSA4NSAxMzIgMTk2IDE4MiA2MSAyOCA5NiAyNiAxNTUgLTh6IG0zMjMgLTUzIGMxMTMgLTYxIDE0MiAtOTcgMTQyIC0xNzYgMAotOTkgLTQyIC0xNTIgLTEzMiAtMTY2IC0zMCAtNSAtNDYgLTMgLTU2IDggLTE2IDE2IC0xNyAyOCAtMTIgMTY2IDMgOTggLTEyCjE0NSAtNjMgMTk5IGwtMzIgMzQgMzAgLTcgYzE3IC00IDcyIC0zMCAxMjMgLTU4eiBtLTU4OSAtMTc3IGM3IC01IDE3IC0yOSAyMgotNTUgMTIgLTY0IDM1IC05NiA2OSAtOTYgMjMgMCAyNyAtMyAyMyAtMjQgLTQgLTE3IDUgLTM1IDMwIC02MiA1MSAtNTcgNTQKLTkwIDE0IC0xMzUgLTQ2IC01MiAtNzQgLTU4IC0xMDMgLTIzIC0xNCAxNiAtMzMgNDYgLTQ0IDY3IC0xNiAyOCAtMjcgMzcgLTQ2CjM3IC0yMyAwIC0yNSAzIC0yMCAyNiAyMCA3OCAxOSA4NCAtOSAxMTQgLTIyIDIzIC0yOSA0MiAtMzMgODMgLTQgNDggLTIgNTQKMTkgNjQgMjkgMTQgNTkgMTYgNzggNHogbTE2MSAtODcgYzYgLTE0IDEwIC0zOSAxMCAtNTYgMCAtMjMgLTQgLTI5IC0xNiAtMjQKLTkgMyAtMTcgNiAtMTkgNiAtOCAwIC0xNyA3MCAtMTEgODUgOCAyMyAyNSAxOCAzNiAtMTF6IG0zMzYgLTE4MSBjNDEgLTU0CjEwMCAtODEgMjQ5IC0xMTMgMTk5IC00MyAyNTkgLTc4IDI4NiAtMTY4IDE2IC01NCAwIC0xMDMgLTY5IC0yMDggLTY0IC05OAotODcgLTE0NiAtMTQyIC0zMDUgLTI5IC04NCAtNTUgLTEzNCAtMTIyIC0yMzUgLTQ3IC03MSAtMTE1IC0xNjAgLTE1MiAtMTk4Ci0xMDMgLTEwNyAtMTA2IC0xNDUgLTI2IC0zMDYgNzYgLTE1MiAxMDEgLTIzOCAxMDMgLTM2MSAyIC05OCAwIC0xMDcgLTI4Ci0xNjIgLTM5IC03NyAtOTUgLTEzMSAtMTcyIC0xNjcgLTkxIC00MyAtMTUwIC01NCAtMjE3IC00MCAtNjYgMTQgLTExMyA0MwotMTQ0IDkyIC0yOSA0MyAtNTMgNDEgLTcxIC03IC0yMiAtNjIgLTEyNiAtMTMyIC0xODEgLTEyMyAtMTYgMiAtMTAgMTEgMzQgNDUKNjUgNTAgMTYzIDE2NiAyMjcgMjY5IDcxIDExNCAxMjAgMjcxIDEyOSA0MTQgNyAxMTMgOCAxMTcgNjAgMjIwIDI5IDU4IDg3CjE1OSAxMzAgMjI1IDExNiAxODEgMTQ5IDI1NCAxOTAgNDI1IDIwIDg2IDIxIDEwOSAxNSAyNTAgLTggMTc1IC0yNiAyNTEgLTc3CjMyMSAtNDEgNTYgLTU3IDEwMyAtNTYgMTU5IDAgMjUgMyAzNiA1IDI1IDMgLTExIDE2IC0zNSAyOSAtNTJ6IE02MzQwIDkyNSBsMAotODY1IDIzIDAgYzEyIDAgMTQ0IDE2IDI5MiAzNSAzMTggNDEgNDMzIDcxIDU3NCAxNDggMTIxIDY3IDI0MyAxOTIgMjk2IDMwMgo0NyA5OSA3NSAyMTcgNzUgMzEzIDAgMTM3IC03MSAzNDEgLTE1OSA0NjEgLTU2IDc2IC0xNjUgMTgzIC0yMzEgMjI4IC01OSA0MAotMTkyIDEwNiAtMjU1IDEyNiAtNDUgMTUgLTU3MiAxMTcgLTYwMiAxMTcgLTEwIDAgLTEzIC0xODAgLTEzIC04NjV6IE0zMDA1CjE3NDAgYy0zNjIgLTM4IC02NjMgLTI0NyAtNzkwIC01NDkgLTQwIC05NSAtNjkgLTI3MSAtNjEgLTM3MSAxNiAtMTkxIDEzNwotNDMzIDI4OCAtNTc2IDE5MiAtMTgxIDM3NSAtMjQwIDcxOCAtMjMzIGwxNjUgNCAzOSAzMCAzOSAzMCAtNiAxNzAgYy00IDkzCi03IDI3MCAtNyAzOTMgbDAgMjIyIC0yNyAwIC0yNiAwIDYgLTM4NCA2IC0zODQgLTM0IC0xNiBjLTUwIC0yNCAtMzM5IC0yMgotNDYwIDMgLTI0MiA1MCAtNDM5IDIwOSAtNTYwIDQ1MSAtOTAgMTc5IC0xMTEgMzEyIC03NyA0ODYgNjQgMzIyIDI3MyA1MzkKNjE3IDYzOSAxMzYgMzkgMjU3IDUwIDM1OCAzMSAxMDUgLTIwIDEwNCAtMjAgMTEwIDQgNCAxNiAtMiAyMiAtMzEgMjkgLTQ3IDEzCi0xNjIgMzEgLTE4MiAzMCAtOCAtMSAtNDcgLTUgLTg1IC05eiBNMCAxMDEwIGwwIC03MDAgMzYgLTcxIGM0NyAtOTQgMTAyCi0xNTIgMTgyIC0xOTEgNTUgLTI4IDc4IC0zMyAxNTYgLTM2IDc1IC0zIDEwMSAwIDE0OSAxOCA3NCAyOCAxNjMgMTEwIDIwNQoxODggbDMyIDYwIDAgNzE2IDAgNzE2IC0yNSAwIC0yNSAwIDAgLTcxMiAwIC03MTMgLTI5IC01MSBjLTM4IC02NiAtMTE5IC0xMzgKLTE3OCAtMTU4IC0yNiAtOSAtNzcgLTE2IC0xMTQgLTE2IC0xMzIgMCAtMjM1IDYzIC0zMDAgMTgyIGwtMzQgNjMgLTUgNzAwIC01CjcwMCAtMjIgMyAtMjMgMyAwIC03MDF6IE03NzkwIDg3NSBsMCAtODM1IDQ0NiAwIDQ0NSAwIC0zIDIzIC0zIDIyIC00MTcgMwotNDE4IDIgMCAzNjAgMCAzNjAgMjQwIDAgMjQwIDAgMCAyNSAwIDI1IC0yNDAgMCBjLTIwNyAwIC0yNDAgMiAtMjQwIDE1IDAgMTMKMzMgMTUgMjQwIDE1IGwyNDAgMCAwIDI1IDAgMjUgLTI0MCAwIC0yNDAgMCAwIDM2MCAwIDM2MCA0MTggMiBjNDA5IDMgNDE3IDMKNDE3IDIzIDAgMjAgLTggMjAgLTQ0MiAyMyBsLTQ0MyAyIDAgLTgzNXogTTEyNzUgMTY5NCBjLTE2IC0yIC01NCAtNyAtODIgLTEwCmwtNTMgLTUgMCAtODI1IDAgLTgyNCAyNSAwIDI1IDAgMCA4MDQgMCA4MDQgMTE4IDcgYzIyMCAxNCA0MDMgLTExIDUxMyAtNzIKNjYgLTM2IDEyNCAtMTAwIDE2MiAtMTgxIDMwIC02MiAzMiAtNzUgMzIgLTE3MiAwIC05NCAtMyAtMTExIC0yOCAtMTYxIC01MgotMTA3IC0xNTggLTE3OSAtMjkyIC0xOTkgLTM5IC01IC0xNDEgLTEwIC0yMjcgLTEwIGwtMTU4IDAgMCAtNDEwIDAgLTQxMCAyNQowIDI1IDAgMCAzODUgMCAzODUgMTI5IDAgYzI1OSAwIDM4MCAzNyA0NzkgMTQ1IDc1IDgyIDk2IDE0NCA5NyAyODAgMCAxMDYgLTEKMTEzIC0zNyAxODcgLTk0IDE5OCAtMjUzIDI3NyAtNTY4IDI4MyAtODUgMiAtMTY4IDEgLTE4NSAtMXogTTM3NzUgMTY3MSBjLTQ3Ci00IC03MCAtMTAgLTY5IC0xOCAxIC03IDIgLTM3MSAzIC04MDkgbDEgLTc5NSAyMyAzIDIyIDMgMyA3ODIgMiA3ODEgODggOApjMTA4IDkgMzE1IC0yIDQwMyAtMjAgMTgzIC0zOSAyODAgLTE1MCAzMTAgLTM1MCAyNSAtMTY3IC01OCAtMzE2IC0yMDkgLTM3NgotNTEgLTIxIC03OSAtMjQgLTI4MiAtMjkgLTIyNCAtNiAtMjI1IC02IC0yMjggLTI4IC0zIC0yMiAwIC0yMyA2MSAtMjMgbDY0IDAKMjU5IC0zOTAgYzE0MiAtMjE0IDI2MiAtMzkwIDI2NSAtMzkwIDMgMCAxMiA2IDIxIDEzIDE0IDEwIC0xNiA1OSAtMjMzIDM4NwotMTM2IDIwNiAtMjQ0IDM3NyAtMjM4IDM3OCA1IDIgMTYgMiAyMyAtMSA3IC0zIDEyMCAtMTY5IDI1MSAtMzY5IDEzMSAtMTk5CjI0NCAtMzcwIDI1MSAtMzc4IDEyIC0xMiAxNiAtMTIgMzAgMSAxNCAxNSAtNyA1MCAtMjI0IDM4MCBsLTIzOCAzNjQgMzUgMwpjMTYyIDEyIDI3MiA1MyAzNDAgMTI3IDUxIDU1IDc3IDEwOCA5NyAxOTIgMTMgNTcgMTQgODEgNCAxNDggLTI4IDE5NCAtMTE5CjMxMyAtMjg0IDM3MSAtOTkgMzYgLTM0NyA1MSAtNTUxIDM1eiBNMzIwMCA0OTAgbDAgLTQwMCAyNSAwIDI1IDAgMCA0MDAgMAo0MDAgLTI1IDAgLTI1IDAgMCAtNDAweiIvPgo8L2c+Cjwvc3ZnPg==" alt="UPGRADE — студия эстетики тела" /></a>
 
-    <!-- Features Section -->
-    <section class="py-20">
-        <div class="max-w-6xl mx-auto px-4">
-            <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">
-                Почему это удобно
-            </h2>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="text-center p-6">
-                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-2">24/7 Доступность</h3>
-                    <p class="text-gray-600">
-                        Записывайтесь в любое время, даже ночью. Система работает круглосуточно.
-                    </p>
-                </div>
-                <div class="text-center p-6">
-                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Мгновенное подтверждение</h3>
-                    <p class="text-gray-600">
-                        Получите подтверждение записи сразу после бронирования.
-                    </p>
-                </div>
-                <div class="text-center p-6">
-                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Удобный календарь</h3>
-                    <p class="text-gray-600">
-                        Видите все свободные слоты и выбираете подходящий за секунды.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
+    <ul class="nav-links">
+      <li><a href="#about">О студии</a></li>
+      <li><a href="#services">Услуги</a></li>
+      <li><a href="#specialists">Специалисты</a></li>
+      <li><a href="#faq">Вопросы</a></li>
+      <li><a href="/pricing.html">Прайс</a></li>
+    </ul>
 
-    <!-- How it Works Section -->
-    <section class="py-20 bg-gray-50">
-        <div class="max-w-6xl mx-auto px-4">
-            <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">
-                Как это работает
-            </h2>
-            <div class="grid md:grid-cols-4 gap-8">
-                <div class="text-center">
-                    <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
-                        1
-                    </div>
-                    <h3 class="font-semibold text-gray-900 mb-2">Выберите услугу</h3>
-                    <p class="text-sm text-gray-600">Посмотрите список доступных услуг и цены</p>
-                </div>
-                <div class="text-center">
-                    <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
-                        2
-                    </div>
-                    <h3 class="font-semibold text-gray-900 mb-2">Выберите дату</h3>
-                    <p class="text-sm text-gray-600">Найдите удобный день в календаре</p>
-                </div>
-                <div class="text-center">
-                    <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
-                        3
-                    </div>
-                    <h3 class="font-semibold text-gray-900 mb-2">Выберите время</h3>
-                    <p class="text-sm text-gray-600">Укажите удобное время из свободных слотов</p>
-                </div>
-                <div class="text-center">
-                    <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
-                        4
-                    </div>
-                    <h3 class="font-semibold text-gray-900 mb-2">Подтвердите</h3>
-                    <p class="text-sm text-gray-600">Введите телефон и получите подтверждение</p>
-                </div>
-            </div>
-        </div>
-    </section>
+    <div class="nav-right">
+      <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+        <span class="theme-toggle-icon sun">☀️</span>
+        <span class="theme-toggle-icon moon">🌙</span>
+      </button>
+      <button class="nav-burger" id="navBurger" aria-label="Меню">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
 
-    <!-- CTA Section -->
-    <section class="py-20">
-        <div class="max-w-4xl mx-auto px-4 text-center">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">
-                Готовы записаться?
-            </h2>
-            <p class="text-xl text-gray-600 mb-8">
-                Это займёт всего пару минут
-            </p>
-            <a href="/book" class="inline-block bg-blue-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-lg shadow-blue-500/30">
-                Записаться онлайн
-            </a>
-        </div>
-    </section>
+  <!-- ═══ MOBILE MENU ═══ -->
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="mobile-close" id="mobileClose">✕</button>
+    <a href="#about" onclick="closeMobile()">О студии</a>
+    <a href="#services" onclick="closeMobile()">Услуги</a>
+    <a href="#specialists" onclick="closeMobile()">Специалисты</a>
+    <a href="#faq" onclick="closeMobile()">Вопросы</a>
+    <a href="/pricing.html" onclick="closeMobile()">Прайс</a>
+    <a href="/book.html" class="btn btn-primary" onclick="closeMobile()">Записаться</a>
+  </div>
 
-    <!-- Footer -->
-    <footer class="bg-gray-900 text-gray-400 py-12">
-        <div class="max-w-6xl mx-auto px-4">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="text-white font-bold text-xl mb-4 md:mb-0">BookingApp</div>
-                <nav class="flex gap-6">
-                    <a href="/pricing" class="hover:text-white transition">Услуги</a>
-                    <a href="/book" class="hover:text-white transition">Записаться</a>
-                </nav>
-            </div>
-            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
-                &copy; 2024 BookingApp. Все права защищены.
-            </div>
+  <!-- ═══ HERO ═══ -->
+  <section class="hero" id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <div class="hero-badge reveal">Студия аппаратной эстетики</div>
+      <h1 class="reveal">Подтянутое тело —<br><em>ваша новая норма</em></h1>
+      <p class="hero-sub reveal">
+        LPG-массаж, прессотерапия, обёртывание — аппаратные процедуры,
+        которые формируют силуэт и&nbsp;возвращают лёгкость
+      </p>
+      <div class="hero-actions reveal">
+        <a href="/book.html" class="btn btn-primary">Записаться</a>
+        <a href="#services" class="btn btn-outline">Процедуры</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ ABOUT ═══ -->
+  <section class="about" id="about">
+    <div class="section-inner">
+      <div class="about-grid">
+        <div class="about-visual reveal">
+          <div class="about-visual-placeholder">
+            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="3"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="m21 15-5-5L5 21"/>
+            </svg>
+            Фото студии
+          </div>
         </div>
-    </footer>
+        <div>
+          <div class="section-label reveal">О студии</div>
+          <h2 class="section-title reveal">Пространство, где технологии <em>заботятся</em> о вас</h2>
+          <p class="section-desc reveal">
+            UPGRADE — это современная студия аппаратной эстетики.
+            Мы используем сертифицированное оборудование и&nbsp;индивидуально подбираем программу
+            для каждого клиента, чтобы результат был заметным и&nbsp;устойчивым.
+          </p>
+          <div class="about-stats stagger reveal">
+            <div class="stat">
+              <div class="stat-number">2 000+</div>
+              <div class="stat-label">довольных клиентов</div>
+            </div>
+            <div class="stat">
+              <div class="stat-number">5 лет</div>
+              <div class="stat-label">опыта работы</div>
+            </div>
+            <div class="stat">
+              <div class="stat-number">6</div>
+              <div class="stat-label">видов процедур</div>
+            </div>
+            <div class="stat">
+              <div class="stat-number">98%</div>
+              <div class="stat-label">рекомендуют нас</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SERVICES ═══ -->
+  <section id="services">
+    <div class="section-inner">
+      <div class="section-label reveal">Процедуры</div>
+      <h2 class="section-title reveal">Аппаратная эстетика тела</h2>
+      <p class="section-desc reveal">
+        Каждая процедура подбирается индивидуально — с учётом ваших целей, особенностей кожи и&nbsp;текущего состояния
+      </p>
+
+      <div class="services-grid stagger reveal">
+        <article class="service-card">
+          <div class="service-icon">✦</div>
+          <h3>LPG-массаж</h3>
+          <p>Вакуумно-роликовая технология для коррекции фигуры, уменьшения целлюлита и&nbsp;подтяжки кожи</p>
+          <div class="service-meta">
+            <span>⏱ 40–60 мин</span>
+            <span>↗ Курс 10 сеансов</span>
+          </div>
+        </article>
+
+        <article class="service-card">
+          <div class="service-icon">◎</div>
+          <h3>Роликовый массаж</h3>
+          <p>Интенсивное воздействие роликами для глубокой проработки проблемных зон и&nbsp;улучшения тургора</p>
+          <div class="service-meta">
+            <span>⏱ 30–50 мин</span>
+            <span>↗ Курс 8 сеансов</span>
+          </div>
+        </article>
+
+        <article class="service-card">
+          <div class="service-icon">◇</div>
+          <h3>Прессотерапия</h3>
+          <p>Аппаратный лимфодренаж для снятия отёков, улучшения кровообращения и&nbsp;вывода токсинов</p>
+          <div class="service-meta">
+            <span>⏱ 30–45 мин</span>
+            <span>↗ Курс 10 сеансов</span>
+          </div>
+        </article>
+
+        <article class="service-card">
+          <div class="service-icon">≋</div>
+          <h3>Индибо</h3>
+          <p>Механовакуумная терапия нового поколения — воздействует на глубокие слои для ремоделирования контуров</p>
+          <div class="service-meta">
+            <span>⏱ 40 мин</span>
+            <span>↗ Курс 10 сеансов</span>
+          </div>
+        </article>
+
+        <article class="service-card">
+          <div class="service-icon">❋</div>
+          <h3>Обёртывание</h3>
+          <p>Детокс и питание кожи активными составами — для упругости, увлажнения и&nbsp;уменьшения объёмов</p>
+          <div class="service-meta">
+            <span>⏱ 45–60 мин</span>
+            <span>↗ Курс 6 сеансов</span>
+          </div>
+        </article>
+
+        <article class="service-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(43,181,184,0.08), rgba(43,181,184,0.02)); border-color: rgba(43,181,184,0.2);">
+          <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--teal);">→</div>
+          <h3 style="text-align: center;">Полный прайс</h3>
+          <p style="text-align: center; margin-bottom: 1.25rem;">Все процедуры, пакеты и&nbsp;абонементы</p>
+          <a href="/pricing.html" class="btn btn-outline" style="font-size: 0.75rem; padding: 10px 24px;">Смотреть</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SPECIALISTS ═══ -->
+  <section class="specialists" id="specialists">
+    <div class="section-inner">
+      <div class="section-label reveal">Специалисты</div>
+      <h2 class="section-title reveal">Руки, которым доверяют</h2>
+      <p class="section-desc reveal">
+        Сертифицированные мастера с медицинским образованием и&nbsp;опытом работы с&nbsp;аппаратными методиками
+      </p>
+
+      <div class="specialists-grid stagger reveal">
+        <div class="specialist-card">
+          <div class="specialist-avatar">👩‍⚕️</div>
+          <h3>Анна Иванова</h3>
+          <div class="specialist-role">Ведущий специалист</div>
+          <p class="specialist-desc">Стаж 8 лет. Сертификат LPG Alliance. Специализация — коррекция фигуры и&nbsp;anti-age</p>
+        </div>
+
+        <div class="specialist-card">
+          <div class="specialist-avatar">👩‍⚕️</div>
+          <h3>Мария Петрова</h3>
+          <div class="specialist-role">Специалист</div>
+          <p class="specialist-desc">Стаж 5 лет. Эксперт по прессотерапии и&nbsp;лимфодренажным техникам</p>
+        </div>
+
+        <div class="specialist-card">
+          <div class="specialist-avatar">👩‍⚕️</div>
+          <h3>Елена Сидорова</h3>
+          <div class="specialist-role">Специалист</div>
+          <p class="specialist-desc">Стаж 4 года. Работает с&nbsp;обёртываниями и&nbsp;комплексными anti-age программами</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ FAQ ═══ -->
+  <section id="faq">
+    <div class="section-inner">
+      <div class="section-label reveal">Вопросы и ответы</div>
+      <h2 class="section-title reveal">Часто спрашивают</h2>
+      <p class="section-desc reveal">Если не нашли ответ — напишите нам, мы с&nbsp;удовольствием проконсультируем</p>
+
+      <div class="faq-list stagger reveal">
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Что такое LPG-массаж?
+            <span class="faq-icon">
+              <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round">
+                <line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              LPG-массаж — аппаратная процедура с&nbsp;использованием вакуумно-роликовой технологии.
+              Воздействует на подкожно-жировую клетчатку, улучшает лимфоотток и&nbsp;кровообращение,
+              помогает уменьшить объёмы и&nbsp;проявления целлюлита. Процедура безболезненная
+              и&nbsp;не требует реабилитации.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Сколько сеансов нужно для результата?
+            <span class="faq-icon">
+              <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round">
+                <line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Первые результаты заметны после 3–4 сеансов. Рекомендуемый курс — 10–15 процедур
+              с&nbsp;частотой 2–3 раза в&nbsp;неделю для достижения устойчивого эффекта.
+              Поддерживающие сеансы — 1–2 раза в месяц.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Есть ли противопоказания?
+            <span class="faq-icon">
+              <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round">
+                <line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Да, как у&nbsp;любой аппаратной процедуры. Основные: онкология, тромбофлебит,
+              острые воспалительные процессы, беременность. Полный список обсудим
+              на&nbsp;консультации — она бесплатная.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Больно ли делать LPG-массаж?
+            <span class="faq-icon">
+              <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round">
+                <line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Нет, процедура безболезненная. Вы почувствуете интенсивное, но приятное воздействие —
+              как глубокий разминающий массаж. Интенсивность настраивается индивидуально
+              в&nbsp;зависимости от&nbsp;чувствительности кожи.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Нужен ли специальный костюм для LPG?
+            <span class="faq-icon">
+              <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round">
+                <line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Да, процедура проводится в&nbsp;специальном эластичном костюме. Мы предоставляем
+              индивидуальный костюм каждому клиенту — он обеспечивает гигиеничность
+              и&nbsp;равномерное скольжение аппарата.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CTA BOTTOM ═══ -->
+  <section style="padding: 80px 2rem; text-align: center; background: var(--bg-secondary);">
+    <div class="section-inner reveal">
+      <h2 class="section-title" style="margin-bottom: 1rem;">Готовы начать?</h2>
+      <p class="section-desc" style="margin: 0 auto 2rem; text-align: center;">
+        Запишитесь на первую процедуру — мы поможем подобрать программу именно для вас
+      </p>
+      <a href="/book.html" class="btn btn-primary">Записаться онлайн</a>
+    </div>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-logo"><img src="data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKIHdpZHRoPSI4NjgiIGhlaWdodD0iNTk1IiB2aWV3Qm94PSIwIDAgODY4IDU5NSIKIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiPgo8ZyBjbGFzcz0ibG9nby1wYXRocyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCw1OTUpIHNjYWxlKDAuMSwtMC4xKSIKZmlsbD0iIzJCQjVCOCIgc3Ryb2tlPSJub25lIj4KPHBhdGggZD0iTTMwNzcgNTkzOCBjLTIgLTcgLTI2OSAtNjQ5IC01OTIgLTE0MjcgLTMyMyAtNzc3IC01ODMgLTE0MTcgLTU3OAotMTQyMSA0IC00IDc4NiAtMzMwIDE3MzggLTcyNCA5NTIgLTM5NSAxNzM0IC03MjEgMTczOCAtNzI1IDUgLTUgLTEzOCAtMzYxCi0zMTcgLTc5MiAtMzAyIC03MzAgLTMyMyAtNzg1IC0zMDUgLTc5MyAxMiAtNiAyMyAtNiAyOCAwIDQgNSAxMzYgMzE4IDI5Mgo2OTcgMTU2IDM3OCAyODYgNjg3IDI4OSA2ODcgMyAwIDE0NyAtMzI0IDMxOSAtNzIwIDE3MyAtMzk2IDMxNyAtNzIwIDMyMAotNzIwIDQgMCAxNCA2IDIzIDEzIDEzIDEwIC0yNCAxMDIgLTMwOCA3NTIgLTE3OCA0MDcgLTMyNCA3NDUgLTMyNCA3NTIgMCAxMgo0OSAxMzMgNjAgMTQ1IDMgNCAxNTggLTM1NiAzNDUgLTgwMCAxODYgLTQ0NCAzNDEgLTgxMCAzNDUgLTgxNSAzIC00IDE0IC0xCjI1IDYgMTcgMTMgLTMgNjMgLTM0NCA4NzQgbC0zNjEgODYxIDU2MSAxMzUxIGMzMDkgNzQ0IDU1OSAxMzU0IDU1OCAxMzU1IC0zCjMgLTMzODUgMTQwOCAtMzQ5NSAxNDUzIC02IDIgLTE0IC0yIC0xNyAtOXogbTE3NTcgLTc0NCBjOTQwIC0zOTAgMTcxMCAtNzE0CjE3MTIgLTcxOSA1IC0xMyAtMTE1MCAtMjgwMCAtMTE2MCAtMjc5OSAtMzAgNCAtMzQ0NiAxNDMwIC0zNDQ2IDE0MzggMCA2IDI2MAo2MzggNTc4IDE0MDQgNDM5IDEwNjAgNTgxIDEzOTIgNTkyIDEzODkgOCAtMiA3ODQgLTMyMyAxNzI0IC03MTN6IE00MjIwIDUyNDYKYy04NSAtMjQgLTE2NiAtODMgLTIxMiAtMTU1IC0zMSAtNTAgLTM1IC04MyAtMTMgLTEyMSA4IC0xNCAxNCAtNDggMTUgLTc2IDAKLTYwIDE1IC0xMTEgNDIgLTE0MCAxNiAtMTkgMTcgLTI2IDcgLTczIC0xMiAtNTkgLTMgLTgxIDM2IC04MSAxMyAwIDI2IC05IDMyCi0yMiA2IC0xMyAyNyAtNDEgNDYgLTYzIDMyIC0zNyAzOCAtNDAgNzYgLTM3IDM1IDMgNDcgMTEgNzcgNDggMjAgMjQgNDAgNDQKNDQgNDQgMTkgMCAxOSAtNTEgMSAtOTQgLTI3IC02MSAtNTQgLTc2IC0xNDggLTgzIC05MSAtNyAtMTIyIC0yMCAtMTgxIC03NwotODEgLTc2IC04NSAtMTAxIC00NiAtMjM5IDMwIC0xMDQgMzggLTEyMSA5OSAtMjE2IDkwIC0xMzkgMTEwIC0yNTEgNTkgLTMyNwotNTEgLTc1IC0xNTAgLTE3OCAtMjU2IC0yNjUgLTE4OCAtMTU2IC0yODggLTMyOSAtMjg4IC01MDAgMCAtOTEgMjggLTIyOSA1NwotMjc5IDM5IC02OSAxMTQgLTEzNSAxNzAgLTE1MSA2OSAtMjAgMTcwIC0xOCAyMTQgNCA0MSAyMCAxMDAgNzIgMTE2IDEwMiAxMQoxOCAxMiAxOCA0MCAtMTEgMzggLTQxIDc3IC02MCAxNTEgLTc0IDc4IC0xNCAxNTEgMyAyNTQgNTcgODEgNDIgMTI4IDkzIDE3MgoxODMgMjkgNjEgMzEgNzEgMjkgMTcwIC0zIDEyNCAtMjMgMTk1IC0xMDkgMzc5IC03MSAxNTQgLTcwIDE2MyAyNyAyNjggNzEgNzcKMTkwIDI0NSAyMzMgMzMxIDEzIDI2IDM4IDg5IDU1IDE0MSA0MSAxMjEgODAgMjA0IDEyMyAyNjQgbDM1IDQ4IDcgLTEwOSBjOAotMTE2IDAgLTE2NCAtMzYgLTIzNSAtMjEgLTQyIC03MiAtMjQxIC04MyAtMzI0IC01IC0zOCAtMSAtNzEgMTUgLTEzMCAyMCAtNjkKMjIgLTk0IDE3IC0yMTMgLTIgLTc0IC0xNSAtMjA1IC0yNyAtMjkyIC0xMyAtODYgLTIwIC0xNzIgLTE2IC0xOTAgMyAtMTkgMTkKLTU1IDM2IC04MSAzNiAtNTggNzUgLTY4IDE2NiAtNDQgNzYgMjEgMTgzIDIyIDIwOSAzIDE3IC0xMiAxNiAtMTQgLTE3IC0yNQotNDcgLTE2IC0xODQgLTMxIC0yODggLTMyIC00NyAwIC05MyAtNCAtMTA0IC04IC0xNyAtNiAtMTUgLTEwIDE1IC0zNiA2MCAtNTAKODcgLTU2IDI2MiAtNTcgMTY2IC0yIDIxMCA0IDIwMSAyNSAtMyA5IC01MiAxMyAtMTgzIDE0IC0xMDcgMSAtMTg3IDUgLTE5OAoxMiAtMTQgOCAtNyAxMCAzNiAxMSA4NCAwIDIzMSAyMCAyNzkgMzcgNDEgMTUgNjMgNDcgNDggNzEgLTI1IDQwIC0xNDggNTQKLTI0OSAyNyAtOTAgLTIzIC0xMTIgLTIwIC0xNDIgMTkgLTM4IDUwIC00MCA4NSAtMTQgMjY3IDMwIDIxNCAzMiA0NDEgNSA1MTEKLTE0IDM3IC0xNyA2MSAtMTIgMTA1IDkgODAgNTggMjY2IDg5IDMzOCAzMyA3NiA0MSAxNDAgMjkgMjM1IC01IDQxIC01IDkwIC0xCjEwOSA1IDIyIDQgMzggLTIgNDIgLTcgNCAtNiAyMSAxIDUxIDE2IDYyIC0xIDExOCAtNTEgMTczIC01MCA1NCAtMTA5IDc5Ci0yNjAgMTEwIC0xNTMgMzEgLTE5MCA0OCAtMjM3IDEwOSAtMzEgNDAgLTMwIDYyIDIgNDEgNDIgLTI4IDE0NiAtMiAxOTQgNDgKNzYgNzkgNjkgMjIwIC0xNSAyOTkgLTUzIDUwIC0yMDQgMTE4IC0yOTUgMTMzIC00NSA4IC0xMDUgMjEgLTEzMiAzMCAtNTggMTgKLTE0MyAxOCAtMjA2IDF6IG0tMzUgLTcyIGMtODEgLTQ5IC0xMTMgLTgwIC0xNDEgLTEzOSAtMjQgLTUwIC0yNCAtNTAgLTI0Ci0xNiAwIDI4IDExIDQ0IDY4IDEwMSA2MCA2MSAxMDEgODUgMTQ3IDg5IDYgMSAtMTcgLTE1IC01MCAtMzV6IG0zNDYgLTE2IGM5MAotNTUgMTIwIC0xMTggMTExIC0yMzcgLTYgLTg0IC0yNCAtOTEgLTI4IC0xMiAtNSAxMDEgLTIzIDE1MCAtNzMgMjAxIC0yNSAyNQotNTkgNTYgLTc2IDY5IC0yOCAyMCAtMjggMjIgLTYgMTUgMTQgLTQgNDYgLTIwIDcyIC0zNnogbS0xMTYgMyBjNzQgLTQzIDEzMgotMTA0IDE0NyAtMTU0IDggLTI4IDEyIC05NCAxMCAtMTk3IC0zIC0xNzcgNSAtMjE3IDYxIC0yOTkgNTggLTg0IDY5IC0xMzcgNzAKLTM0MCAyIC0xNjYgMCAtMTgxIC0yNiAtMjY2IC0zNyAtMTIxIC05MCAtMjI4IC0xNzYgLTM2MCAtNDAgLTYwIC05NyAtMTYwCi0xMjcgLTIyMCAtNTUgLTExMCAtNTYgLTExMiAtNjQgLTIzMCAtMTEgLTE2MiAtNjEgLTMxMyAtMTQzIC00MzUgLTc1IC0xMTAKLTIxOSAtMjYwIC0yNTAgLTI2MCAtNSAwIC03IC05IC00IC0yMCA0IC0xNyAxIC0xOSAtMjEgLTE0IC02OSAxNSAtOTMgMjgKLTEzNSA3MyAtNTggNjIgLTc1IDk2IC05MyAxODggLTQ3IDI0NyAyNiA0MTggMjY3IDYxOSAxMTQgOTUgMjM0IDIyNiAyNjggMjkxCjQ1IDg5IDIxIDIwMSAtNzUgMzUwIC02OSAxMDYgLTEyNCAyNzEgLTExMCAzMjYgMTYgNjcgMTEwIDEzNyAxODMgMTM3IDY0IDEKMTIxIDE1IDE1MiAzOCAzNSAyNiA3MyA5NiA3MyAxMzUgMCAzMiAtNTEgMTQ1IC04MCAxNzkgLTEzIDE1IC0xMiAxOSAyIDMzIDIyCjIyIDIwIDgwIC00IDEzMyAtMTYgMzYgLTIzIDQyIC00OSA0MiAtMzIgMCAtNjEgLTMwIC02MSAtNjQgMCAtMzIgLTEyIC0xMAotMjEgNDAgLTUgMjYgLTE2IDU2IC0yNSA2NiAtMjIgMjQgLTgyIDM0IC0xMDcgMTkgLTE4IC0xMiAtMTkgLTExIC0xMyAxNiAxNwo2OSA4NSAxMzIgMTk2IDE4MiA2MSAyOCA5NiAyNiAxNTUgLTh6IG0zMjMgLTUzIGMxMTMgLTYxIDE0MiAtOTcgMTQyIC0xNzYgMAotOTkgLTQyIC0xNTIgLTEzMiAtMTY2IC0zMCAtNSAtNDYgLTMgLTU2IDggLTE2IDE2IC0xNyAyOCAtMTIgMTY2IDMgOTggLTEyCjE0NSAtNjMgMTk5IGwtMzIgMzQgMzAgLTcgYzE3IC00IDcyIC0zMCAxMjMgLTU4eiBtLTU4OSAtMTc3IGM3IC01IDE3IC0yOSAyMgotNTUgMTIgLTY0IDM1IC05NiA2OSAtOTYgMjMgMCAyNyAtMyAyMyAtMjQgLTQgLTE3IDUgLTM1IDMwIC02MiA1MSAtNTcgNTQKLTkwIDE0IC0xMzUgLTQ2IC01MiAtNzQgLTU4IC0xMDMgLTIzIC0xNCAxNiAtMzMgNDYgLTQ0IDY3IC0xNiAyOCAtMjcgMzcgLTQ2CjM3IC0yMyAwIC0yNSAzIC0yMCAyNiAyMCA3OCAxOSA4NCAtOSAxMTQgLTIyIDIzIC0yOSA0MiAtMzMgODMgLTQgNDggLTIgNTQKMTkgNjQgMjkgMTQgNTkgMTYgNzggNHogbTE2MSAtODcgYzYgLTE0IDEwIC0zOSAxMCAtNTYgMCAtMjMgLTQgLTI5IC0xNiAtMjQKLTkgMyAtMTcgNiAtMTkgNiAtOCAwIC0xNyA3MCAtMTEgODUgOCAyMyAyNSAxOCAzNiAtMTF6IG0zMzYgLTE4MSBjNDEgLTU0CjEwMCAtODEgMjQ5IC0xMTMgMTk5IC00MyAyNTkgLTc4IDI4NiAtMTY4IDE2IC01NCAwIC0xMDMgLTY5IC0yMDggLTY0IC05OAotODcgLTE0NiAtMTQyIC0zMDUgLTI5IC04NCAtNTUgLTEzNCAtMTIyIC0yMzUgLTQ3IC03MSAtMTE1IC0xNjAgLTE1MiAtMTk4Ci0xMDMgLTEwNyAtMTA2IC0xNDUgLTI2IC0zMDYgNzYgLTE1MiAxMDEgLTIzOCAxMDMgLTM2MSAyIC05OCAwIC0xMDcgLTI4Ci0xNjIgLTM5IC03NyAtOTUgLTEzMSAtMTcyIC0xNjcgLTkxIC00MyAtMTUwIC01NCAtMjE3IC00MCAtNjYgMTQgLTExMyA0MwotMTQ0IDkyIC0yOSA0MyAtNTMgNDEgLTcxIC03IC0yMiAtNjIgLTEyNiAtMTMyIC0xODEgLTEyMyAtMTYgMiAtMTAgMTEgMzQgNDUKNjUgNTAgMTYzIDE2NiAyMjcgMjY5IDcxIDExNCAxMjAgMjcxIDEyOSA0MTQgNyAxMTMgOCAxMTcgNjAgMjIwIDI5IDU4IDg3CjE1OSAxMzAgMjI1IDExNiAxODEgMTQ5IDI1NCAxOTAgNDI1IDIwIDg2IDIxIDEwOSAxNSAyNTAgLTggMTc1IC0yNiAyNTEgLTc3CjMyMSAtNDEgNTYgLTU3IDEwMyAtNTYgMTU5IDAgMjUgMyAzNiA1IDI1IDMgLTExIDE2IC0zNSAyOSAtNTJ6IE02MzQwIDkyNSBsMAotODY1IDIzIDAgYzEyIDAgMTQ0IDE2IDI5MiAzNSAzMTggNDEgNDMzIDcxIDU3NCAxNDggMTIxIDY3IDI0MyAxOTIgMjk2IDMwMgo0NyA5OSA3NSAyMTcgNzUgMzEzIDAgMTM3IC03MSAzNDEgLTE1OSA0NjEgLTU2IDc2IC0xNjUgMTgzIC0yMzEgMjI4IC01OSA0MAotMTkyIDEwNiAtMjU1IDEyNiAtNDUgMTUgLTU3MiAxMTcgLTYwMiAxMTcgLTEwIDAgLTEzIC0xODAgLTEzIC04NjV6IE0zMDA1CjE3NDAgYy0zNjIgLTM4IC02NjMgLTI0NyAtNzkwIC01NDkgLTQwIC05NSAtNjkgLTI3MSAtNjEgLTM3MSAxNiAtMTkxIDEzNwotNDMzIDI4OCAtNTc2IDE5MiAtMTgxIDM3NSAtMjQwIDcxOCAtMjMzIGwxNjUgNCAzOSAzMCAzOSAzMCAtNiAxNzAgYy00IDkzCi03IDI3MCAtNyAzOTMgbDAgMjIyIC0yNyAwIC0yNiAwIDYgLTM4NCA2IC0zODQgLTM0IC0xNiBjLTUwIC0yNCAtMzM5IC0yMgotNDYwIDMgLTI0MiA1MCAtNDM5IDIwOSAtNTYwIDQ1MSAtOTAgMTc5IC0xMTEgMzEyIC03NyA0ODYgNjQgMzIyIDI3MyA1MzkKNjE3IDYzOSAxMzYgMzkgMjU3IDUwIDM1OCAzMSAxMDUgLTIwIDEwNCAtMjAgMTEwIDQgNCAxNiAtMiAyMiAtMzEgMjkgLTQ3IDEzCi0xNjIgMzEgLTE4MiAzMCAtOCAtMSAtNDcgLTUgLTg1IC05eiBNMCAxMDEwIGwwIC03MDAgMzYgLTcxIGM0NyAtOTQgMTAyCi0xNTIgMTgyIC0xOTEgNTUgLTI4IDc4IC0zMyAxNTYgLTM2IDc1IC0zIDEwMSAwIDE0OSAxOCA3NCAyOCAxNjMgMTEwIDIwNQoxODggbDMyIDYwIDAgNzE2IDAgNzE2IC0yNSAwIC0yNSAwIDAgLTcxMiAwIC03MTMgLTI5IC01MSBjLTM4IC02NiAtMTE5IC0xMzgKLTE3OCAtMTU4IC0yNiAtOSAtNzcgLTE2IC0xMTQgLTE2IC0xMzIgMCAtMjM1IDYzIC0zMDAgMTgyIGwtMzQgNjMgLTUgNzAwIC01CjcwMCAtMjIgMyAtMjMgMyAwIC03MDF6IE03NzkwIDg3NSBsMCAtODM1IDQ0NiAwIDQ0NSAwIC0zIDIzIC0zIDIyIC00MTcgMwotNDE4IDIgMCAzNjAgMCAzNjAgMjQwIDAgMjQwIDAgMCAyNSAwIDI1IC0yNDAgMCBjLTIwNyAwIC0yNDAgMiAtMjQwIDE1IDAgMTMKMzMgMTUgMjQwIDE1IGwyNDAgMCAwIDI1IDAgMjUgLTI0MCAwIC0yNDAgMCAwIDM2MCAwIDM2MCA0MTggMiBjNDA5IDMgNDE3IDMKNDE3IDIzIDAgMjAgLTggMjAgLTQ0MiAyMyBsLTQ0MyAyIDAgLTgzNXogTTEyNzUgMTY5NCBjLTE2IC0yIC01NCAtNyAtODIgLTEwCmwtNTMgLTUgMCAtODI1IDAgLTgyNCAyNSAwIDI1IDAgMCA4MDQgMCA4MDQgMTE4IDcgYzIyMCAxNCA0MDMgLTExIDUxMyAtNzIKNjYgLTM2IDEyNCAtMTAwIDE2MiAtMTgxIDMwIC02MiAzMiAtNzUgMzIgLTE3MiAwIC05NCAtMyAtMTExIC0yOCAtMTYxIC01MgotMTA3IC0xNTggLTE3OSAtMjkyIC0xOTkgLTM5IC01IC0xNDEgLTEwIC0yMjcgLTEwIGwtMTU4IDAgMCAtNDEwIDAgLTQxMCAyNQowIDI1IDAgMCAzODUgMCAzODUgMTI5IDAgYzI1OSAwIDM4MCAzNyA0NzkgMTQ1IDc1IDgyIDk2IDE0NCA5NyAyODAgMCAxMDYgLTEKMTEzIC0zNyAxODcgLTk0IDE5OCAtMjUzIDI3NyAtNTY4IDI4MyAtODUgMiAtMTY4IDEgLTE4NSAtMXogTTM3NzUgMTY3MSBjLTQ3Ci00IC03MCAtMTAgLTY5IC0xOCAxIC03IDIgLTM3MSAzIC04MDkgbDEgLTc5NSAyMyAzIDIyIDMgMyA3ODIgMiA3ODEgODggOApjMTA4IDkgMzE1IC0yIDQwMyAtMjAgMTgzIC0zOSAyODAgLTE1MCAzMTAgLTM1MCAyNSAtMTY3IC01OCAtMzE2IC0yMDkgLTM3NgotNTEgLTIxIC03OSAtMjQgLTI4MiAtMjkgLTIyNCAtNiAtMjI1IC02IC0yMjggLTI4IC0zIC0yMiAwIC0yMyA2MSAtMjMgbDY0IDAKMjU5IC0zOTAgYzE0MiAtMjE0IDI2MiAtMzkwIDI2NSAtMzkwIDMgMCAxMiA2IDIxIDEzIDE0IDEwIC0xNiA1OSAtMjMzIDM4NwotMTM2IDIwNiAtMjQ0IDM3NyAtMjM4IDM3OCA1IDIgMTYgMiAyMyAtMSA3IC0zIDEyMCAtMTY5IDI1MSAtMzY5IDEzMSAtMTk5CjI0NCAtMzcwIDI1MSAtMzc4IDEyIC0xMiAxNiAtMTIgMzAgMSAxNCAxNSAtNyA1MCAtMjI0IDM4MCBsLTIzOCAzNjQgMzUgMwpjMTYyIDEyIDI3MiA1MyAzNDAgMTI3IDUxIDU1IDc3IDEwOCA5NyAxOTIgMTMgNTcgMTQgODEgNCAxNDggLTI4IDE5NCAtMTE5CjMxMyAtMjg0IDM3MSAtOTkgMzYgLTM0NyA1MSAtNTUxIDM1eiBNMzIwMCA0OTAgbDAgLTQwMCAyNSAwIDI1IDAgMCA0MDAgMAo0MDAgLTI1IDAgLTI1IDAgMCAtNDAweiIvPgo8L2c+Cjwvc3ZnPg==" alt="UPGRADE" /></div>
+      <ul class="footer-links">
+        <li><a href="#services">Услуги</a></li>
+        <li><a href="/pricing.html">Прайс</a></li>
+        <li><a href="https://www.instagram.com/upgrade.lpg" target="_blank" rel="noopener">Instagram</a></li>
+        <li><a href="https://t.me/upgrade_lpg_bot" target="_blank" rel="noopener">Telegram</a></li>
+      </ul>
+      <div class="footer-copy">© 2025 UPGRADE. Все права защищены.</div>
+    </div>
+  </footer>
+
+  <!-- ═══ JAVASCRIPT ═══ -->
+  <script>
+    /* ── Theme Toggle ── */
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggle');
+    const saved = localStorage.getItem('theme');
+    if (saved) html.setAttribute('data-theme', saved);
+
+    themeBtn.addEventListener('click', () => {
+      const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
+
+    /* ── Nav scroll ── */
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 40);
+    }, { passive: true });
+
+    /* ── Mobile menu ── */
+    const burger = document.getElementById('navBurger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const mobileClose = document.getElementById('mobileClose');
+
+    burger.addEventListener('click', () => mobileMenu.classList.add('active'));
+    mobileClose.addEventListener('click', closeMobile);
+    function closeMobile() { mobileMenu.classList.remove('active'); }
+
+    /* ── FAQ accordion ── */
+    document.querySelectorAll('.faq-question').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.parentElement;
+        const answer = item.querySelector('.faq-answer');
+        const isOpen = item.classList.contains('open');
+
+        // Close all
+        document.querySelectorAll('.faq-item.open').forEach(openItem => {
+          openItem.classList.remove('open');
+          openItem.querySelector('.faq-answer').style.maxHeight = '0';
+          openItem.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+        });
+
+        // Open clicked (if it was closed)
+        if (!isOpen) {
+          item.classList.add('open');
+          answer.style.maxHeight = answer.scrollHeight + 'px';
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+
+    /* ── Scroll reveal ── */
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+
 </body>
 </html>

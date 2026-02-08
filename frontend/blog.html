@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Блог — UPGRADE | Статьи об аппаратной эстетике и уходе за телом</title>
+  <meta name="description" content="Полезные статьи о LPG-массаже, прессотерапии, обёртывании и уходе за телом. Экспертные советы от специалистов студии UPGRADE.">
+  <link rel="canonical" href="https://upgrade-studio.ru/blog/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Блог UPGRADE — статьи об аппаратной эстетике">
+  <meta property="og:description" content="Полезные статьи о LPG-массаже, прессотерапии, обёртывании и уходе за телом.">
+  <meta property="og:url" content="https://upgrade-studio.ru/blog/">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════
+       DESIGN TOKENS
+       ═══════════════════════════════════════ */
+    :root {
+      --teal:        #2BB5B8;
+      --teal-light:  #5DD3D5;
+      --teal-dark:   #1E8E90;
+      --teal-subtle: #E8F7F7;
+      --font-display:'Cormorant Garamond', Georgia, serif;
+      --font-body:   'Manrope', system-ui, sans-serif;
+    }
+
+    [data-theme="light"] {
+      --bg-primary:    #FFFFFF;
+      --bg-secondary:  #F8FBFB;
+      --bg-card:       #FFFFFF;
+      --text-primary:  #1A2B2B;
+      --text-secondary:#5A7070;
+      --text-muted:    #8FA5A5;
+      --border:        #E0EDED;
+      --border-light:  #F0F5F5;
+      --shadow-sm:     0 1px 3px rgba(43,181,184,0.06);
+      --shadow-md:     0 8px 32px rgba(43,181,184,0.08);
+      --shadow-lg:     0 16px 48px rgba(43,181,184,0.12);
+      --nav-bg:        rgba(255,255,255,0.85);
+    }
+
+    [data-theme="dark"] {
+      --bg-primary:    #0F1A1A;
+      --bg-secondary:  #162222;
+      --bg-card:       #1A2D2D;
+      --text-primary:  #E8F0F0;
+      --text-secondary:#9BB5B5;
+      --text-muted:    #6A8585;
+      --border:        #253838;
+      --border-light:  #1E3030;
+      --shadow-sm:     0 1px 3px rgba(0,0,0,0.2);
+      --shadow-md:     0 8px 32px rgba(0,0,0,0.3);
+      --shadow-lg:     0 16px 48px rgba(0,0,0,0.4);
+      --nav-bg:        rgba(15,26,26,0.9);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      transition: background 0.4s ease, color 0.4s ease;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ═══════════════════════════════════════
+       NAVIGATION
+       ═══════════════════════════════════════ */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 0 2rem; height: 72px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--nav-bg);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-light);
+      transition: height 0.3s ease, box-shadow 0.3s ease;
+    }
+    .nav.scrolled { height: 60px; box-shadow: var(--shadow-sm); }
+    .nav-logo { display: flex; align-items: center; text-decoration: none; line-height: 1; }
+    .nav-logo img { height: 48px; width: auto; transition: height 0.3s ease; }
+    .nav.scrolled .nav-logo img { height: 38px; }
+    .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
+    .nav-links a {
+      font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);
+      text-decoration: none; letter-spacing: 0.03em; text-transform: uppercase;
+      transition: color 0.3s ease; position: relative;
+    }
+    .nav-links a:hover { color: var(--teal); }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1.5px;
+      background: var(--teal); transition: width 0.3s ease;
+    }
+    .nav-links a:hover::after { width: 100%; }
+
+    .theme-toggle {
+      background: none; border: 1px solid var(--border); border-radius: 50%;
+      width: 36px; height: 36px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; font-size: 1rem;
+      color: var(--text-secondary); transition: all 0.3s ease;
+    }
+    .theme-toggle:hover { border-color: var(--teal); color: var(--teal); }
+
+    .mobile-toggle {
+      display: none; background: none; border: none; cursor: pointer;
+      width: 36px; height: 36px; position: relative;
+    }
+    .mobile-toggle span {
+      display: block; width: 20px; height: 1.5px; background: var(--text-primary);
+      position: absolute; left: 8px; transition: all 0.3s ease;
+    }
+    .mobile-toggle span:nth-child(1) { top: 12px; }
+    .mobile-toggle span:nth-child(2) { top: 17px; }
+    .mobile-toggle span:nth-child(3) { top: 22px; }
+
+    @media (max-width: 768px) {
+      .nav { padding: 0 1rem; }
+      .mobile-toggle { display: block; }
+      .nav-links {
+        position: fixed; top: 72px; left: 0; right: 0;
+        background: var(--bg-primary); flex-direction: column;
+        padding: 1.5rem; gap: 1.25rem; border-bottom: 1px solid var(--border);
+        transform: translateY(-120%); transition: transform 0.4s ease;
+      }
+      .nav-links.open { transform: translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════
+       PAGE LAYOUT
+       ═══════════════════════════════════════ */
+    .page { flex: 1; padding-top: 72px; }
+
+    .container {
+      max-width: 1080px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* ═══════════════════════════════════════
+       BLOG HEADER
+       ═══════════════════════════════════════ */
+    .blog-header {
+      text-align: center;
+      padding: 3rem 0 2rem;
+    }
+
+    .blog-header h1 {
+      font-family: var(--font-display);
+      font-size: 2.8rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+    .blog-header h1 span { color: var(--teal); }
+
+    .blog-header p {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* ═══════════════════════════════════════
+       CATEGORY FILTERS
+       ═══════════════════════════════════════ */
+    .filters {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .filter-btn {
+      padding: 0.5rem 1.1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 100px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+    }
+    .filter-btn:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+    .filter-btn.active {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #fff;
+    }
+
+    /* ═══════════════════════════════════════
+       ARTICLE GRID
+       ═══════════════════════════════════════ */
+    .articles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .article-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--bg-card);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .article-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-3px);
+    }
+
+    .article-card-image {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: linear-gradient(135deg, var(--teal-subtle), var(--border-light));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .article-card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    /* Placeholder icon when no image */
+    .article-card-image .placeholder-icon {
+      font-size: 2.5rem;
+      opacity: 0.3;
+    }
+
+    .article-card-body {
+      padding: 1.25rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .article-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.6rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .article-category {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 100px;
+      background: var(--teal-subtle);
+      color: var(--teal-dark);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    [data-theme="dark"] .article-category {
+      background: rgba(43,181,184,0.12);
+      color: var(--teal-light);
+    }
+
+    .article-card-title {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 500;
+      line-height: 1.3;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+    .article-card-title a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+    .article-card-title a:hover { color: var(--teal); }
+
+    .article-card-excerpt {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      flex: 1;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .article-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .read-time {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .read-more {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--teal);
+      text-decoration: none;
+      transition: gap 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .read-more:hover { gap: 0.5rem; }
+
+    /* ═══════════════════════════════════════
+       PAGINATION
+       ═══════════════════════════════════════ */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 3rem;
+    }
+
+    .pagination a,
+    .pagination span {
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      color: var(--text-secondary);
+      border: 1.5px solid var(--border);
+    }
+    .pagination a:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+    .pagination .current {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #fff;
+    }
+    .pagination .dots {
+      border: none;
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+    .pagination .arrow {
+      font-size: 1.1rem;
+    }
+
+    /* ═══════════════════════════════════════
+       EMPTY STATE
+       ═══════════════════════════════════════ */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--text-muted);
+    }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.4; }
+    .empty-state p { font-size: 0.95rem; }
+
+    /* ═══════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════ */
+    .footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-light);
+      padding: 1.5rem 2rem;
+      margin-top: auto;
+    }
+    .footer-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 1rem;
+    }
+    .footer-logo { display: flex; align-items: center; line-height: 1; }
+    .footer-logo img { height: 36px; width: auto; }
+    .footer-links { display: flex; gap: 2rem; list-style: none; }
+    .footer-links a {
+      font-size: 0.8rem; color: var(--text-secondary);
+      text-decoration: none; transition: color 0.3s ease;
+    }
+    .footer-links a:hover { color: var(--teal); }
+    .footer-copy { font-size: 0.75rem; color: var(--text-muted); width: 100%; text-align: center; margin-top: 0.75rem; }
+
+    /* ═══════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .blog-header { padding: 2rem 0 1.5rem; }
+      .blog-header h1 { font-size: 2rem; }
+      .articles-grid { grid-template-columns: 1fr; gap: 1rem; }
+      .footer { padding: 1.25rem 1rem; }
+      .footer-inner { justify-content: center; text-align: center; }
+      .footer-links { justify-content: center; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.15s !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── NAV ─── -->
+  <nav class="nav" id="navbar">
+    <a href="/" class="nav-logo"><img src="data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKIHdpZHRoPSI4NjgiIGhlaWdodD0iNTk1IiB2aWV3Qm94PSIwIDAgODY4IDU5NSIKIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiPgo8ZyBjbGFzcz0ibG9nby1wYXRocyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCw1OTUpIHNjYWxlKDAuMSwtMC4xKSIKZmlsbD0iIzJCQjVCOCIgc3Ryb2tlPSJub25lIj4KPHBhdGggZD0iTTMwNzcgNTkzOCBjLTIgLTcgLTI2OSAtNjQ5IC01OTIgLTE0MjcgLTMyMyAtNzc3IC01ODMgLTE0MTcgLTU3OAotMTQyMSA0IC00IDc4NiAtMzMwIDE3MzggLTcyNCA5NTIgLTM5NSAxNzM0IC03MjEgMTczOCAtNzI1IDUgLTUgLTEzOCAtMzYxCi0zMTcgLTc5MiAtMzAyIC03MzAgLTMyMyAtNzg1IC0zMDUgLTc5MyAxMiAtNiAyMyAtNiAyOCAwIDQgNSAxMzYgMzE4IDI5Mgo2OTcgMTU2IDM3OCAyODYgNjg3IDI4OSA2ODcgMyAwIDE0NyAtMzI0IDMxOSAtNzIwIDE3MyAtMzk2IDMxNyAtNzIwIDMyMAotNzIwIDQgMCAxNCA2IDIzIDEzIDEzIDEwIC0yNCAxMDIgLTMwOCA3NTIgLTE3OCA0MDcgLTMyNCA3NDUgLTMyNCA3NTIgMCAxMgo0OSAxMzMgNjAgMTQ1IDMgNCAxNTggLTM1NiAzNDUgLTgwMCAxODYgLTQ0NCAzNDEgLTgxMCAzNDUgLTgxNSAzIC00IDE0IC0xCjI1IDYgMTcgMTMgLTMgNjMgLTM0NCA4NzQgbC0zNjEgODYxIDU2MSAxMzUxIGMzMDkgNzQ0IDU1OSAxMzU0IDU1OCAxMzU1IC0zCjMgLTMzODUgMTQwOCAtMzQ5NSAxNDUzIC02IDIgLTE0IC0yIC0xNyAtOXogbTE3NTcgLTc0NCBjOTQwIC0zOTAgMTcxMCAtNzE0CjE3MTIgLTcxOSA1IC0xMyAtMTE1MCAtMjgwMCAtMTE2MCAtMjc5OSAtMzAgNCAtMzQ0NiAxNDMwIC0zNDQ2IDE0MzggMCA2IDI2MAo2MzggNTc4IDE0MDQgNDM5IDEwNjAgNTgxIDEzOTIgNTkyIDEzODkgOCAtMiA3ODQgLTMyMyAxNzI0IC03MTN6IE00MjIwIDUyNDYKYy04NSAtMjQgLTE2NiAtODMgLTIxMiAtMTU1IC0zMSAtNTAgLTM1IC04MyAtMTMgLTEyMSA4IC0xNCAxNCAtNDggMTUgLTc2IDAKLTYwIDE1IC0xMTEgNDIgLTE0MCAxNiAtMTkgMTcgLTI2IDcgLTczIC0xMiAtNTkgLTMgLTgxIDM2IC04MSAxMyAwIDI2IC05IDMyCi0yMiA2IC0xMyAyNyAtNDEgNDYgLTYzIDMyIC0zNyAzOCAtNDAgNzYgLTM3IDM1IDMgNDcgMTEgNzcgNDggMjAgMjQgNDAgNDQKNDQgNDQgMTkgMCAxOSAtNTEgMSAtOTQgLTI3IC02MSAtNTQgLTc2IC0xNDggLTgzIC05MSAtNyAtMTIyIC0yMCAtMTgxIC03NwotODEgLTc2IC04NSAtMTAxIC00NiAtMjM5IDMwIC0xMDQgMzggLTEyMSA5OSAtMjE2IDkwIC0xMzkgMTEwIC0yNTEgNTkgLTMyNwotNTEgLTc1IC0xNTAgLTE3OCAtMjU2IC0yNjUgLTE4OCAtMTU2IC0yODggLTMyOSAtMjg4IC01MDAgMCAtOTEgMjggLTIyOSA1NwotMjc5IDM5IC02OSAxMTQgLTEzNSAxNzAgLTE1MSA2OSAtMjAgMTcwIC0xOCAyMTQgNCA0MSAyMCAxMDAgNzIgMTE2IDEwMiAxMQoxOCAxMiAxOCA0MCAtMTEgMzggLTQxIDc3IC02MCAxNTEgLTc0IDc4IC0xNCAxNTEgMyAyNTQgNTcgODEgNDIgMTI4IDkzIDE3MgoxODMgMjkgNjEgMzEgNzEgMjkgMTcwIC0zIDEyNCAtMjMgMTk1IC0xMDkgMzc5IC03MSAxNTQgLTcwIDE2MyAyNyAyNjggNzEgNzcKMTkwIDI0NSAyMzMgMzMxIDEzIDI2IDM4IDg5IDU1IDE0MSA0MSAxMjEgODAgMjA0IDEyMyAyNjQgbDM1IDQ4IDcgLTEwOSBjOAotMTE2IDAgLTE2NCAtMzYgLTIzNSAtMjEgLTQyIC03MiAtMjQxIC04MyAtMzI0IC01IC0zOCAtMSAtNzEgMTUgLTEzMCAyMCAtNjkKMjIgLTk0IDE3IC0yMTMgLTIgLTc0IC0xNSAtMjA1IC0yNyAtMjkyIC0xMyAtODYgLTIwIC0xNzIgLTE2IC0xOTAgMyAtMTkgMTkKLTU1IDM2IC04MSAzNiAtNTggNzUgLTY4IDE2NiAtNDQgNzYgMjEgMTgzIDIyIDIwOSAzIDE3IC0xMiAxNiAtMTQgLTE3IC0yNQotNDcgLTE2IC0xODQgLTMxIC0yODggLTMyIC00NyAwIC05MyAtNCAtMTA0IC04IC0xNyAtNiAtMTUgLTEwIDE1IC0zNiA2MCAtNTAKODcgLTU2IDI2MiAtNTcgMTY2IC0yIDIxMCA0IDIwMSAyNSAtMyA5IC01MiAxMyAtMTgzIDE0IC0xMDcgMSAtMTg3IDUgLTE5OAoxMiAtMTQgOCAtNyAxMCAzNiAxMSA4NCAwIDIzMSAyMCAyNzkgMzcgNDEgMTUgNjMgNDcgNDggNzEgLTI1IDQwIC0xNDggNTQKLTI0OSAyNyAtOTAgLTIzIC0xMTIgLTIwIC0xNDIgMTkgLTM4IDUwIC00MCA4NSAtMTQgMjY3IDMwIDIxNCAzMiA0NDEgNSA1MTEKLTE0IDM3IC0xNyA2MSAtMTIgMTA1IDkgODAgNTggMjY2IDg5IDMzOCAzMyA3NiA0MSAxNDAgMjkgMjM1IC01IDQxIC01IDkwIC0xCjEwOSA1IDIyIDQgMzggLTIgNDIgLTcgNCAtNiAyMSAxIDUxIDE2IDYyIC0xIDExOCAtNTEgMTczIC01MCA1NCAtMTA5IDc5Ci0yNjAgMTEwIC0xNTMgMzEgLTE5MCA0OCAtMjM3IDEwOSAtMzEgNDAgLTMwIDYyIDIgNDEgNDIgLTI4IDE0NiAtMiAxOTQgNDgKNzYgNzkgNjkgMjIwIC0xNSAyOTkgLTUzIDUwIC0yMDQgMTE4IC0yOTUgMTMzIC00NSA4IC0xMDUgMjEgLTEzMiAzMCAtNTggMTgKLTE0MyAxOCAtMjA2IDF6IG0tMzUgLTcyIGMtODEgLTQ5IC0xMTMgLTgwIC0xNDEgLTEzOSAtMjQgLTUwIC0yNCAtNTAgLTI0Ci0xNiAwIDI4IDExIDQ0IDY4IDEwMSA2MCA2MSAxMDEgODUgMTQ3IDg5IDYgMSAtMTcgLTE1IC01MCAtMzV6IG0zNDYgLTE2IGM5MAotNTUgMTIwIC0xMTggMTExIC0yMzcgLTYgLTg0IC0yNCAtOTEgLTI4IC0xMiAtNSAxMDEgLTIzIDE1MCAtNzMgMjAxIC0yNSAyNQotNTkgNTYgLTc2IDY5IC0yOCAyMCAtMjggMjIgLTYgMTUgMTQgLTQgNDYgLTIwIDcyIC0zNnogbS0xMTYgMyBjNzQgLTQzIDEzMgotMTA0IDE0NyAtMTU0IDggLTI4IDEyIC05NCAxMCAtMTk3IC0zIC0xNzcgNSAtMjE3IDYxIC0yOTkgNTggLTg0IDY5IC0xMzcgNzAKLTM0MCAyIC0xNjYgMCAtMTgxIC0yNiAtMjY2IC0zNyAtMTIxIC05MCAtMjI4IC0xNzYgLTM2MCAtNDAgLTYwIC05NyAtMTYwCi0xMjcgLTIyMCAtNTUgLTExMCAtNTYgLTExMiAtNjQgLTIzMCAtMTEgLTE2MiAtNjEgLTMxMyAtMTQzIC00MzUgLTc1IC0xMTAKLTIxOSAtMjYwIC0yNTAgLTI2MCAtNSAwIC03IC05IC00IC0yMCA0IC0xNyAxIC0xOSAtMjEgLTE0IC02OSAxNSAtOTMgMjgKLTEzNSA3MyAtNTggNjIgLTc1IDk2IC05MyAxODggLTQ3IDI0NyAyNiA0MTggMjY3IDYxOSAxMTQgOTUgMjM0IDIyNiAyNjggMjkxCjQ1IDg5IDIxIDIwMSAtNzUgMzUwIC02OSAxMDYgLTEyNCAyNzEgLTExMCAzMjYgMTYgNjcgMTEwIDEzNyAxODMgMTM3IDY0IDEKMTIxIDE1IDE1MiAzOCAzNSAyNiA3MyA5NiA3MyAxMzUgMCAzMiAtNTEgMTQ1IC04MCAxNzkgLTEzIDE1IC0xMiAxOSAyIDMzIDIyCjIyIDIwIDgwIC00IDEzMyAtMTYgMzYgLTIzIDQyIC00OSA0MiAtMzIgMCAtNjEgLTMwIC02MSAtNjQgMCAtMzIgLTEyIC0xMAotMjEgNDAgLTUgMjYgLTE2IDU2IC0yNSA2NiAtMjIgMjQgLTgyIDM0IC0xMDcgMTkgLTE4IC0xMiAtMTkgLTExIC0xMyAxNiAxNwo2OSA4NSAxMzIgMTk2IDE4MiA2MSAyOCA5NiAyNiAxNTUgLTh6IG0zMjMgLTUzIGMxMTMgLTYxIDE0MiAtOTcgMTQyIC0xNzYgMAotOTkgLTQyIC0xNTIgLTEzMiAtMTY2IC0zMCAtNSAtNDYgLTMgLTU2IDggLTE2IDE2IC0xNyAyOCAtMTIgMTY2IDMgOTggLTEyCjE0NSAtNjMgMTk5IGwtMzIgMzQgMzAgLTcgYzE3IC00IDcyIC0zMCAxMjMgLTU4eiBtLTU4OSAtMTc3IGM3IC01IDE3IC0yOSAyMgotNTUgMTIgLTY0IDM1IC05NiA2OSAtOTYgMjMgMCAyNyAtMyAyMyAtMjQgLTQgLTE3IDUgLTM1IDMwIC02MiA1MSAtNTcgNTQKLTkwIDE0IC0xMzUgLTQ2IC01MiAtNzQgLTU4IC0xMDMgLTIzIC0xNCAxNiAtMzMgNDYgLTQ0IDY3IC0xNiAyOCAtMjcgMzcgLTQ2CjM3IC0yMyAwIC0yNSAzIC0yMCAyNiAyMCA3OCAxOSA4NCAtOSAxMTQgLTIyIDIzIC0yOSA0MiAtMzMgODMgLTQgNDggLTIgNTQKMTkgNjQgMjkgMTQgNTkgMTYgNzggNHogbTE2MSAtODcgYzYgLTE0IDEwIC0zOSAxMCAtNTYgMCAtMjMgLTQgLTI5IC0xNiAtMjQKLTkgMyAtMTcgNiAtMTkgNiAtOCAwIC0xNyA3MCAtMTEgODUgOCAyMyAyNSAxOCAzNiAtMTF6IG0zMzYgLTE4MSBjNDEgLTU0CjEwMCAtODEgMjQ5IC0xMTMgMTk5IC00MyAyNTkgLTc4IDI4NiAtMTY4IDE2IC01NCAwIC0xMDMgLTY5IC0yMDggLTY0IC05OAotODcgLTE0NiAtMTQyIC0zMDUgLTI5IC04NCAtNTUgLTEzNCAtMTIyIC0yMzUgLTQ3IC03MSAtMTE1IC0xNjAgLTE1MiAtMTk4Ci0xMDMgLTEwNyAtMTA2IC0xNDUgLTI2IC0zMDYgNzYgLTE1MiAxMDEgLTIzOCAxMDMgLTM2MSAyIC05OCAwIC0xMDcgLTI4Ci0xNjIgLTM5IC03NyAtOTUgLTEzMSAtMTcyIC0xNjcgLTkxIC00MyAtMTUwIC01NCAtMjE3IC00MCAtNjYgMTQgLTExMyA0MwotMTQ0IDkyIC0yOSA0MyAtNTMgNDEgLTcxIC03IC0yMiAtNjIgLTEyNiAtMTMyIC0xODEgLTEyMyAtMTYgMiAtMTAgMTEgMzQgNDUKNjUgNTAgMTYzIDE2NiAyMjcgMjY5IDcxIDExNCAxMjAgMjcxIDEyOSA0MTQgNyAxMTMgOCAxMTcgNjAgMjIwIDI5IDU4IDg3CjE1OSAxMzAgMjI1IDExNiAxODEgMTQ5IDI1NCAxOTAgNDI1IDIwIDg2IDIxIDEwOSAxNSAyNTAgLTggMTc1IC0yNiAyNTEgLTc3CjMyMSAtNDEgNTYgLTU3IDEwMyAtNTYgMTU5IDAgMjUgMyAzNiA1IDI1IDMgLTExIDE2IC0zNSAyOSAtNTJ6IE02MzQwIDkyNSBsMAotODY1IDIzIDAgYzEyIDAgMTQ0IDE2IDI5MiAzNSAzMTggNDEgNDMzIDcxIDU3NCAxNDggMTIxIDY3IDI0MyAxOTIgMjk2IDMwMgo0NyA5OSA3NSAyMTcgNzUgMzEzIDAgMTM3IC03MSAzNDEgLTE1OSA0NjEgLTU2IDc2IC0xNjUgMTgzIC0yMzEgMjI4IC01OSA0MAotMTkyIDEwNiAtMjU1IDEyNiAtNDUgMTUgLTU3MiAxMTcgLTYwMiAxMTcgLTEwIDAgLTEzIC0xODAgLTEzIC04NjV6IE0zMDA1CjE3NDAgYy0zNjIgLTM4IC02NjMgLTI0NyAtNzkwIC01NDkgLTQwIC05NSAtNjkgLTI3MSAtNjEgLTM3MSAxNiAtMTkxIDEzNwotNDMzIDI4OCAtNTc2IDE5MiAtMTgxIDM3NSAtMjQwIDcxOCAtMjMzIGwxNjUgNCAzOSAzMCAzOSAzMCAtNiAxNzAgYy00IDkzCi03IDI3MCAtNyAzOTMgbDAgMjIyIC0yNyAwIC0yNiAwIDYgLTM4NCA2IC0zODQgLTM0IC0xNiBjLTUwIC0yNCAtMzM5IC0yMgotNDYwIDMgLTI0MiA1MCAtNDM5IDIwOSAtNTYwIDQ1MSAtOTAgMTc5IC0xMTEgMzEyIC03NyA0ODYgNjQgMzIyIDI3MyA1MzkKNjE3IDYzOSAxMzYgMzkgMjU3IDUwIDM1OCAzMSAxMDUgLTIwIDEwNCAtMjAgMTEwIDQgNCAxNiAtMiAyMiAtMzEgMjkgLTQ3IDEzCi0xNjIgMzEgLTE4MiAzMCAtOCAtMSAtNDcgLTUgLTg1IC05eiBNMCAxMDEwIGwwIC03MDAgMzYgLTcxIGM0NyAtOTQgMTAyCi0xNTIgMTgyIC0xOTEgNTUgLTI4IDc4IC0zMyAxNTYgLTM2IDc1IC0zIDEwMSAwIDE0OSAxOCA3NCAyOCAxNjMgMTEwIDIwNQoxODggbDMyIDYwIDAgNzE2IDAgNzE2IC0yNSAwIC0yNSAwIDAgLTcxMiAwIC03MTMgLTI5IC01MSBjLTM4IC02NiAtMTE5IC0xMzgKLTE3OCAtMTU4IC0yNiAtOSAtNzcgLTE2IC0xMTQgLTE2IC0xMzIgMCAtMjM1IDYzIC0zMDAgMTgyIGwtMzQgNjMgLTUgNzAwIC01CjcwMCAtMjIgMyAtMjMgMyAwIC03MDF6IE03NzkwIDg3NSBsMCAtODM1IDQ0NiAwIDQ0NSAwIC0zIDIzIC0zIDIyIC00MTcgMwotNDE4IDIgMCAzNjAgMCAzNjAgMjQwIDAgMjQwIDAgMCAyNSAwIDI1IC0yNDAgMCBjLTIwNyAwIC0yNDAgMiAtMjQwIDE1IDAgMTMKMzMgMTUgMjQwIDE1IGwyNDAgMCAwIDI1IDAgMjUgLTI0MCAwIC0yNDAgMCAwIDM2MCAwIDM2MCA0MTggMiBjNDA5IDMgNDE3IDMKNDE3IDIzIDAgMjAgLTggMjAgLTQ0MiAyMyBsLTQ0MyAyIDAgLTgzNXogTTEyNzUgMTY5NCBjLTE2IC0yIC01NCAtNyAtODIgLTEwCmwtNTMgLTUgMCAtODI1IDAgLTgyNCAyNSAwIDI1IDAgMCA4MDQgMCA4MDQgMTE4IDcgYzIyMCAxNCA0MDMgLTExIDUxMyAtNzIKNjYgLTM2IDEyNCAtMTAwIDE2MiAtMTgxIDMwIC02MiAzMiAtNzUgMzIgLTE3MiAwIC05NCAtMyAtMTExIC0yOCAtMTYxIC01MgotMTA3IC0xNTggLTE3OSAtMjkyIC0xOTkgLTM5IC01IC0xNDEgLTEwIC0yMjcgLTEwIGwtMTU4IDAgMCAtNDEwIDAgLTQxMCAyNQowIDI1IDAgMCAzODUgMCAzODUgMTI5IDAgYzI1OSAwIDM4MCAzNyA0NzkgMTQ1IDc1IDgyIDk2IDE0NCA5NyAyODAgMCAxMDYgLTEKMTEzIC0zNyAxODcgLTk0IDE5OCAtMjUzIDI3NyAtNTY4IDI4MyAtODUgMiAtMTY4IDEgLTE4NSAtMXogTTM3NzUgMTY3MSBjLTQ3Ci00IC03MCAtMTAgLTY5IC0xOCAxIC03IDIgLTM3MSAzIC04MDkgbDEgLTc5NSAyMyAzIDIyIDMgMyA3ODIgMiA3ODEgODggOApjMTA4IDkgMzE1IC0yIDQwMyAtMjAgMTgzIC0zOSAyODAgLTE1MCAzMTAgLTM1MCAyNSAtMTY3IC01OCAtMzE2IC0yMDkgLTM3NgotNTEgLTIxIC03OSAtMjQgLTI4MiAtMjkgLTIyNCAtNiAtMjI1IC02IC0yMjggLTI4IC0zIC0yMiAwIC0yMyA2MSAtMjMgbDY0IDAKMjU5IC0zOTAgYzE0MiAtMjE0IDI2MiAtMzkwIDI2NSAtMzkwIDMgMCAxMiA2IDIxIDEzIDE0IDEwIC0xNiA1OSAtMjMzIDM4NwotMTM2IDIwNiAtMjQ0IDM3NyAtMjM4IDM3OCA1IDIgMTYgMiAyMyAtMSA3IC0zIDEyMCAtMTY5IDI1MSAtMzY5IDEzMSAtMTk5CjI0NCAtMzcwIDI1MSAtMzc4IDEyIC0xMiAxNiAtMTIgMzAgMSAxNCAxNSAtNyA1MCAtMjI0IDM4MCBsLTIzOCAzNjQgMzUgMwpjMTYyIDEyIDI3MiA1MyAzNDAgMTI3IDUxIDU1IDc3IDEwOCA5NyAxOTIgMTMgNTcgMTQgODEgNCAxNDggLTI4IDE5NCAtMTE5CjMxMyAtMjg0IDM3MSAtOTkgMzYgLTM0NyA1MSAtNTUxIDM1eiBNMzIwMCA0OTAgbDAgLTQwMCAyNSAwIDI1IDAgMCA0MDAgMAo0MDAgLTI1IDAgLTI1IDAgMCAtNDAweiIvPgo8L2c+Cjwvc3ZnPg==" alt="UPGRADE — студия эстетики тела" /></a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="/#about">О студии</a></li>
+      <li><a href="/pricing.html">Услуги</a></li>
+      <li><a href="/blog/">Блог</a></li>
+      <li><a href="/book.html">Записаться</a></li>
+      <li><button class="theme-toggle" id="themeToggle" aria-label="Сменить тему">☀️</button></li>
+    </ul>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Меню">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- ─── BLOG ─── -->
+  <main class="page">
+    <div class="container">
+
+      <header class="blog-header">
+        <h1>Наш <span>блог</span></h1>
+        <p>Экспертные статьи о процедурах, уходе за телом и результатах аппаратной эстетики</p>
+      </header>
+
+      <!-- Category filters -->
+      <div class="filters" id="filters">
+        <button class="filter-btn active" data-cat="all">Все статьи</button>
+        <button class="filter-btn" data-cat="lpg">LPG-массаж</button>
+        <button class="filter-btn" data-cat="pressotherapy">Прессотерапия</button>
+        <button class="filter-btn" data-cat="body-care">Уход за телом</button>
+        <button class="filter-btn" data-cat="results">Результаты</button>
+        <button class="filter-btn" data-cat="faq">Ответы на вопросы</button>
+      </div>
+
+      <!--
+        ═══ SSG RENDERER ═══
+        Рендер-модуль генерирует этот блок из БД.
+        Каждая карточка — один <article class="article-card" data-cat="{{category_slug}}">.
+        Пагинация: отдельный blog/page/2.html, blog/page/3.html и т.д.
+        Ниже — mock для превью шаблона.
+      -->
+
+      <div class="articles-grid" id="articlesGrid">
+
+        <article class="article-card" data-cat="lpg">
+          <div class="article-card-image">
+            <span class="placeholder-icon">💆</span>
+          </div>
+          <div class="article-card-body">
+            <div class="article-card-meta">
+              <span class="article-category">LPG-массаж</span>
+              <span>12 февраля 2026</span>
+            </div>
+            <h2 class="article-card-title">
+              <a href="/blog/lpg-vs-ruchnoy-massazh.html">LPG vs ручной массаж: что эффективнее для борьбы с целлюлитом?</a>
+            </h2>
+            <p class="article-card-excerpt">Сравниваем два подхода к антицеллюлитному массажу — аппаратный LPG и классический ручной. Разбираем механизмы воздействия, результаты клинических исследований и реальные отзывы.</p>
+            <div class="article-card-footer">
+              <span class="read-time">7 мин чтения</span>
+              <a href="/blog/lpg-vs-ruchnoy-massazh.html" class="read-more">Читать →</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="article-card" data-cat="pressotherapy">
+          <div class="article-card-image">
+            <span class="placeholder-icon">🫧</span>
+          </div>
+          <div class="article-card-body">
+            <div class="article-card-meta">
+              <span class="article-category">Прессотерапия</span>
+              <span>8 февраля 2026</span>
+            </div>
+            <h2 class="article-card-title">
+              <a href="/blog/pressoterapiya-pokazaniya-protivopokazaniya.html">Прессотерапия: показания, противопоказания и чего ожидать от процедуры</a>
+            </h2>
+            <p class="article-card-excerpt">Всё о прессотерапии — кому подходит, когда лучше воздержаться, как проходит сеанс и какие результаты можно получить уже после первого посещения.</p>
+            <div class="article-card-footer">
+              <span class="read-time">5 мин чтения</span>
+              <a href="/blog/pressoterapiya-pokazaniya-protivopokazaniya.html" class="read-more">Читать →</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="article-card" data-cat="body-care">
+          <div class="article-card-image">
+            <span class="placeholder-icon">🌿</span>
+          </div>
+          <div class="article-card-body">
+            <div class="article-card-meta">
+              <span class="article-category">Уход за телом</span>
+              <span>5 февраля 2026</span>
+            </div>
+            <h2 class="article-card-title">
+              <a href="/blog/kak-ubrat-tsellyulit-na-bedrah.html">Как убрать целлюлит на бёдрах: 5 работающих методов в 2026 году</a>
+            </h2>
+            <p class="article-card-excerpt">Разбираем научно обоснованные подходы к борьбе с целлюлитом — от питания и спорта до аппаратных процедур. Что действительно работает, а что — маркетинг.</p>
+            <div class="article-card-footer">
+              <span class="read-time">9 мин чтения</span>
+              <a href="/blog/kak-ubrat-tsellyulit-na-bedrah.html" class="read-more">Читать →</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="article-card" data-cat="faq">
+          <div class="article-card-image">
+            <span class="placeholder-icon">❓</span>
+          </div>
+          <div class="article-card-body">
+            <div class="article-card-meta">
+              <span class="article-category">Ответы на вопросы</span>
+              <span>1 февраля 2026</span>
+            </div>
+            <h2 class="article-card-title">
+              <a href="/blog/skolko-seansov-lpg-nuzhno.html">Сколько сеансов LPG нужно для видимого результата?</a>
+            </h2>
+            <p class="article-card-excerpt">Отвечаем на самый частый вопрос. Разбираем от чего зависит количество процедур, как часто ходить и когда ждать первых изменений.</p>
+            <div class="article-card-footer">
+              <span class="read-time">4 мин чтения</span>
+              <a href="/blog/skolko-seansov-lpg-nuzhno.html" class="read-more">Читать →</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="article-card" data-cat="results">
+          <div class="article-card-image">
+            <span class="placeholder-icon">📐</span>
+          </div>
+          <div class="article-card-body">
+            <div class="article-card-meta">
+              <span class="article-category">Результаты</span>
+              <span>28 января 2026</span>
+            </div>
+            <h2 class="article-card-title">
+              <a href="/blog/minus-10-sm-za-kurs.html">Минус 10 см за курс: реальные замеры наших клиентов</a>
+            </h2>
+            <p class="article-card-excerpt">Публикуем реальные результаты с замерами до и после курса аппаратных процедур. Без фотошопа — только цифры, даты и программы.</p>
+            <div class="article-card-footer">
+              <span class="read-time">6 мин чтения</span>
+              <a href="/blog/minus-10-sm-za-kurs.html" class="read-more">Читать →</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="article-card" data-cat="lpg">
+          <div class="article-card-image">
+            <span class="placeholder-icon">✨</span>
+          </div>
+          <div class="article-card-body">
+            <div class="article-card-meta">
+              <span class="article-category">LPG-массаж</span>
+              <span>22 января 2026</span>
+            </div>
+            <h2 class="article-card-title">
+              <a href="/blog/lpg-bolno-ili-net.html">Больно ли делать LPG-массаж? Честный разбор ощущений</a>
+            </h2>
+            <p class="article-card-excerpt">Рассказываем, что чувствуют клиенты во время процедуры, как настраивается интенсивность и почему первый сеанс отличается от пятого.</p>
+            <div class="article-card-footer">
+              <span class="read-time">4 мин чтения</span>
+              <a href="/blog/lpg-bolno-ili-net.html" class="read-more">Читать →</a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Pagination (SSG renders for multi-page) -->
+      <nav class="pagination" aria-label="Страницы блога">
+        <span class="current">1</span>
+        <a href="/blog/page/2.html">2</a>
+        <a href="/blog/page/3.html">3</a>
+        <span class="dots">…</span>
+        <a href="/blog/page/2.html" class="arrow" aria-label="Следующая страница">›</a>
+      </nav>
+
+    </div>
+  </main>
+
+  <!-- ─── FOOTER ─── -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-logo"><img src="data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKIHdpZHRoPSI4NjgiIGhlaWdodD0iNTk1IiB2aWV3Qm94PSIwIDAgODY4IDU5NSIKIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiPgo8ZyBjbGFzcz0ibG9nby1wYXRocyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCw1OTUpIHNjYWxlKDAuMSwtMC4xKSIKZmlsbD0iIzJCQjVCOCIgc3Ryb2tlPSJub25lIj4KPHBhdGggZD0iTTMwNzcgNTkzOCBjLTIgLTcgLTI2OSAtNjQ5IC01OTIgLTE0MjcgLTMyMyAtNzc3IC01ODMgLTE0MTcgLTU3OAotMTQyMSA0IC00IDc4NiAtMzMwIDE3MzggLTcyNCA5NTIgLTM5NSAxNzM0IC03MjEgMTczOCAtNzI1IDUgLTUgLTEzOCAtMzYxCi0zMTcgLTc5MiAtMzAyIC03MzAgLTMyMyAtNzg1IC0zMDUgLTc5MyAxMiAtNiAyMyAtNiAyOCAwIDQgNSAxMzYgMzE4IDI5Mgo2OTcgMTU2IDM3OCAyODYgNjg3IDI4OSA2ODcgMyAwIDE0NyAtMzI0IDMxOSAtNzIwIDE3MyAtMzk2IDMxNyAtNzIwIDMyMAotNzIwIDQgMCAxNCA2IDIzIDEzIDEzIDEwIC0yNCAxMDIgLTMwOCA3NTIgLTE3OCA0MDcgLTMyNCA3NDUgLTMyNCA3NTIgMCAxMgo0OSAxMzMgNjAgMTQ1IDMgNCAxNTggLTM1NiAzNDUgLTgwMCAxODYgLTQ0NCAzNDEgLTgxMCAzNDUgLTgxNSAzIC00IDE0IC0xCjI1IDYgMTcgMTMgLTMgNjMgLTM0NCA4NzQgbC0zNjEgODYxIDU2MSAxMzUxIGMzMDkgNzQ0IDU1OSAxMzU0IDU1OCAxMzU1IC0zCjMgLTMzODUgMTQwOCAtMzQ5NSAxNDUzIC02IDIgLTE0IC0yIC0xNyAtOXogbTE3NTcgLTc0NCBjOTQwIC0zOTAgMTcxMCAtNzE0CjE3MTIgLTcxOSA1IC0xMyAtMTE1MCAtMjgwMCAtMTE2MCAtMjc5OSAtMzAgNCAtMzQ0NiAxNDMwIC0zNDQ2IDE0MzggMCA2IDI2MAo2MzggNTc4IDE0MDQgNDM5IDEwNjAgNTgxIDEzOTIgNTkyIDEzODkgOCAtMiA3ODQgLTMyMyAxNzI0IC03MTN6IE00MjIwIDUyNDYKYy04NSAtMjQgLTE2NiAtODMgLTIxMiAtMTU1IC0zMSAtNTAgLTM1IC04MyAtMTMgLTEyMSA4IC0xNCAxNCAtNDggMTUgLTc2IDAKLTYwIDE1IC0xMTEgNDIgLTE0MCAxNiAtMTkgMTcgLTI2IDcgLTczIC0xMiAtNTkgLTMgLTgxIDM2IC04MSAxMyAwIDI2IC05IDMyCi0yMiA2IC0xMyAyNyAtNDEgNDYgLTYzIDMyIC0zNyAzOCAtNDAgNzYgLTM3IDM1IDMgNDcgMTEgNzcgNDggMjAgMjQgNDAgNDQKNDQgNDQgMTkgMCAxOSAtNTEgMSAtOTQgLTI3IC02MSAtNTQgLTc2IC0xNDggLTgzIC05MSAtNyAtMTIyIC0yMCAtMTgxIC03NwotODEgLTc2IC04NSAtMTAxIC00NiAtMjM5IDMwIC0xMDQgMzggLTEyMSA5OSAtMjE2IDkwIC0xMzkgMTEwIC0yNTEgNTkgLTMyNwotNTEgLTc1IC0xNTAgLTE3OCAtMjU2IC0yNjUgLTE4OCAtMTU2IC0yODggLTMyOSAtMjg4IC01MDAgMCAtOTEgMjggLTIyOSA1NwotMjc5IDM5IC02OSAxMTQgLTEzNSAxNzAgLTE1MSA2OSAtMjAgMTcwIC0xOCAyMTQgNCA0MSAyMCAxMDAgNzIgMTE2IDEwMiAxMQoxOCAxMiAxOCA0MCAtMTEgMzggLTQxIDc3IC02MCAxNTEgLTc0IDc4IC0xNCAxNTEgMyAyNTQgNTcgODEgNDIgMTI4IDkzIDE3MgoxODMgMjkgNjEgMzEgNzEgMjkgMTcwIC0zIDEyNCAtMjMgMTk1IC0xMDkgMzc5IC03MSAxNTQgLTcwIDE2MyAyNyAyNjggNzEgNzcKMTkwIDI0NSAyMzMgMzMxIDEzIDI2IDM4IDg5IDU1IDE0MSA0MSAxMjEgODAgMjA0IDEyMyAyNjQgbDM1IDQ4IDcgLTEwOSBjOAotMTE2IDAgLTE2NCAtMzYgLTIzNSAtMjEgLTQyIC03MiAtMjQxIC04MyAtMzI0IC01IC0zOCAtMSAtNzEgMTUgLTEzMCAyMCAtNjkKMjIgLTk0IDE3IC0yMTMgLTIgLTc0IC0xNSAtMjA1IC0yNyAtMjkyIC0xMyAtODYgLTIwIC0xNzIgLTE2IC0xOTAgMyAtMTkgMTkKLTU1IDM2IC04MSAzNiAtNTggNzUgLTY4IDE2NiAtNDQgNzYgMjEgMTgzIDIyIDIwOSAzIDE3IC0xMiAxNiAtMTQgLTE3IC0yNQotNDcgLTE2IC0xODQgLTMxIC0yODggLTMyIC00NyAwIC05MyAtNCAtMTA0IC04IC0xNyAtNiAtMTUgLTEwIDE1IC0zNiA2MCAtNTAKODcgLTU2IDI2MiAtNTcgMTY2IC0yIDIxMCA0IDIwMSAyNSAtMyA5IC01MiAxMyAtMTgzIDE0IC0xMDcgMSAtMTg3IDUgLTE5OAoxMiAtMTQgOCAtNyAxMCAzNiAxMSA4NCAwIDIzMSAyMCAyNzkgMzcgNDEgMTUgNjMgNDcgNDggNzEgLTI1IDQwIC0xNDggNTQKLTI0OSAyNyAtOTAgLTIzIC0xMTIgLTIwIC0xNDIgMTkgLTM4IDUwIC00MCA4NSAtMTQgMjY3IDMwIDIxNCAzMiA0NDEgNSA1MTEKLTE0IDM3IC0xNyA2MSAtMTIgMTA1IDkgODAgNTggMjY2IDg5IDMzOCAzMyA3NiA0MSAxNDAgMjkgMjM1IC01IDQxIC01IDkwIC0xCjEwOSA1IDIyIDQgMzggLTIgNDIgLTcgNCAtNiAyMSAxIDUxIDE2IDYyIC0xIDExOCAtNTEgMTczIC01MCA1NCAtMTA5IDc5Ci0yNjAgMTEwIC0xNTMgMzEgLTE5MCA0OCAtMjM3IDEwOSAtMzEgNDAgLTMwIDYyIDIgNDEgNDIgLTI4IDE0NiAtMiAxOTQgNDgKNzYgNzkgNjkgMjIwIC0xNSAyOTkgLTUzIDUwIC0yMDQgMTE4IC0yOTUgMTMzIC00NSA4IC0xMDUgMjEgLTEzMiAzMCAtNTggMTgKLTE0MyAxOCAtMjA2IDF6IG0tMzUgLTcyIGMtODEgLTQ5IC0xMTMgLTgwIC0xNDEgLTEzOSAtMjQgLTUwIC0yNCAtNTAgLTI0Ci0xNiAwIDI4IDExIDQ0IDY4IDEwMSA2MCA2MSAxMDEgODUgMTQ3IDg5IDYgMSAtMTcgLTE1IC01MCAtMzV6IG0zNDYgLTE2IGM5MAotNTUgMTIwIC0xMTggMTExIC0yMzcgLTYgLTg0IC0yNCAtOTEgLTI4IC0xMiAtNSAxMDEgLTIzIDE1MCAtNzMgMjAxIC0yNSAyNQotNTkgNTYgLTc2IDY5IC0yOCAyMCAtMjggMjIgLTYgMTUgMTQgLTQgNDYgLTIwIDcyIC0zNnogbS0xMTYgMyBjNzQgLTQzIDEzMgotMTA0IDE0NyAtMTU0IDggLTI4IDEyIC05NCAxMCAtMTk3IC0zIC0xNzcgNSAtMjE3IDYxIC0yOTkgNTggLTg0IDY5IC0xMzcgNzAKLTM0MCAyIC0xNjYgMCAtMTgxIC0yNiAtMjY2IC0zNyAtMTIxIC05MCAtMjI4IC0xNzYgLTM2MCAtNDAgLTYwIC05NyAtMTYwCi0xMjcgLTIyMCAtNTUgLTExMCAtNTYgLTExMiAtNjQgLTIzMCAtMTEgLTE2MiAtNjEgLTMxMyAtMTQzIC00MzUgLTc1IC0xMTAKLTIxOSAtMjYwIC0yNTAgLTI2MCAtNSAwIC03IC05IC00IC0yMCA0IC0xNyAxIC0xOSAtMjEgLTE0IC02OSAxNSAtOTMgMjgKLTEzNSA3MyAtNTggNjIgLTc1IDk2IC05MyAxODggLTQ3IDI0NyAyNiA0MTggMjY3IDYxOSAxMTQgOTUgMjM0IDIyNiAyNjggMjkxCjQ1IDg5IDIxIDIwMSAtNzUgMzUwIC02OSAxMDYgLTEyNCAyNzEgLTExMCAzMjYgMTYgNjcgMTEwIDEzNyAxODMgMTM3IDY0IDEKMTIxIDE1IDE1MiAzOCAzNSAyNiA3MyA5NiA3MyAxMzUgMCAzMiAtNTEgMTQ1IC04MCAxNzkgLTEzIDE1IC0xMiAxOSAyIDMzIDIyCjIyIDIwIDgwIC00IDEzMyAtMTYgMzYgLTIzIDQyIC00OSA0MiAtMzIgMCAtNjEgLTMwIC02MSAtNjQgMCAtMzIgLTEyIC0xMAotMjEgNDAgLTUgMjYgLTE2IDU2IC0yNSA2NiAtMjIgMjQgLTgyIDM0IC0xMDcgMTkgLTE4IC0xMiAtMTkgLTExIC0xMyAxNiAxNwo2OSA4NSAxMzIgMTk2IDE4MiA2MSAyOCA5NiAyNiAxNTUgLTh6IG0zMjMgLTUzIGMxMTMgLTYxIDE0MiAtOTcgMTQyIC0xNzYgMAotOTkgLTQyIC0xNTIgLTEzMiAtMTY2IC0zMCAtNSAtNDYgLTMgLTU2IDggLTE2IDE2IC0xNyAyOCAtMTIgMTY2IDMgOTggLTEyCjE0NSAtNjMgMTk5IGwtMzIgMzQgMzAgLTcgYzE3IC00IDcyIC0zMCAxMjMgLTU4eiBtLTU4OSAtMTc3IGM3IC01IDE3IC0yOSAyMgotNTUgMTIgLTY0IDM1IC05NiA2OSAtOTYgMjMgMCAyNyAtMyAyMyAtMjQgLTQgLTE3IDUgLTM1IDMwIC02MiA1MSAtNTcgNTQKLTkwIDE0IC0xMzUgLTQ2IC01MiAtNzQgLTU4IC0xMDMgLTIzIC0xNCAxNiAtMzMgNDYgLTQ0IDY3IC0xNiAyOCAtMjcgMzcgLTQ2CjM3IC0yMyAwIC0yNSAzIC0yMCAyNiAyMCA3OCAxOSA4NCAtOSAxMTQgLTIyIDIzIC0yOSA0MiAtMzMgODMgLTQgNDggLTIgNTQKMTkgNjQgMjkgMTQgNTkgMTYgNzggNHogbTE2MSAtODcgYzYgLTE0IDEwIC0zOSAxMCAtNTYgMCAtMjMgLTQgLTI5IC0xNiAtMjQKLTkgMyAtMTcgNiAtMTkgNiAtOCAwIC0xNyA3MCAtMTEgODUgOCAyMyAyNSAxOCAzNiAtMTF6IG0zMzYgLTE4MSBjNDEgLTU0CjEwMCAtODEgMjQ5IC0xMTMgMTk5IC00MyAyNTkgLTc4IDI4NiAtMTY4IDE2IC01NCAwIC0xMDMgLTY5IC0yMDggLTY0IC05OAotODcgLTE0NiAtMTQyIC0zMDUgLTI5IC04NCAtNTUgLTEzNCAtMTIyIC0yMzUgLTQ3IC03MSAtMTE1IC0xNjAgLTE1MiAtMTk4Ci0xMDMgLTEwNyAtMTA2IC0xNDUgLTI2IC0zMDYgNzYgLTE1MiAxMDEgLTIzOCAxMDMgLTM2MSAyIC05OCAwIC0xMDcgLTI4Ci0xNjIgLTM5IC03NyAtOTUgLTEzMSAtMTcyIC0xNjcgLTkxIC00MyAtMTUwIC01NCAtMjE3IC00MCAtNjYgMTQgLTExMyA0MwotMTQ0IDkyIC0yOSA0MyAtNTMgNDEgLTcxIC03IC0yMiAtNjIgLTEyNiAtMTMyIC0xODEgLTEyMyAtMTYgMiAtMTAgMTEgMzQgNDUKNjUgNTAgMTYzIDE2NiAyMjcgMjY5IDcxIDExNCAxMjAgMjcxIDEyOSA0MTQgNyAxMTMgOCAxMTcgNjAgMjIwIDI5IDU4IDg3CjE1OSAxMzAgMjI1IDExNiAxODEgMTQ5IDI1NCAxOTAgNDI1IDIwIDg2IDIxIDEwOSAxNSAyNTAgLTggMTc1IC0yNiAyNTEgLTc3CjMyMSAtNDEgNTYgLTU3IDEwMyAtNTYgMTU5IDAgMjUgMyAzNiA1IDI1IDMgLTExIDE2IC0zNSAyOSAtNTJ6IE02MzQwIDkyNSBsMAotODY1IDIzIDAgYzEyIDAgMTQ0IDE2IDI5MiAzNSAzMTggNDEgNDMzIDcxIDU3NCAxNDggMTIxIDY3IDI0MyAxOTIgMjk2IDMwMgo0NyA5OSA3NSAyMTcgNzUgMzEzIDAgMTM3IC03MSAzNDEgLTE1OSA0NjEgLTU2IDc2IC0xNjUgMTgzIC0yMzEgMjI4IC01OSA0MAotMTkyIDEwNiAtMjU1IDEyNiAtNDUgMTUgLTU3MiAxMTcgLTYwMiAxMTcgLTEwIDAgLTEzIC0xODAgLTEzIC04NjV6IE0zMDA1CjE3NDAgYy0zNjIgLTM4IC02NjMgLTI0NyAtNzkwIC01NDkgLTQwIC05NSAtNjkgLTI3MSAtNjEgLTM3MSAxNiAtMTkxIDEzNwotNDMzIDI4OCAtNTc2IDE5MiAtMTgxIDM3NSAtMjQwIDcxOCAtMjMzIGwxNjUgNCAzOSAzMCAzOSAzMCAtNiAxNzAgYy00IDkzCi03IDI3MCAtNyAzOTMgbDAgMjIyIC0yNyAwIC0yNiAwIDYgLTM4NCA2IC0zODQgLTM0IC0xNiBjLTUwIC0yNCAtMzM5IC0yMgotNDYwIDMgLTI0MiA1MCAtNDM5IDIwOSAtNTYwIDQ1MSAtOTAgMTc5IC0xMTEgMzEyIC03NyA0ODYgNjQgMzIyIDI3MyA1MzkKNjE3IDYzOSAxMzYgMzkgMjU3IDUwIDM1OCAzMSAxMDUgLTIwIDEwNCAtMjAgMTEwIDQgNCAxNiAtMiAyMiAtMzEgMjkgLTQ3IDEzCi0xNjIgMzEgLTE4MiAzMCAtOCAtMSAtNDcgLTUgLTg1IC05eiBNMCAxMDEwIGwwIC03MDAgMzYgLTcxIGM0NyAtOTQgMTAyCi0xNTIgMTgyIC0xOTEgNTUgLTI4IDc4IC0zMyAxNTYgLTM2IDc1IC0zIDEwMSAwIDE0OSAxOCA3NCAyOCAxNjMgMTEwIDIwNQoxODggbDMyIDYwIDAgNzE2IDAgNzE2IC0yNSAwIC0yNSAwIDAgLTcxMiAwIC03MTMgLTI5IC01MSBjLTM4IC02NiAtMTE5IC0xMzgKLTE3OCAtMTU4IC0yNiAtOSAtNzcgLTE2IC0xMTQgLTE2IC0xMzIgMCAtMjM1IDYzIC0zMDAgMTgyIGwtMzQgNjMgLTUgNzAwIC01CjcwMCAtMjIgMyAtMjMgMyAwIC03MDF6IE03NzkwIDg3NSBsMCAtODM1IDQ0NiAwIDQ0NSAwIC0zIDIzIC0zIDIyIC00MTcgMwotNDE4IDIgMCAzNjAgMCAzNjAgMjQwIDAgMjQwIDAgMCAyNSAwIDI1IC0yNDAgMCBjLTIwNyAwIC0yNDAgMiAtMjQwIDE1IDAgMTMKMzMgMTUgMjQwIDE1IGwyNDAgMCAwIDI1IDAgMjUgLTI0MCAwIC0yNDAgMCAwIDM2MCAwIDM2MCA0MTggMiBjNDA5IDMgNDE3IDMKNDE3IDIzIDAgMjAgLTggMjAgLTQ0MiAyMyBsLTQ0MyAyIDAgLTgzNXogTTEyNzUgMTY5NCBjLTE2IC0yIC01NCAtNyAtODIgLTEwCmwtNTMgLTUgMCAtODI1IDAgLTgyNCAyNSAwIDI1IDAgMCA4MDQgMCA4MDQgMTE4IDcgYzIyMCAxNCA0MDMgLTExIDUxMyAtNzIKNjYgLTM2IDEyNCAtMTAwIDE2MiAtMTgxIDMwIC02MiAzMiAtNzUgMzIgLTE3MiAwIC05NCAtMyAtMTExIC0yOCAtMTYxIC01MgotMTA3IC0xNTggLTE3OSAtMjkyIC0xOTkgLTM5IC01IC0xNDEgLTEwIC0yMjcgLTEwIGwtMTU4IDAgMCAtNDEwIDAgLTQxMCAyNQowIDI1IDAgMCAzODUgMCAzODUgMTI5IDAgYzI1OSAwIDM4MCAzNyA0NzkgMTQ1IDc1IDgyIDk2IDE0NCA5NyAyODAgMCAxMDYgLTEKMTEzIC0zNyAxODcgLTk0IDE5OCAtMjUzIDI3NyAtNTY4IDI4MyAtODUgMiAtMTY4IDEgLTE4NSAtMXogTTM3NzUgMTY3MSBjLTQ3Ci00IC03MCAtMTAgLTY5IC0xOCAxIC03IDIgLTM3MSAzIC04MDkgbDEgLTc5NSAyMyAzIDIyIDMgMyA3ODIgMiA3ODEgODggOApjMTA4IDkgMzE1IC0yIDQwMyAtMjAgMTgzIC0zOSAyODAgLTE1MCAzMTAgLTM1MCAyNSAtMTY3IC01OCAtMzE2IC0yMDkgLTM3NgotNTEgLTIxIC03OSAtMjQgLTI4MiAtMjkgLTIyNCAtNiAtMjI1IC02IC0yMjggLTI4IC0zIC0yMiAwIC0yMyA2MSAtMjMgbDY0IDAKMjU5IC0zOTAgYzE0MiAtMjE0IDI2MiAtMzkwIDI2NSAtMzkwIDMgMCAxMiA2IDIxIDEzIDE0IDEwIC0xNiA1OSAtMjMzIDM4NwotMTM2IDIwNiAtMjQ0IDM3NyAtMjM4IDM3OCA1IDIgMTYgMiAyMyAtMSA3IC0zIDEyMCAtMTY5IDI1MSAtMzY5IDEzMSAtMTk5CjI0NCAtMzcwIDI1MSAtMzc4IDEyIC0xMiAxNiAtMTIgMzAgMSAxNCAxNSAtNyA1MCAtMjI0IDM4MCBsLTIzOCAzNjQgMzUgMwpjMTYyIDEyIDI3MiA1MyAzNDAgMTI3IDUxIDU1IDc3IDEwOCA5NyAxOTIgMTMgNTcgMTQgODEgNCAxNDggLTI4IDE5NCAtMTE5CjMxMyAtMjg0IDM3MSAtOTkgMzYgLTM0NyA1MSAtNTUxIDM1eiBNMzIwMCA0OTAgbDAgLTQwMCAyNSAwIDI1IDAgMCA0MDAgMAo0MDAgLTI1IDAgLTI1IDAgMCAtNDAweiIvPgo8L2c+Cjwvc3ZnPg==" alt="UPGRADE" /></div>
+      <ul class="footer-links">
+        <li><a href="https://www.instagram.com/upgrade.lpg" target="_blank" rel="noopener">Instagram</a></li>
+        <li><a href="https://t.me/upgrade_lpg_bot" target="_blank" rel="noopener">Telegram</a></li>
+      </ul>
+      <div class="footer-copy">© 2025 UPGRADE. Все права защищены.</div>
+    </div>
+  </footer>
+
+  <script>
+    /* ── Category filter (client-side for static pages) ── */
+    const filters = document.getElementById('filters');
+    const grid = document.getElementById('articlesGrid');
+
+    filters.addEventListener('click', (e) => {
+      const btn = e.target.closest('.filter-btn');
+      if (!btn) return;
+
+      filters.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const cat = btn.dataset.cat;
+      grid.querySelectorAll('.article-card').forEach(card => {
+        if (cat === 'all' || card.dataset.cat === cat) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+
+    /* ── Theme ── */
+    const themeToggle = document.getElementById('themeToggle');
+    const stored = localStorage.getItem('theme');
+    if (stored) document.documentElement.dataset.theme = stored;
+    themeToggle.textContent = document.documentElement.dataset.theme === 'dark' ? '🌙' : '☀️';
+    themeToggle.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem('theme', next);
+      themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
+    });
+
+    /* ── Mobile menu ── */
+    document.getElementById('mobileToggle').addEventListener('click', () => {
+      document.getElementById('navLinks').classList.toggle('open');
+    });
+
+    /* ── Nav scroll ── */
+    const nav = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 10);
+    }, { passive: true });
+  </script>
+</body>
+</html>

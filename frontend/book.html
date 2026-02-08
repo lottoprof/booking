@@ -1,175 +1,1607 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Онлайн запись на услуги">
-    <title>Онлайн запись</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/css/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Онлайн-запись — UPGRADE | Студия аппаратной эстетики</title>
+  <meta name="description" content="Запишитесь онлайн на LPG-массаж, прессотерапию, обёртывание в студии UPGRADE. Выберите удобную дату и время.">
+  <meta property="og:title" content="Онлайн-запись — UPGRADE">
+  <meta property="og:description" content="Запишитесь онлайн на аппаратный массаж. Удобный выбор даты и времени.">
+  <meta property="og:url" content="https://upgrade-studio.ru/book.html">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════
+       DESIGN TOKENS
+       ═══════════════════════════════════════ */
+    :root {
+      --teal:        #2BB5B8;
+      --teal-light:  #5DD3D5;
+      --teal-dark:   #1E8E90;
+      --teal-subtle: #E8F7F7;
+      --success:     #34C77B;
+      --danger:      #E74C5E;
+      --font-display:'Cormorant Garamond', Georgia, serif;
+      --font-body:   'Manrope', system-ui, sans-serif;
+    }
+
+    [data-theme="light"] {
+      --bg-primary:    #FFFFFF;
+      --bg-secondary:  #F8FBFB;
+      --bg-card:       #FFFFFF;
+      --text-primary:  #1A2B2B;
+      --text-secondary:#5A7070;
+      --text-muted:    #8FA5A5;
+      --border:        #E0EDED;
+      --border-light:  #F0F5F5;
+      --shadow-sm:     0 1px 3px rgba(43,181,184,0.06);
+      --shadow-md:     0 8px 32px rgba(43,181,184,0.08);
+      --shadow-lg:     0 16px 48px rgba(43,181,184,0.12);
+      --nav-bg:        rgba(255,255,255,0.85);
+      --step-done-bg:  var(--teal-subtle);
+      --step-done-text:var(--teal-dark);
+    }
+
+    [data-theme="dark"] {
+      --bg-primary:    #0F1A1A;
+      --bg-secondary:  #162222;
+      --bg-card:       #1A2D2D;
+      --text-primary:  #E8F0F0;
+      --text-secondary:#9BB5B5;
+      --text-muted:    #6A8585;
+      --border:        #253838;
+      --border-light:  #1E3030;
+      --shadow-sm:     0 1px 3px rgba(0,0,0,0.2);
+      --shadow-md:     0 8px 32px rgba(0,0,0,0.3);
+      --shadow-lg:     0 16px 48px rgba(0,0,0,0.4);
+      --nav-bg:        rgba(15,26,26,0.9);
+      --step-done-bg:  rgba(43,181,184,0.12);
+      --step-done-text:var(--teal-light);
+    }
+
+    /* ═══════════════════════════════════════
+       RESET & BASE
+       ═══════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      font-family: var(--font-body);
+      font-weight: 400;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      transition: background 0.4s ease, color 0.4s ease;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ═══════════════════════════════════════
+       NAVIGATION (shared with other pages)
+       ═══════════════════════════════════════ */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 0 2rem;
+      height: 72px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--nav-bg);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-light);
+      transition: height 0.3s ease, box-shadow 0.3s ease;
+    }
+    .nav.scrolled { height: 60px; box-shadow: var(--shadow-sm); }
+    .nav-logo { display: flex; align-items: center; text-decoration: none; line-height: 1; }
+    .nav-logo img { height: 48px; width: auto; transition: height 0.3s ease; }
+    .nav.scrolled .nav-logo img { height: 38px; }
+
+    .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
+    .nav-links a {
+      font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);
+      text-decoration: none; letter-spacing: 0.03em; text-transform: uppercase;
+      transition: color 0.3s ease; position: relative;
+    }
+    .nav-links a:hover { color: var(--teal); }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1.5px;
+      background: var(--teal); transition: width 0.3s ease;
+    }
+    .nav-links a:hover::after { width: 100%; }
+
+    .theme-toggle {
+      background: none; border: 1px solid var(--border); border-radius: 50%;
+      width: 36px; height: 36px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; font-size: 1rem;
+      color: var(--text-secondary); transition: all 0.3s ease;
+    }
+    .theme-toggle:hover { border-color: var(--teal); color: var(--teal); }
+
+    .mobile-toggle {
+      display: none; background: none; border: none; cursor: pointer;
+      width: 36px; height: 36px; position: relative;
+    }
+    .mobile-toggle span {
+      display: block; width: 20px; height: 1.5px; background: var(--text-primary);
+      position: absolute; left: 8px; transition: all 0.3s ease;
+    }
+    .mobile-toggle span:nth-child(1) { top: 12px; }
+    .mobile-toggle span:nth-child(2) { top: 17px; }
+    .mobile-toggle span:nth-child(3) { top: 22px; }
+
+    @media (max-width: 768px) {
+      .nav { padding: 0 1rem; }
+      .mobile-toggle { display: block; }
+      .nav-links {
+        position: fixed; top: 72px; left: 0; right: 0;
+        background: var(--bg-primary); flex-direction: column;
+        padding: 1.5rem; gap: 1.25rem; border-bottom: 1px solid var(--border);
+        transform: translateY(-120%); transition: transform 0.4s ease;
+      }
+      .nav-links.open { transform: translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════
+       BOOKING WIZARD LAYOUT
+       ═══════════════════════════════════════ */
+    .booking-page {
+      flex: 1;
+      padding-top: 72px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .booking-container {
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 3rem;
+      flex: 1;
+    }
+
+    /* Page header */
+    .booking-title {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      font-weight: 500;
+      text-align: center;
+      margin-bottom: 2rem;
+      color: var(--text-primary);
+    }
+    .booking-title span { color: var(--teal); }
+
+    /* ═══════════════════════════════════════
+       STEP PROGRESS BAR
+       ═══════════════════════════════════════ */
+    .step-inputs { display: none; }
+
+    .progress {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+
+    .progress-step {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+    }
+
+    .progress-dot {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--bg-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 600;
+      color: var(--text-muted);
+      transition: all 0.4s ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    .progress-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      transition: color 0.4s ease;
+      text-align: center;
+    }
+
+    /* Line between dots */
+    .progress-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 18px;
+      left: calc(50% + 22px);
+      width: calc(100% - 44px);
+      height: 2px;
+      background: var(--border);
+      z-index: 1;
+      transition: background 0.4s ease;
+    }
+
+    /* Active step */
+    .progress-step.active .progress-dot {
+      border-color: var(--teal);
+      background: var(--teal);
+      color: #fff;
+      box-shadow: 0 0 0 4px rgba(43,181,184,0.15);
+    }
+    .progress-step.active .progress-label { color: var(--teal); }
+
+    /* Done step */
+    .progress-step.done .progress-dot {
+      border-color: var(--teal);
+      background: var(--step-done-bg);
+      color: var(--step-done-text);
+    }
+    .progress-step.done .progress-label { color: var(--text-secondary); }
+    .progress-step.done::after { background: var(--teal); }
+
+    @media (max-width: 480px) {
+      .progress-label { font-size: 0.6rem; }
+      .progress-dot { width: 30px; height: 30px; font-size: 0.7rem; }
+      .progress-step:not(:last-child)::after { top: 15px; left: calc(50% + 19px); width: calc(100% - 38px); }
+    }
+
+    /* ═══════════════════════════════════════
+       WIZARD PAGES
+       ═══════════════════════════════════════ */
+    .wizard-page {
+      display: none;
+      animation: fadeSlideIn 0.4s ease forwards;
+    }
+    .wizard-page.active { display: block; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-heading {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 500;
+      margin-bottom: 0.4rem;
+      color: var(--text-primary);
+    }
+    .page-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ═══════════════════════════════════════
+       SERVICE CARDS
+       ═══════════════════════════════════════ */
+    .service-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    .service-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.1rem 1.25rem;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      background: var(--bg-card);
+      position: relative;
+    }
+    .service-card:hover {
+      border-color: var(--teal);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+    .service-card.selected {
+      border-color: var(--teal);
+      background: var(--teal-subtle);
+    }
+    [data-theme="dark"] .service-card.selected { background: rgba(43,181,184,0.1); }
+
+    .service-card .icon {
+      width: 44px; height: 44px; min-width: 44px;
+      border-radius: 10px;
+      background: var(--teal-subtle);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+    }
+    [data-theme="dark"] .service-card .icon { background: rgba(43,181,184,0.12); }
+
+    .service-info { flex: 1; min-width: 0; }
+    .service-name {
+      font-weight: 600; font-size: 0.95rem;
+      color: var(--text-primary);
+      margin-bottom: 0.15rem;
+    }
+    .service-meta {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    .service-price {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--teal);
+      white-space: nowrap;
+    }
+    .service-card .check-mark {
+      position: absolute; top: 10px; right: 10px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--teal); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700;
+      opacity: 0; transform: scale(0.5);
+      transition: all 0.25s ease;
+    }
+    .service-card.selected .check-mark { opacity: 1; transform: scale(1); }
+
+    /* ═══════════════════════════════════════
+       CALENDAR
+       ═══════════════════════════════════════ */
+    .calendar {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .calendar-month {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    .calendar-nav {
+      display: flex; gap: 0.5rem;
+    }
+    .calendar-nav button {
+      width: 34px; height: 34px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg-primary);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary); font-size: 1rem;
+      transition: all 0.2s ease;
+    }
+    .calendar-nav button:hover:not(:disabled) {
+      border-color: var(--teal); color: var(--teal);
+    }
+    .calendar-nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .calendar-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      margin-bottom: 0.4rem;
+    }
+    .calendar-weekdays span {
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      padding: 0.4rem 0;
+    }
+
+    .calendar-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--text-primary);
+      position: relative;
+    }
+    .cal-day:hover:not(.disabled):not(.empty) {
+      background: var(--teal-subtle);
+      color: var(--teal-dark);
+    }
+    [data-theme="dark"] .cal-day:hover:not(.disabled):not(.empty) {
+      background: rgba(43,181,184,0.12);
+      color: var(--teal-light);
+    }
+
+    .cal-day.today::after {
+      content: '';
+      position: absolute;
+      bottom: 4px;
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+
+    .cal-day.selected {
+      background: var(--teal);
+      color: #fff;
+      font-weight: 600;
+    }
+    .cal-day.selected::after { background: #fff; }
+
+    .cal-day.disabled {
+      color: var(--text-muted);
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .cal-day.empty { cursor: default; }
+
+    /* ═══════════════════════════════════════
+       TIME SLOTS
+       ═══════════════════════════════════════ */
+    .time-section { margin-top: 1.75rem; }
+
+    .time-period {
+      margin-bottom: 1.25rem;
+    }
+    .time-period-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .time-period-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-light);
+    }
+
+    .time-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .time-slot {
+      padding: 0.7rem 0.25rem;
+      text-align: center;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+      background: var(--bg-card);
+    }
+    .time-slot:hover:not(.disabled) {
+      border-color: var(--teal);
+      color: var(--teal);
+      background: var(--teal-subtle);
+    }
+    [data-theme="dark"] .time-slot:hover:not(.disabled) {
+      background: rgba(43,181,184,0.1);
+    }
+    .time-slot.selected {
+      border-color: var(--teal);
+      background: var(--teal);
+      color: #fff;
+    }
+    .time-slot.disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      background: var(--bg-secondary);
+    }
+
+    .time-empty {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* ═══════════════════════════════════════
+       SPECIALIST CARDS
+       ═══════════════════════════════════════ */
+    .specialist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .specialist-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.5rem 1rem;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      background: var(--bg-card);
+      text-align: center;
+    }
+    .specialist-card:hover {
+      border-color: var(--teal);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-2px);
+    }
+    .specialist-card.selected {
+      border-color: var(--teal);
+      background: var(--teal-subtle);
+    }
+    [data-theme="dark"] .specialist-card.selected { background: rgba(43,181,184,0.1); }
+
+    .specialist-avatar {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--teal-subtle), var(--teal-light));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: var(--teal-dark);
+      font-family: var(--font-display); font-weight: 600;
+    }
+    .specialist-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+    }
+    .specialist-role {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: -0.35rem;
+    }
+
+    /* ═══════════════════════════════════════
+       CONTACT FORM & SUMMARY
+       ═══════════════════════════════════════ */
+    .summary-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0.55rem 0;
+    }
+    .summary-row:not(:last-child) {
+      border-bottom: 1px solid var(--border-light);
+    }
+    .summary-label {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+    .summary-value {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      text-align: right;
+    }
+    .summary-row.total .summary-value {
+      color: var(--teal);
+      font-size: 1.1rem;
+    }
+
+    .form-field {
+      margin-bottom: 1rem;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.02em;
+    }
+    .form-input {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    .form-input::placeholder { color: var(--text-muted); }
+    .form-input:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(43,181,184,0.1);
+    }
+    .form-input:user-valid:not(:placeholder-shown) { border-color: var(--success); }
+    .form-input:user-invalid:not(:placeholder-shown) { border-color: var(--danger); }
+    .form-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+
+    /* ═══════════════════════════════════════
+       NAVIGATION BUTTONS
+       ═══════════════════════════════════════ */
+    .wizard-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2rem;
+      gap: 1rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem 1.5rem;
+      border-radius: 10px;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-decoration: none;
+      border: none;
+      outline: none;
+    }
+
+    .btn-back {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text-secondary);
+    }
+    .btn-back:hover { border-color: var(--teal); color: var(--teal); }
+
+    .btn-next {
+      background: var(--teal);
+      color: #fff;
+      margin-left: auto;
+    }
+    .btn-next:hover { background: var(--teal-dark); transform: translateY(-1px); }
+    .btn-next:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-confirm {
+      background: var(--success);
+      color: #fff;
+      width: 100%;
+      justify-content: center;
+      padding: 1rem;
+      font-size: 1rem;
+      border-radius: 12px;
+    }
+    .btn-confirm:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ═══════════════════════════════════════
+       LOADING & SKELETON
+       ═══════════════════════════════════════ */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border-light) 25%, var(--border) 50%, var(--border-light) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-card {
+      height: 72px;
+      margin-bottom: 0.75rem;
+    }
+
+    .loading-overlay {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1rem;
+      gap: 1rem;
+    }
+
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--teal);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* ═══════════════════════════════════════
+       SUCCESS STATE
+       ═══════════════════════════════════════ */
+    .success-page {
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+    .success-icon {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: var(--teal-subtle);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2.5rem;
+      animation: popIn 0.5s ease;
+    }
+    [data-theme="dark"] .success-icon { background: rgba(43,181,184,0.15); }
+    @keyframes popIn {
+      0%   { transform: scale(0); opacity: 0; }
+      60%  { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .success-title {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+    .success-subtitle {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-bottom: 2rem;
+    }
+    .success-details {
+      text-align: left;
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    /* ═══════════════════════════════════════
+       FOOTER (shared)
+       ═══════════════════════════════════════ */
+    .footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-light);
+      padding: 1.5rem 2rem;
+      margin-top: auto;
+    }
+    .footer-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 1rem;
+    }
+    .footer-logo { display: flex; align-items: center; line-height: 1; }
+    .footer-logo img { height: 36px; width: auto; }
+    .footer-links { display: flex; gap: 2rem; list-style: none; }
+    .footer-links a {
+      font-size: 0.8rem; color: var(--text-secondary);
+      text-decoration: none; transition: color 0.3s ease;
+    }
+    .footer-links a:hover { color: var(--teal); }
+    .footer-copy { font-size: 0.75rem; color: var(--text-muted); width: 100%; text-align: center; margin-top: 0.75rem; }
+
+    @media (max-width: 768px) {
+      .booking-title { font-size: 1.7rem; }
+      .page-heading { font-size: 1.35rem; }
+      .booking-container { padding: 1.25rem 1rem 2rem; }
+      .footer { padding: 1.25rem 1rem; }
+      .footer-inner { justify-content: center; text-align: center; }
+      .footer-links { justify-content: center; }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.15s !important;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div id="booking-app" class="max-w-lg mx-auto px-4 py-6">
+<body>
 
-        <!-- Progress Bar -->
-        <div class="progress-bar" id="progress-bar">
-            <div class="progress-step" data-step="1"></div>
-            <div class="progress-step" data-step="2"></div>
-            <div class="progress-step" data-step="3"></div>
-            <div class="progress-step" data-step="4"></div>
-            <div class="progress-step" data-step="5"></div>
+  <!-- ─── NAVIGATION ─── -->
+  <nav class="nav" id="navbar">
+    <a href="/" class="nav-logo"><img src="data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKIHdpZHRoPSI4NjgiIGhlaWdodD0iNTk1IiB2aWV3Qm94PSIwIDAgODY4IDU5NSIKIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiPgo8ZyBjbGFzcz0ibG9nby1wYXRocyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCw1OTUpIHNjYWxlKDAuMSwtMC4xKSIKZmlsbD0iIzJCQjVCOCIgc3Ryb2tlPSJub25lIj4KPHBhdGggZD0iTTMwNzcgNTkzOCBjLTIgLTcgLTI2OSAtNjQ5IC01OTIgLTE0MjcgLTMyMyAtNzc3IC01ODMgLTE0MTcgLTU3OAotMTQyMSA0IC00IDc4NiAtMzMwIDE3MzggLTcyNCA5NTIgLTM5NSAxNzM0IC03MjEgMTczOCAtNzI1IDUgLTUgLTEzOCAtMzYxCi0zMTcgLTc5MiAtMzAyIC03MzAgLTMyMyAtNzg1IC0zMDUgLTc5MyAxMiAtNiAyMyAtNiAyOCAwIDQgNSAxMzYgMzE4IDI5Mgo2OTcgMTU2IDM3OCAyODYgNjg3IDI4OSA2ODcgMyAwIDE0NyAtMzI0IDMxOSAtNzIwIDE3MyAtMzk2IDMxNyAtNzIwIDMyMAotNzIwIDQgMCAxNCA2IDIzIDEzIDEzIDEwIC0yNCAxMDIgLTMwOCA3NTIgLTE3OCA0MDcgLTMyNCA3NDUgLTMyNCA3NTIgMCAxMgo0OSAxMzMgNjAgMTQ1IDMgNCAxNTggLTM1NiAzNDUgLTgwMCAxODYgLTQ0NCAzNDEgLTgxMCAzNDUgLTgxNSAzIC00IDE0IC0xCjI1IDYgMTcgMTMgLTMgNjMgLTM0NCA4NzQgbC0zNjEgODYxIDU2MSAxMzUxIGMzMDkgNzQ0IDU1OSAxMzU0IDU1OCAxMzU1IC0zCjMgLTMzODUgMTQwOCAtMzQ5NSAxNDUzIC02IDIgLTE0IC0yIC0xNyAtOXogbTE3NTcgLTc0NCBjOTQwIC0zOTAgMTcxMCAtNzE0CjE3MTIgLTcxOSA1IC0xMyAtMTE1MCAtMjgwMCAtMTE2MCAtMjc5OSAtMzAgNCAtMzQ0NiAxNDMwIC0zNDQ2IDE0MzggMCA2IDI2MAo2MzggNTc4IDE0MDQgNDM5IDEwNjAgNTgxIDEzOTIgNTkyIDEzODkgOCAtMiA3ODQgLTMyMyAxNzI0IC03MTN6IE00MjIwIDUyNDYKYy04NSAtMjQgLTE2NiAtODMgLTIxMiAtMTU1IC0zMSAtNTAgLTM1IC04MyAtMTMgLTEyMSA4IC0xNCAxNCAtNDggMTUgLTc2IDAKLTYwIDE1IC0xMTEgNDIgLTE0MCAxNiAtMTkgMTcgLTI2IDcgLTczIC0xMiAtNTkgLTMgLTgxIDM2IC04MSAxMyAwIDI2IC05IDMyCi0yMiA2IC0xMyAyNyAtNDEgNDYgLTYzIDMyIC0zNyAzOCAtNDAgNzYgLTM3IDM1IDMgNDcgMTEgNzcgNDggMjAgMjQgNDAgNDQKNDQgNDQgMTkgMCAxOSAtNTEgMSAtOTQgLTI3IC02MSAtNTQgLTc2IC0xNDggLTgzIC05MSAtNyAtMTIyIC0yMCAtMTgxIC03NwotODEgLTc2IC04NSAtMTAxIC00NiAtMjM5IDMwIC0xMDQgMzggLTEyMSA5OSAtMjE2IDkwIC0xMzkgMTEwIC0yNTEgNTkgLTMyNwotNTEgLTc1IC0xNTAgLTE3OCAtMjU2IC0yNjUgLTE4OCAtMTU2IC0yODggLTMyOSAtMjg4IC01MDAgMCAtOTEgMjggLTIyOSA1NwotMjc5IDM5IC02OSAxMTQgLTEzNSAxNzAgLTE1MSA2OSAtMjAgMTcwIC0xOCAyMTQgNCA0MSAyMCAxMDAgNzIgMTE2IDEwMiAxMQoxOCAxMiAxOCA0MCAtMTEgMzggLTQxIDc3IC02MCAxNTEgLTc0IDc4IC0xNCAxNTEgMyAyNTQgNTcgODEgNDIgMTI4IDkzIDE3MgoxODMgMjkgNjEgMzEgNzEgMjkgMTcwIC0zIDEyNCAtMjMgMTk1IC0xMDkgMzc5IC03MSAxNTQgLTcwIDE2MyAyNyAyNjggNzEgNzcKMTkwIDI0NSAyMzMgMzMxIDEzIDI2IDM4IDg5IDU1IDE0MSA0MSAxMjEgODAgMjA0IDEyMyAyNjQgbDM1IDQ4IDcgLTEwOSBjOAotMTE2IDAgLTE2NCAtMzYgLTIzNSAtMjEgLTQyIC03MiAtMjQxIC04MyAtMzI0IC01IC0zOCAtMSAtNzEgMTUgLTEzMCAyMCAtNjkKMjIgLTk0IDE3IC0yMTMgLTIgLTc0IC0xNSAtMjA1IC0yNyAtMjkyIC0xMyAtODYgLTIwIC0xNzIgLTE2IC0xOTAgMyAtMTkgMTkKLTU1IDM2IC04MSAzNiAtNTggNzUgLTY4IDE2NiAtNDQgNzYgMjEgMTgzIDIyIDIwOSAzIDE3IC0xMiAxNiAtMTQgLTE3IC0yNQotNDcgLTE2IC0xODQgLTMxIC0yODggLTMyIC00NyAwIC05MyAtNCAtMTA0IC04IC0xNyAtNiAtMTUgLTEwIDE1IC0zNiA2MCAtNTAKODcgLTU2IDI2MiAtNTcgMTY2IC0yIDIxMCA0IDIwMSAyNSAtMyA5IC01MiAxMyAtMTgzIDE0IC0xMDcgMSAtMTg3IDUgLTE5OAoxMiAtMTQgOCAtNyAxMCAzNiAxMSA4NCAwIDIzMSAyMCAyNzkgMzcgNDEgMTUgNjMgNDcgNDggNzEgLTI1IDQwIC0xNDggNTQKLTI0OSAyNyAtOTAgLTIzIC0xMTIgLTIwIC0xNDIgMTkgLTM4IDUwIC00MCA4NSAtMTQgMjY3IDMwIDIxNCAzMiA0NDEgNSA1MTEKLTE0IDM3IC0xNyA2MSAtMTIgMTA1IDkgODAgNTggMjY2IDg5IDMzOCAzMyA3NiA0MSAxNDAgMjkgMjM1IC01IDQxIC01IDkwIC0xCjEwOSA1IDIyIDQgMzggLTIgNDIgLTcgNCAtNiAyMSAxIDUxIDE2IDYyIC0xIDExOCAtNTEgMTczIC01MCA1NCAtMTA5IDc5Ci0yNjAgMTEwIC0xNTMgMzEgLTE5MCA0OCAtMjM3IDEwOSAtMzEgNDAgLTMwIDYyIDIgNDEgNDIgLTI4IDE0NiAtMiAxOTQgNDgKNzYgNzkgNjkgMjIwIC0xNSAyOTkgLTUzIDUwIC0yMDQgMTE4IC0yOTUgMTMzIC00NSA4IC0xMDUgMjEgLTEzMiAzMCAtNTggMTgKLTE0MyAxOCAtMjA2IDF6IG0tMzUgLTcyIGMtODEgLTQ5IC0xMTMgLTgwIC0xNDEgLTEzOSAtMjQgLTUwIC0yNCAtNTAgLTI0Ci0xNiAwIDI4IDExIDQ0IDY4IDEwMSA2MCA2MSAxMDEgODUgMTQ3IDg5IDYgMSAtMTcgLTE1IC01MCAtMzV6IG0zNDYgLTE2IGM5MAotNTUgMTIwIC0xMTggMTExIC0yMzcgLTYgLTg0IC0yNCAtOTEgLTI4IC0xMiAtNSAxMDEgLTIzIDE1MCAtNzMgMjAxIC0yNSAyNQotNTkgNTYgLTc2IDY5IC0yOCAyMCAtMjggMjIgLTYgMTUgMTQgLTQgNDYgLTIwIDcyIC0zNnogbS0xMTYgMyBjNzQgLTQzIDEzMgotMTA0IDE0NyAtMTU0IDggLTI4IDEyIC05NCAxMCAtMTk3IC0zIC0xNzcgNSAtMjE3IDYxIC0yOTkgNTggLTg0IDY5IC0xMzcgNzAKLTM0MCAyIC0xNjYgMCAtMTgxIC0yNiAtMjY2IC0zNyAtMTIxIC05MCAtMjI4IC0xNzYgLTM2MCAtNDAgLTYwIC05NyAtMTYwCi0xMjcgLTIyMCAtNTUgLTExMCAtNTYgLTExMiAtNjQgLTIzMCAtMTEgLTE2MiAtNjEgLTMxMyAtMTQzIC00MzUgLTc1IC0xMTAKLTIxOSAtMjYwIC0yNTAgLTI2MCAtNSAwIC03IC05IC00IC0yMCA0IC0xNyAxIC0xOSAtMjEgLTE0IC02OSAxNSAtOTMgMjgKLTEzNSA3MyAtNTggNjIgLTc1IDk2IC05MyAxODggLTQ3IDI0NyAyNiA0MTggMjY3IDYxOSAxMTQgOTUgMjM0IDIyNiAyNjggMjkxCjQ1IDg5IDIxIDIwMSAtNzUgMzUwIC02OSAxMDYgLTEyNCAyNzEgLTExMCAzMjYgMTYgNjcgMTEwIDEzNyAxODMgMTM3IDY0IDEKMTIxIDE1IDE1MiAzOCAzNSAyNiA3MyA5NiA3MyAxMzUgMCAzMiAtNTEgMTQ1IC04MCAxNzkgLTEzIDE1IC0xMiAxOSAyIDMzIDIyCjIyIDIwIDgwIC00IDEzMyAtMTYgMzYgLTIzIDQyIC00OSA0MiAtMzIgMCAtNjEgLTMwIC02MSAtNjQgMCAtMzIgLTEyIC0xMAotMjEgNDAgLTUgMjYgLTE2IDU2IC0yNSA2NiAtMjIgMjQgLTgyIDM0IC0xMDcgMTkgLTE4IC0xMiAtMTkgLTExIC0xMyAxNiAxNwo2OSA4NSAxMzIgMTk2IDE4MiA2MSAyOCA5NiAyNiAxNTUgLTh6IG0zMjMgLTUzIGMxMTMgLTYxIDE0MiAtOTcgMTQyIC0xNzYgMAotOTkgLTQyIC0xNTIgLTEzMiAtMTY2IC0zMCAtNSAtNDYgLTMgLTU2IDggLTE2IDE2IC0xNyAyOCAtMTIgMTY2IDMgOTggLTEyCjE0NSAtNjMgMTk5IGwtMzIgMzQgMzAgLTcgYzE3IC00IDcyIC0zMCAxMjMgLTU4eiBtLTU4OSAtMTc3IGM3IC01IDE3IC0yOSAyMgotNTUgMTIgLTY0IDM1IC05NiA2OSAtOTYgMjMgMCAyNyAtMyAyMyAtMjQgLTQgLTE3IDUgLTM1IDMwIC02MiA1MSAtNTcgNTQKLTkwIDE0IC0xMzUgLTQ2IC01MiAtNzQgLTU4IC0xMDMgLTIzIC0xNCAxNiAtMzMgNDYgLTQ0IDY3IC0xNiAyOCAtMjcgMzcgLTQ2CjM3IC0yMyAwIC0yNSAzIC0yMCAyNiAyMCA3OCAxOSA4NCAtOSAxMTQgLTIyIDIzIC0yOSA0MiAtMzMgODMgLTQgNDggLTIgNTQKMTkgNjQgMjkgMTQgNTkgMTYgNzggNHogbTE2MSAtODcgYzYgLTE0IDEwIC0zOSAxMCAtNTYgMCAtMjMgLTQgLTI5IC0xNiAtMjQKLTkgMyAtMTcgNiAtMTkgNiAtOCAwIC0xNyA3MCAtMTEgODUgOCAyMyAyNSAxOCAzNiAtMTF6IG0zMzYgLTE4MSBjNDEgLTU0CjEwMCAtODEgMjQ5IC0xMTMgMTk5IC00MyAyNTkgLTc4IDI4NiAtMTY4IDE2IC01NCAwIC0xMDMgLTY5IC0yMDggLTY0IC05OAotODcgLTE0NiAtMTQyIC0zMDUgLTI5IC04NCAtNTUgLTEzNCAtMTIyIC0yMzUgLTQ3IC03MSAtMTE1IC0xNjAgLTE1MiAtMTk4Ci0xMDMgLTEwNyAtMTA2IC0xNDUgLTI2IC0zMDYgNzYgLTE1MiAxMDEgLTIzOCAxMDMgLTM2MSAyIC05OCAwIC0xMDcgLTI4Ci0xNjIgLTM5IC03NyAtOTUgLTEzMSAtMTcyIC0xNjcgLTkxIC00MyAtMTUwIC01NCAtMjE3IC00MCAtNjYgMTQgLTExMyA0MwotMTQ0IDkyIC0yOSA0MyAtNTMgNDEgLTcxIC03IC0yMiAtNjIgLTEyNiAtMTMyIC0xODEgLTEyMyAtMTYgMiAtMTAgMTEgMzQgNDUKNjUgNTAgMTYzIDE2NiAyMjcgMjY5IDcxIDExNCAxMjAgMjcxIDEyOSA0MTQgNyAxMTMgOCAxMTcgNjAgMjIwIDI5IDU4IDg3CjE1OSAxMzAgMjI1IDExNiAxODEgMTQ5IDI1NCAxOTAgNDI1IDIwIDg2IDIxIDEwOSAxNSAyNTAgLTggMTc1IC0yNiAyNTEgLTc3CjMyMSAtNDEgNTYgLTU3IDEwMyAtNTYgMTU5IDAgMjUgMyAzNiA1IDI1IDMgLTExIDE2IC0zNSAyOSAtNTJ6IE02MzQwIDkyNSBsMAotODY1IDIzIDAgYzEyIDAgMTQ0IDE2IDI5MiAzNSAzMTggNDEgNDMzIDcxIDU3NCAxNDggMTIxIDY3IDI0MyAxOTIgMjk2IDMwMgo0NyA5OSA3NSAyMTcgNzUgMzEzIDAgMTM3IC03MSAzNDEgLTE1OSA0NjEgLTU2IDc2IC0xNjUgMTgzIC0yMzEgMjI4IC01OSA0MAotMTkyIDEwNiAtMjU1IDEyNiAtNDUgMTUgLTU3MiAxMTcgLTYwMiAxMTcgLTEwIDAgLTEzIC0xODAgLTEzIC04NjV6IE0zMDA1CjE3NDAgYy0zNjIgLTM4IC02NjMgLTI0NyAtNzkwIC01NDkgLTQwIC05NSAtNjkgLTI3MSAtNjEgLTM3MSAxNiAtMTkxIDEzNwotNDMzIDI4OCAtNTc2IDE5MiAtMTgxIDM3NSAtMjQwIDcxOCAtMjMzIGwxNjUgNCAzOSAzMCAzOSAzMCAtNiAxNzAgYy00IDkzCi03IDI3MCAtNyAzOTMgbDAgMjIyIC0yNyAwIC0yNiAwIDYgLTM4NCA2IC0zODQgLTM0IC0xNiBjLTUwIC0yNCAtMzM5IC0yMgotNDYwIDMgLTI0MiA1MCAtNDM5IDIwOSAtNTYwIDQ1MSAtOTAgMTc5IC0xMTEgMzEyIC03NyA0ODYgNjQgMzIyIDI3MyA1MzkKNjE3IDYzOSAxMzYgMzkgMjU3IDUwIDM1OCAzMSAxMDUgLTIwIDEwNCAtMjAgMTEwIDQgNCAxNiAtMiAyMiAtMzEgMjkgLTQ3IDEzCi0xNjIgMzEgLTE4MiAzMCAtOCAtMSAtNDcgLTUgLTg1IC05eiBNMCAxMDEwIGwwIC03MDAgMzYgLTcxIGM0NyAtOTQgMTAyCi0xNTIgMTgyIC0xOTEgNTUgLTI4IDc4IC0zMyAxNTYgLTM2IDc1IC0zIDEwMSAwIDE0OSAxOCA3NCAyOCAxNjMgMTEwIDIwNQoxODggbDMyIDYwIDAgNzE2IDAgNzE2IC0yNSAwIC0yNSAwIDAgLTcxMiAwIC03MTMgLTI5IC01MSBjLTM4IC02NiAtMTE5IC0xMzgKLTE3OCAtMTU4IC0yNiAtOSAtNzcgLTE2IC0xMTQgLTE2IC0xMzIgMCAtMjM1IDYzIC0zMDAgMTgyIGwtMzQgNjMgLTUgNzAwIC01CjcwMCAtMjIgMyAtMjMgMyAwIC03MDF6IE03NzkwIDg3NSBsMCAtODM1IDQ0NiAwIDQ0NSAwIC0zIDIzIC0zIDIyIC00MTcgMwotNDE4IDIgMCAzNjAgMCAzNjAgMjQwIDAgMjQwIDAgMCAyNSAwIDI1IC0yNDAgMCBjLTIwNyAwIC0yNDAgMiAtMjQwIDE1IDAgMTMKMzMgMTUgMjQwIDE1IGwyNDAgMCAwIDI1IDAgMjUgLTI0MCAwIC0yNDAgMCAwIDM2MCAwIDM2MCA0MTggMiBjNDA5IDMgNDE3IDMKNDE3IDIzIDAgMjAgLTggMjAgLTQ0MiAyMyBsLTQ0MyAyIDAgLTgzNXogTTEyNzUgMTY5NCBjLTE2IC0yIC01NCAtNyAtODIgLTEwCmwtNTMgLTUgMCAtODI1IDAgLTgyNCAyNSAwIDI1IDAgMCA4MDQgMCA4MDQgMTE4IDcgYzIyMCAxNCA0MDMgLTExIDUxMyAtNzIKNjYgLTM2IDEyNCAtMTAwIDE2MiAtMTgxIDMwIC02MiAzMiAtNzUgMzIgLTE3MiAwIC05NCAtMyAtMTExIC0yOCAtMTYxIC01MgotMTA3IC0xNTggLTE3OSAtMjkyIC0xOTkgLTM5IC01IC0xNDEgLTEwIC0yMjcgLTEwIGwtMTU4IDAgMCAtNDEwIDAgLTQxMCAyNQowIDI1IDAgMCAzODUgMCAzODUgMTI5IDAgYzI1OSAwIDM4MCAzNyA0NzkgMTQ1IDc1IDgyIDk2IDE0NCA5NyAyODAgMCAxMDYgLTEKMTEzIC0zNyAxODcgLTk0IDE5OCAtMjUzIDI3NyAtNTY4IDI4MyAtODUgMiAtMTY4IDEgLTE4NSAtMXogTTM3NzUgMTY3MSBjLTQ3Ci00IC03MCAtMTAgLTY5IC0xOCAxIC03IDIgLTM3MSAzIC04MDkgbDEgLTc5NSAyMyAzIDIyIDMgMyA3ODIgMiA3ODEgODggOApjMTA4IDkgMzE1IC0yIDQwMyAtMjAgMTgzIC0zOSAyODAgLTE1MCAzMTAgLTM1MCAyNSAtMTY3IC01OCAtMzE2IC0yMDkgLTM3NgotNTEgLTIxIC03OSAtMjQgLTI4MiAtMjkgLTIyNCAtNiAtMjI1IC02IC0yMjggLTI4IC0zIC0yMiAwIC0yMyA2MSAtMjMgbDY0IDAKMjU5IC0zOTAgYzE0MiAtMjE0IDI2MiAtMzkwIDI2NSAtMzkwIDMgMCAxMiA2IDIxIDEzIDE0IDEwIC0xNiA1OSAtMjMzIDM4NwotMTM2IDIwNiAtMjQ0IDM3NyAtMjM4IDM3OCA1IDIgMTYgMiAyMyAtMSA3IC0zIDEyMCAtMTY5IDI1MSAtMzY5IDEzMSAtMTk5CjI0NCAtMzcwIDI1MSAtMzc4IDEyIC0xMiAxNiAtMTIgMzAgMSAxNCAxNSAtNyA1MCAtMjI0IDM4MCBsLTIzOCAzNjQgMzUgMwpjMTYyIDEyIDI3MiA1MyAzNDAgMTI3IDUxIDU1IDc3IDEwOCA5NyAxOTIgMTMgNTcgMTQgODEgNCAxNDggLTI4IDE5NCAtMTE5CjMxMyAtMjg0IDM3MSAtOTkgMzYgLTM0NyA1MSAtNTUxIDM1eiBNMzIwMCA0OTAgbDAgLTQwMCAyNSAwIDI1IDAgMCA0MDAgMAo0MDAgLTI1IDAgLTI1IDAgMCAtNDAweiIvPgo8L2c+Cjwvc3ZnPg==" alt="UPGRADE — студия эстетики тела" /></a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="/#about">О студии</a></li>
+      <li><a href="/pricing.html">Услуги</a></li>
+      <li><a href="/#specialists">Специалисты</a></li>
+      <li><a href="/#faq">Вопросы</a></li>
+      <li><button class="theme-toggle" id="themeToggle" aria-label="Сменить тему">☀️</button></li>
+    </ul>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Меню">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- ─── BOOKING WIZARD ─── -->
+  <main class="booking-page">
+    <div class="booking-container">
+      <h1 class="booking-title">Онлайн-<span>запись</span></h1>
+
+      <!-- Progress bar -->
+      <div class="progress" id="progressBar">
+        <!-- Rendered by JS based on active steps -->
+      </div>
+
+      <!-- Step 1: Service -->
+      <div class="wizard-page active" id="page-service" data-step="service">
+        <h2 class="page-heading">Выберите услугу</h2>
+        <p class="page-subtitle">Какая процедура вас интересует?</p>
+        <div class="service-grid" id="serviceGrid">
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+        </div>
+      </div>
+
+      <!-- Step 2: Date -->
+      <div class="wizard-page" id="page-date" data-step="date">
+        <h2 class="page-heading">Выберите дату</h2>
+        <p class="page-subtitle" id="dateSubtitle">Доступные дни для записи</p>
+        <div class="calendar">
+          <div class="calendar-header">
+            <span class="calendar-month" id="calendarMonth"></span>
+            <div class="calendar-nav">
+              <button id="calPrev" aria-label="Предыдущий месяц">‹</button>
+              <button id="calNext" aria-label="Следующий месяц">›</button>
+            </div>
+          </div>
+          <div class="calendar-weekdays">
+            <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+          </div>
+          <div class="calendar-days" id="calendarDays"></div>
+        </div>
+        <div class="wizard-actions">
+          <button class="btn btn-back" id="backFromDate">← Назад</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Time -->
+      <div class="wizard-page" id="page-time" data-step="time">
+        <h2 class="page-heading">Выберите время</h2>
+        <p class="page-subtitle" id="timeSubtitle"></p>
+        <div class="time-section" id="timeSection">
+          <div class="loading-overlay" id="timeLoading">
+            <div class="spinner"></div>
+            <span class="loading-text">Загружаем доступные слоты…</span>
+          </div>
+        </div>
+        <div class="wizard-actions">
+          <button class="btn btn-back" id="backFromTime">← Назад</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Specialist (conditional) -->
+      <div class="wizard-page" id="page-specialist" data-step="specialist">
+        <h2 class="page-heading">Выберите специалиста</h2>
+        <p class="page-subtitle" id="specialistSubtitle"></p>
+        <div class="specialist-grid" id="specialistGrid"></div>
+        <div class="wizard-actions">
+          <button class="btn btn-back" id="backFromSpecialist">← Назад</button>
+        </div>
+      </div>
+
+      <!-- Step 5: Confirm -->
+      <div class="wizard-page" id="page-confirm" data-step="confirm">
+        <h2 class="page-heading">Подтверждение записи</h2>
+        <p class="page-subtitle">Проверьте данные и оставьте контакты</p>
+
+        <div class="summary-card" id="summaryCard"></div>
+
+        <div class="form-field">
+          <label class="form-label" for="clientName">Ваше имя</label>
+          <input class="form-input" type="text" id="clientName" placeholder="Анна" required autocomplete="given-name">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="clientPhone">Телефон</label>
+          <input class="form-input" type="tel" id="clientPhone" placeholder="+7 (999) 123-45-67" required autocomplete="tel">
+          <div class="form-hint">Для подтверждения записи</div>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="clientEmail">Email <span style="color:var(--text-muted)">(необязательно)</span></label>
+          <input class="form-input" type="email" id="clientEmail" placeholder="anna@example.com" autocomplete="email">
         </div>
 
-        <!-- Step 1: Service Selection -->
-        <div id="step-service" class="step">
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">Выберите услугу</h1>
-            <p class="text-gray-500 mb-6">Укажите, какую услугу вы хотите заказать</p>
-
-            <div id="services-list" class="space-y-3">
-                <!-- Services loaded dynamically -->
-                <div class="text-center py-8 text-gray-400">
-                    <div class="spinner mx-auto mb-4" style="width:32px;height:32px;border:3px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite;"></div>
-                    Загрузка услуг...
-                </div>
-            </div>
+        <div class="wizard-actions" style="flex-direction: column; gap: 0.75rem;">
+          <button class="btn btn-confirm" id="btnSubmit">Записаться</button>
+          <button class="btn btn-back" id="backFromConfirm" style="align-self: flex-start;">← Назад</button>
         </div>
+      </div>
 
-        <!-- Step 2: Specialist Selection -->
-        <div id="step-specialist" class="step">
-            <a class="back-link" data-back="service">&larr; Назад</a>
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">Выберите специалиста</h1>
-            <p class="text-gray-500 mb-6">Или оставьте выбор системе</p>
-
-            <div id="specialists-list" class="space-y-3">
-                <!-- Specialists loaded dynamically -->
-            </div>
-
-            <button id="any-specialist-btn" class="btn btn-secondary btn-full mt-4">
-                Любой свободный специалист
-            </button>
+      <!-- Success -->
+      <div class="wizard-page" id="page-success" data-step="success">
+        <div class="success-page">
+          <div class="success-icon">✓</div>
+          <h2 class="success-title">Вы записаны!</h2>
+          <p class="success-subtitle">Мы свяжемся с вами для подтверждения</p>
+          <div class="success-details summary-card" id="successDetails"></div>
+          <div style="margin-top: 1.5rem;">
+            <a href="/" class="btn btn-next">На главную →</a>
+          </div>
         </div>
-
-        <!-- Step 3: Calendar Selection -->
-        <div id="step-calendar" class="step">
-            <a class="back-link" data-back="specialist">&larr; Назад</a>
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">Выберите дату</h1>
-            <p class="text-gray-500 mb-6">Доступные даты для записи</p>
-
-            <div class="calendar-header">
-                <button class="calendar-nav" id="prev-month">&larr;</button>
-                <span class="font-semibold text-gray-800" id="current-month"></span>
-                <button class="calendar-nav" id="next-month">&rarr;</button>
-            </div>
-
-            <div class="calendar-grid mb-4">
-                <div class="calendar-day-header">Пн</div>
-                <div class="calendar-day-header">Вт</div>
-                <div class="calendar-day-header">Ср</div>
-                <div class="calendar-day-header">Чт</div>
-                <div class="calendar-day-header">Пт</div>
-                <div class="calendar-day-header">Сб</div>
-                <div class="calendar-day-header">Вс</div>
-            </div>
-
-            <div id="calendar-days" class="calendar-grid">
-                <!-- Days loaded dynamically -->
-            </div>
-        </div>
-
-        <!-- Step 4: Time Selection -->
-        <div id="step-time" class="step">
-            <a class="back-link" data-back="calendar">&larr; Назад</a>
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">Выберите время</h1>
-            <p class="text-gray-500 mb-6" id="selected-date-display">Свободные слоты</p>
-
-            <div id="time-slots" class="time-slots-grid">
-                <!-- Time slots loaded dynamically -->
-            </div>
-
-            <div id="no-slots-message" class="text-center py-8 text-gray-400 hidden">
-                Нет свободных слотов на эту дату
-            </div>
-        </div>
-
-        <!-- Step 5: Contact Form -->
-        <div id="step-phone" class="step">
-            <a class="back-link" data-back="time">&larr; Назад</a>
-
-            <!-- Reserve Timer -->
-            <div class="reserve-timer" id="reserve-timer">
-                Слот зарезервирован на <span class="time" id="timer-display">5:00</span>
-            </div>
-
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">Контактные данные</h1>
-            <p class="text-gray-500 mb-6">Для подтверждения записи</p>
-
-            <form id="contact-form" class="space-y-4">
-                <div>
-                    <label class="form-label" for="phone-input">Телефон *</label>
-                    <input
-                        type="tel"
-                        id="phone-input"
-                        class="form-input"
-                        placeholder="+7 (___) ___-__-__"
-                        required
-                        autocomplete="tel"
-                    >
-                    <p class="form-hint">На этот номер придёт подтверждение</p>
-                </div>
-
-                <div>
-                    <label class="form-label" for="name-input">Ваше имя</label>
-                    <input
-                        type="text"
-                        id="name-input"
-                        class="form-input"
-                        placeholder="Как к вам обращаться?"
-                        autocomplete="name"
-                    >
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-full" id="submit-btn">
-                    Записаться
-                </button>
-            </form>
-        </div>
-
-        <!-- Step 6: Confirmation / Result -->
-        <div id="step-confirm" class="step">
-            <!-- Pending State -->
-            <div id="status-pending" class="status-pending">
-                <div class="spinner"></div>
-                <h2 class="text-xl font-semibold text-gray-800 mb-2">Обрабатываем запись...</h2>
-                <p class="text-gray-500">Это займёт несколько секунд</p>
-            </div>
-
-            <!-- Success State -->
-            <div id="status-success" class="status-success hidden">
-                <div class="icon">&#10003;</div>
-                <h2 class="text-xl font-semibold text-gray-800 mb-2">Запись подтверждена!</h2>
-                <p class="text-gray-500 mb-6">Вам придёт SMS с подтверждением</p>
-
-                <div class="summary-card mb-6" id="booking-summary">
-                    <!-- Summary filled dynamically -->
-                </div>
-
-                <a href="/" class="btn btn-primary btn-full">На главную</a>
-            </div>
-
-            <!-- Error State -->
-            <div id="status-error" class="status-error hidden">
-                <div class="icon">&#10007;</div>
-                <h2 class="text-xl font-semibold text-gray-800 mb-2">Не удалось записаться</h2>
-                <p class="text-gray-500 mb-2" id="error-message">Произошла ошибка</p>
-
-                <button class="btn btn-secondary btn-full mt-4" id="try-again-btn">
-                    Попробовать снова
-                </button>
-            </div>
-        </div>
+      </div>
 
     </div>
+  </main>
 
-    <script type="module" src="/dist/booking.js"></script>
+  <!-- ─── FOOTER ─── -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-logo"><img src="data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKIHdpZHRoPSI4NjgiIGhlaWdodD0iNTk1IiB2aWV3Qm94PSIwIDAgODY4IDU5NSIKIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiPgo8ZyBjbGFzcz0ibG9nby1wYXRocyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCw1OTUpIHNjYWxlKDAuMSwtMC4xKSIKZmlsbD0iIzJCQjVCOCIgc3Ryb2tlPSJub25lIj4KPHBhdGggZD0iTTMwNzcgNTkzOCBjLTIgLTcgLTI2OSAtNjQ5IC01OTIgLTE0MjcgLTMyMyAtNzc3IC01ODMgLTE0MTcgLTU3OAotMTQyMSA0IC00IDc4NiAtMzMwIDE3MzggLTcyNCA5NTIgLTM5NSAxNzM0IC03MjEgMTczOCAtNzI1IDUgLTUgLTEzOCAtMzYxCi0zMTcgLTc5MiAtMzAyIC03MzAgLTMyMyAtNzg1IC0zMDUgLTc5MyAxMiAtNiAyMyAtNiAyOCAwIDQgNSAxMzYgMzE4IDI5Mgo2OTcgMTU2IDM3OCAyODYgNjg3IDI4OSA2ODcgMyAwIDE0NyAtMzI0IDMxOSAtNzIwIDE3MyAtMzk2IDMxNyAtNzIwIDMyMAotNzIwIDQgMCAxNCA2IDIzIDEzIDEzIDEwIC0yNCAxMDIgLTMwOCA3NTIgLTE3OCA0MDcgLTMyNCA3NDUgLTMyNCA3NTIgMCAxMgo0OSAxMzMgNjAgMTQ1IDMgNCAxNTggLTM1NiAzNDUgLTgwMCAxODYgLTQ0NCAzNDEgLTgxMCAzNDUgLTgxNSAzIC00IDE0IC0xCjI1IDYgMTcgMTMgLTMgNjMgLTM0NCA4NzQgbC0zNjEgODYxIDU2MSAxMzUxIGMzMDkgNzQ0IDU1OSAxMzU0IDU1OCAxMzU1IC0zCjMgLTMzODUgMTQwOCAtMzQ5NSAxNDUzIC02IDIgLTE0IC0yIC0xNyAtOXogbTE3NTcgLTc0NCBjOTQwIC0zOTAgMTcxMCAtNzE0CjE3MTIgLTcxOSA1IC0xMyAtMTE1MCAtMjgwMCAtMTE2MCAtMjc5OSAtMzAgNCAtMzQ0NiAxNDMwIC0zNDQ2IDE0MzggMCA2IDI2MAo2MzggNTc4IDE0MDQgNDM5IDEwNjAgNTgxIDEzOTIgNTkyIDEzODkgOCAtMiA3ODQgLTMyMyAxNzI0IC03MTN6IE00MjIwIDUyNDYKYy04NSAtMjQgLTE2NiAtODMgLTIxMiAtMTU1IC0zMSAtNTAgLTM1IC04MyAtMTMgLTEyMSA4IC0xNCAxNCAtNDggMTUgLTc2IDAKLTYwIDE1IC0xMTEgNDIgLTE0MCAxNiAtMTkgMTcgLTI2IDcgLTczIC0xMiAtNTkgLTMgLTgxIDM2IC04MSAxMyAwIDI2IC05IDMyCi0yMiA2IC0xMyAyNyAtNDEgNDYgLTYzIDMyIC0zNyAzOCAtNDAgNzYgLTM3IDM1IDMgNDcgMTEgNzcgNDggMjAgMjQgNDAgNDQKNDQgNDQgMTkgMCAxOSAtNTEgMSAtOTQgLTI3IC02MSAtNTQgLTc2IC0xNDggLTgzIC05MSAtNyAtMTIyIC0yMCAtMTgxIC03NwotODEgLTc2IC04NSAtMTAxIC00NiAtMjM5IDMwIC0xMDQgMzggLTEyMSA5OSAtMjE2IDkwIC0xMzkgMTEwIC0yNTEgNTkgLTMyNwotNTEgLTc1IC0xNTAgLTE3OCAtMjU2IC0yNjUgLTE4OCAtMTU2IC0yODggLTMyOSAtMjg4IC01MDAgMCAtOTEgMjggLTIyOSA1NwotMjc5IDM5IC02OSAxMTQgLTEzNSAxNzAgLTE1MSA2OSAtMjAgMTcwIC0xOCAyMTQgNCA0MSAyMCAxMDAgNzIgMTE2IDEwMiAxMQoxOCAxMiAxOCA0MCAtMTEgMzggLTQxIDc3IC02MCAxNTEgLTc0IDc4IC0xNCAxNTEgMyAyNTQgNTcgODEgNDIgMTI4IDkzIDE3MgoxODMgMjkgNjEgMzEgNzEgMjkgMTcwIC0zIDEyNCAtMjMgMTk1IC0xMDkgMzc5IC03MSAxNTQgLTcwIDE2MyAyNyAyNjggNzEgNzcKMTkwIDI0NSAyMzMgMzMxIDEzIDI2IDM4IDg5IDU1IDE0MSA0MSAxMjEgODAgMjA0IDEyMyAyNjQgbDM1IDQ4IDcgLTEwOSBjOAotMTE2IDAgLTE2NCAtMzYgLTIzNSAtMjEgLTQyIC03MiAtMjQxIC04MyAtMzI0IC01IC0zOCAtMSAtNzEgMTUgLTEzMCAyMCAtNjkKMjIgLTk0IDE3IC0yMTMgLTIgLTc0IC0xNSAtMjA1IC0yNyAtMjkyIC0xMyAtODYgLTIwIC0xNzIgLTE2IC0xOTAgMyAtMTkgMTkKLTU1IDM2IC04MSAzNiAtNTggNzUgLTY4IDE2NiAtNDQgNzYgMjEgMTgzIDIyIDIwOSAzIDE3IC0xMiAxNiAtMTQgLTE3IC0yNQotNDcgLTE2IC0xODQgLTMxIC0yODggLTMyIC00NyAwIC05MyAtNCAtMTA0IC04IC0xNyAtNiAtMTUgLTEwIDE1IC0zNiA2MCAtNTAKODcgLTU2IDI2MiAtNTcgMTY2IC0yIDIxMCA0IDIwMSAyNSAtMyA5IC01MiAxMyAtMTgzIDE0IC0xMDcgMSAtMTg3IDUgLTE5OAoxMiAtMTQgOCAtNyAxMCAzNiAxMSA4NCAwIDIzMSAyMCAyNzkgMzcgNDEgMTUgNjMgNDcgNDggNzEgLTI1IDQwIC0xNDggNTQKLTI0OSAyNyAtOTAgLTIzIC0xMTIgLTIwIC0xNDIgMTkgLTM4IDUwIC00MCA4NSAtMTQgMjY3IDMwIDIxNCAzMiA0NDEgNSA1MTEKLTE0IDM3IC0xNyA2MSAtMTIgMTA1IDkgODAgNTggMjY2IDg5IDMzOCAzMyA3NiA0MSAxNDAgMjkgMjM1IC01IDQxIC01IDkwIC0xCjEwOSA1IDIyIDQgMzggLTIgNDIgLTcgNCAtNiAyMSAxIDUxIDE2IDYyIC0xIDExOCAtNTEgMTczIC01MCA1NCAtMTA5IDc5Ci0yNjAgMTEwIC0xNTMgMzEgLTE5MCA0OCAtMjM3IDEwOSAtMzEgNDAgLTMwIDYyIDIgNDEgNDIgLTI4IDE0NiAtMiAxOTQgNDgKNzYgNzkgNjkgMjIwIC0xNSAyOTkgLTUzIDUwIC0yMDQgMTE4IC0yOTUgMTMzIC00NSA4IC0xMDUgMjEgLTEzMiAzMCAtNTggMTgKLTE0MyAxOCAtMjA2IDF6IG0tMzUgLTcyIGMtODEgLTQ5IC0xMTMgLTgwIC0xNDEgLTEzOSAtMjQgLTUwIC0yNCAtNTAgLTI0Ci0xNiAwIDI4IDExIDQ0IDY4IDEwMSA2MCA2MSAxMDEgODUgMTQ3IDg5IDYgMSAtMTcgLTE1IC01MCAtMzV6IG0zNDYgLTE2IGM5MAotNTUgMTIwIC0xMTggMTExIC0yMzcgLTYgLTg0IC0yNCAtOTEgLTI4IC0xMiAtNSAxMDEgLTIzIDE1MCAtNzMgMjAxIC0yNSAyNQotNTkgNTYgLTc2IDY5IC0yOCAyMCAtMjggMjIgLTYgMTUgMTQgLTQgNDYgLTIwIDcyIC0zNnogbS0xMTYgMyBjNzQgLTQzIDEzMgotMTA0IDE0NyAtMTU0IDggLTI4IDEyIC05NCAxMCAtMTk3IC0zIC0xNzcgNSAtMjE3IDYxIC0yOTkgNTggLTg0IDY5IC0xMzcgNzAKLTM0MCAyIC0xNjYgMCAtMTgxIC0yNiAtMjY2IC0zNyAtMTIxIC05MCAtMjI4IC0xNzYgLTM2MCAtNDAgLTYwIC05NyAtMTYwCi0xMjcgLTIyMCAtNTUgLTExMCAtNTYgLTExMiAtNjQgLTIzMCAtMTEgLTE2MiAtNjEgLTMxMyAtMTQzIC00MzUgLTc1IC0xMTAKLTIxOSAtMjYwIC0yNTAgLTI2MCAtNSAwIC03IC05IC00IC0yMCA0IC0xNyAxIC0xOSAtMjEgLTE0IC02OSAxNSAtOTMgMjgKLTEzNSA3MyAtNTggNjIgLTc1IDk2IC05MyAxODggLTQ3IDI0NyAyNiA0MTggMjY3IDYxOSAxMTQgOTUgMjM0IDIyNiAyNjggMjkxCjQ1IDg5IDIxIDIwMSAtNzUgMzUwIC02OSAxMDYgLTEyNCAyNzEgLTExMCAzMjYgMTYgNjcgMTEwIDEzNyAxODMgMTM3IDY0IDEKMTIxIDE1IDE1MiAzOCAzNSAyNiA3MyA5NiA3MyAxMzUgMCAzMiAtNTEgMTQ1IC04MCAxNzkgLTEzIDE1IC0xMiAxOSAyIDMzIDIyCjIyIDIwIDgwIC00IDEzMyAtMTYgMzYgLTIzIDQyIC00OSA0MiAtMzIgMCAtNjEgLTMwIC02MSAtNjQgMCAtMzIgLTEyIC0xMAotMjEgNDAgLTUgMjYgLTE2IDU2IC0yNSA2NiAtMjIgMjQgLTgyIDM0IC0xMDcgMTkgLTE4IC0xMiAtMTkgLTExIC0xMyAxNiAxNwo2OSA4NSAxMzIgMTk2IDE4MiA2MSAyOCA5NiAyNiAxNTUgLTh6IG0zMjMgLTUzIGMxMTMgLTYxIDE0MiAtOTcgMTQyIC0xNzYgMAotOTkgLTQyIC0xNTIgLTEzMiAtMTY2IC0zMCAtNSAtNDYgLTMgLTU2IDggLTE2IDE2IC0xNyAyOCAtMTIgMTY2IDMgOTggLTEyCjE0NSAtNjMgMTk5IGwtMzIgMzQgMzAgLTcgYzE3IC00IDcyIC0zMCAxMjMgLTU4eiBtLTU4OSAtMTc3IGM3IC01IDE3IC0yOSAyMgotNTUgMTIgLTY0IDM1IC05NiA2OSAtOTYgMjMgMCAyNyAtMyAyMyAtMjQgLTQgLTE3IDUgLTM1IDMwIC02MiA1MSAtNTcgNTQKLTkwIDE0IC0xMzUgLTQ2IC01MiAtNzQgLTU4IC0xMDMgLTIzIC0xNCAxNiAtMzMgNDYgLTQ0IDY3IC0xNiAyOCAtMjcgMzcgLTQ2CjM3IC0yMyAwIC0yNSAzIC0yMCAyNiAyMCA3OCAxOSA4NCAtOSAxMTQgLTIyIDIzIC0yOSA0MiAtMzMgODMgLTQgNDggLTIgNTQKMTkgNjQgMjkgMTQgNTkgMTYgNzggNHogbTE2MSAtODcgYzYgLTE0IDEwIC0zOSAxMCAtNTYgMCAtMjMgLTQgLTI5IC0xNiAtMjQKLTkgMyAtMTcgNiAtMTkgNiAtOCAwIC0xNyA3MCAtMTEgODUgOCAyMyAyNSAxOCAzNiAtMTF6IG0zMzYgLTE4MSBjNDEgLTU0CjEwMCAtODEgMjQ5IC0xMTMgMTk5IC00MyAyNTkgLTc4IDI4NiAtMTY4IDE2IC01NCAwIC0xMDMgLTY5IC0yMDggLTY0IC05OAotODcgLTE0NiAtMTQyIC0zMDUgLTI5IC04NCAtNTUgLTEzNCAtMTIyIC0yMzUgLTQ3IC03MSAtMTE1IC0xNjAgLTE1MiAtMTk4Ci0xMDMgLTEwNyAtMTA2IC0xNDUgLTI2IC0zMDYgNzYgLTE1MiAxMDEgLTIzOCAxMDMgLTM2MSAyIC05OCAwIC0xMDcgLTI4Ci0xNjIgLTM5IC03NyAtOTUgLTEzMSAtMTcyIC0xNjcgLTkxIC00MyAtMTUwIC01NCAtMjE3IC00MCAtNjYgMTQgLTExMyA0MwotMTQ0IDkyIC0yOSA0MyAtNTMgNDEgLTcxIC03IC0yMiAtNjIgLTEyNiAtMTMyIC0xODEgLTEyMyAtMTYgMiAtMTAgMTEgMzQgNDUKNjUgNTAgMTYzIDE2NiAyMjcgMjY5IDcxIDExNCAxMjAgMjcxIDEyOSA0MTQgNyAxMTMgOCAxMTcgNjAgMjIwIDI5IDU4IDg3CjE1OSAxMzAgMjI1IDExNiAxODEgMTQ5IDI1NCAxOTAgNDI1IDIwIDg2IDIxIDEwOSAxNSAyNTAgLTggMTc1IC0yNiAyNTEgLTc3CjMyMSAtNDEgNTYgLTU3IDEwMyAtNTYgMTU5IDAgMjUgMyAzNiA1IDI1IDMgLTExIDE2IC0zNSAyOSAtNTJ6IE02MzQwIDkyNSBsMAotODY1IDIzIDAgYzEyIDAgMTQ0IDE2IDI5MiAzNSAzMTggNDEgNDMzIDcxIDU3NCAxNDggMTIxIDY3IDI0MyAxOTIgMjk2IDMwMgo0NyA5OSA3NSAyMTcgNzUgMzEzIDAgMTM3IC03MSAzNDEgLTE1OSA0NjEgLTU2IDc2IC0xNjUgMTgzIC0yMzEgMjI4IC01OSA0MAotMTkyIDEwNiAtMjU1IDEyNiAtNDUgMTUgLTU3MiAxMTcgLTYwMiAxMTcgLTEwIDAgLTEzIC0xODAgLTEzIC04NjV6IE0zMDA1CjE3NDAgYy0zNjIgLTM4IC02NjMgLTI0NyAtNzkwIC01NDkgLTQwIC05NSAtNjkgLTI3MSAtNjEgLTM3MSAxNiAtMTkxIDEzNwotNDMzIDI4OCAtNTc2IDE5MiAtMTgxIDM3NSAtMjQwIDcxOCAtMjMzIGwxNjUgNCAzOSAzMCAzOSAzMCAtNiAxNzAgYy00IDkzCi03IDI3MCAtNyAzOTMgbDAgMjIyIC0yNyAwIC0yNiAwIDYgLTM4NCA2IC0zODQgLTM0IC0xNiBjLTUwIC0yNCAtMzM5IC0yMgotNDYwIDMgLTI0MiA1MCAtNDM5IDIwOSAtNTYwIDQ1MSAtOTAgMTc5IC0xMTEgMzEyIC03NyA0ODYgNjQgMzIyIDI3MyA1MzkKNjE3IDYzOSAxMzYgMzkgMjU3IDUwIDM1OCAzMSAxMDUgLTIwIDEwNCAtMjAgMTEwIDQgNCAxNiAtMiAyMiAtMzEgMjkgLTQ3IDEzCi0xNjIgMzEgLTE4MiAzMCAtOCAtMSAtNDcgLTUgLTg1IC05eiBNMCAxMDEwIGwwIC03MDAgMzYgLTcxIGM0NyAtOTQgMTAyCi0xNTIgMTgyIC0xOTEgNTUgLTI4IDc4IC0zMyAxNTYgLTM2IDc1IC0zIDEwMSAwIDE0OSAxOCA3NCAyOCAxNjMgMTEwIDIwNQoxODggbDMyIDYwIDAgNzE2IDAgNzE2IC0yNSAwIC0yNSAwIDAgLTcxMiAwIC03MTMgLTI5IC01MSBjLTM4IC02NiAtMTE5IC0xMzgKLTE3OCAtMTU4IC0yNiAtOSAtNzcgLTE2IC0xMTQgLTE2IC0xMzIgMCAtMjM1IDYzIC0zMDAgMTgyIGwtMzQgNjMgLTUgNzAwIC01CjcwMCAtMjIgMyAtMjMgMyAwIC03MDF6IE03NzkwIDg3NSBsMCAtODM1IDQ0NiAwIDQ0NSAwIC0zIDIzIC0zIDIyIC00MTcgMwotNDE4IDIgMCAzNjAgMCAzNjAgMjQwIDAgMjQwIDAgMCAyNSAwIDI1IC0yNDAgMCBjLTIwNyAwIC0yNDAgMiAtMjQwIDE1IDAgMTMKMzMgMTUgMjQwIDE1IGwyNDAgMCAwIDI1IDAgMjUgLTI0MCAwIC0yNDAgMCAwIDM2MCAwIDM2MCA0MTggMiBjNDA5IDMgNDE3IDMKNDE3IDIzIDAgMjAgLTggMjAgLTQ0MiAyMyBsLTQ0MyAyIDAgLTgzNXogTTEyNzUgMTY5NCBjLTE2IC0yIC01NCAtNyAtODIgLTEwCmwtNTMgLTUgMCAtODI1IDAgLTgyNCAyNSAwIDI1IDAgMCA4MDQgMCA4MDQgMTE4IDcgYzIyMCAxNCA0MDMgLTExIDUxMyAtNzIKNjYgLTM2IDEyNCAtMTAwIDE2MiAtMTgxIDMwIC02MiAzMiAtNzUgMzIgLTE3MiAwIC05NCAtMyAtMTExIC0yOCAtMTYxIC01MgotMTA3IC0xNTggLTE3OSAtMjkyIC0xOTkgLTM5IC01IC0xNDEgLTEwIC0yMjcgLTEwIGwtMTU4IDAgMCAtNDEwIDAgLTQxMCAyNQowIDI1IDAgMCAzODUgMCAzODUgMTI5IDAgYzI1OSAwIDM4MCAzNyA0NzkgMTQ1IDc1IDgyIDk2IDE0NCA5NyAyODAgMCAxMDYgLTEKMTEzIC0zNyAxODcgLTk0IDE5OCAtMjUzIDI3NyAtNTY4IDI4MyAtODUgMiAtMTY4IDEgLTE4NSAtMXogTTM3NzUgMTY3MSBjLTQ3Ci00IC03MCAtMTAgLTY5IC0xOCAxIC03IDIgLTM3MSAzIC04MDkgbDEgLTc5NSAyMyAzIDIyIDMgMyA3ODIgMiA3ODEgODggOApjMTA4IDkgMzE1IC0yIDQwMyAtMjAgMTgzIC0zOSAyODAgLTE1MCAzMTAgLTM1MCAyNSAtMTY3IC01OCAtMzE2IC0yMDkgLTM3NgotNTEgLTIxIC03OSAtMjQgLTI4MiAtMjkgLTIyNCAtNiAtMjI1IC02IC0yMjggLTI4IC0zIC0yMiAwIC0yMyA2MSAtMjMgbDY0IDAKMjU5IC0zOTAgYzE0MiAtMjE0IDI2MiAtMzkwIDI2NSAtMzkwIDMgMCAxMiA2IDIxIDEzIDE0IDEwIC0xNiA1OSAtMjMzIDM4NwotMTM2IDIwNiAtMjQ0IDM3NyAtMjM4IDM3OCA1IDIgMTYgMiAyMyAtMSA3IC0zIDEyMCAtMTY5IDI1MSAtMzY5IDEzMSAtMTk5CjI0NCAtMzcwIDI1MSAtMzc4IDEyIC0xMiAxNiAtMTIgMzAgMSAxNCAxNSAtNyA1MCAtMjI0IDM4MCBsLTIzOCAzNjQgMzUgMwpjMTYyIDEyIDI3MiA1MyAzNDAgMTI3IDUxIDU1IDc3IDEwOCA5NyAxOTIgMTMgNTcgMTQgODEgNCAxNDggLTI4IDE5NCAtMTE5CjMxMyAtMjg0IDM3MSAtOTkgMzYgLTM0NyA1MSAtNTUxIDM1eiBNMzIwMCA0OTAgbDAgLTQwMCAyNSAwIDI1IDAgMCA0MDAgMAo0MDAgLTI1IDAgLTI1IDAgMCAtNDAweiIvPgo8L2c+Cjwvc3ZnPg==" alt="UPGRADE" /></div>
+      <ul class="footer-links">
+        <li><a href="https://www.instagram.com/upgrade.lpg" target="_blank" rel="noopener">Instagram</a></li>
+        <li><a href="https://t.me/upgrade_lpg_bot" target="_blank" rel="noopener">Telegram</a></li>
+      </ul>
+      <div class="footer-copy">© 2025 UPGRADE. Все права защищены.</div>
+    </div>
+  </footer>
+
+  <script>
+    /* ═══════════════════════════════════════
+       MOCK API (replace with real endpoints)
+       ═══════════════════════════════════════ */
+    /* ═══════════════════════════════════════
+       API LAYER — connects to /web/* endpoints
+       ═══════════════════════════════════════ */
+    let _locationId = null;
+
+    async function _getLocationId() {
+      if (_locationId) return _locationId;
+      const res = await fetch('/web/locations');
+      if (res.ok) {
+        const locs = await res.json();
+        if (locs.length > 0) { _locationId = locs[0].id; return _locationId; }
+      }
+      _locationId = 1;
+      return _locationId;
+    }
+
+    class BookingAPI {
+      static async getServices() {
+        const res = await fetch('/web/services');
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        return res.json();
+      }
+
+      static async getAvailableSlots(serviceId, date) {
+        const locationId = await _getLocationId();
+        const params = new URLSearchParams({
+          location_id: locationId, service_id: serviceId, date: date
+        });
+        const res = await fetch(`/web/slots/day?${params}`);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return (data.slots || []).map(s => ({
+          time: s.time,
+          available: s.available !== false,
+          specialists: s.specialists || [],
+        }));
+      }
+
+      static async getSpecialists(serviceId) {
+        const res = await fetch(`/web/specialists?service_id=${serviceId}`);
+        if (!res.ok) return [];
+        return res.json();
+      }
+
+      static async reserveSlot(serviceId, date, time, specialistId) {
+        const locationId = await _getLocationId();
+        const res = await fetch('/web/reserve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location_id: locationId,
+            service_id: serviceId,
+            specialist_id: specialistId || null,
+            date: date,
+            time: time,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || 'Slot unavailable');
+        }
+        return res.json();
+      }
+
+      static async submitBooking(data) {
+        const res = await fetch('/web/booking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reserve_uuid: data.reserve_uuid,
+            phone: data.client_phone,
+            name: data.client_name || null,
+          }),
+        });
+        if (!res.ok) throw new Error('Booking failed');
+        const result = await res.json();
+
+        // Poll for confirmation (max 15 seconds)
+        const uuid = result.uuid;
+        for (let i = 0; i < 15; i++) {
+          await new Promise(r => setTimeout(r, 1000));
+          const poll = await fetch(`/web/booking/${uuid}`);
+          if (!poll.ok) continue;
+          const status = await poll.json();
+          if (status.status === 'confirmed') {
+            return { success: true, booking_id: status.booking_id || uuid };
+          }
+          if (status.status === 'failed') {
+            throw new Error(status.error || 'Booking failed');
+          }
+        }
+        // Timeout — return success with UUID (consumer will process async)
+        return { success: true, booking_id: uuid };
+      }
+    }
+
+    /* ═══════════════════════════════════════
+       BOOKING WIZARD
+       ═══════════════════════════════════════ */
+    class BookingWizard {
+      constructor() {
+        this.state = {
+          service: null,
+          date: null,
+          time: null,
+          specialist: null,
+        };
+
+        // Dynamic step list — specialist may be skipped
+        this.steps = ['service', 'date', 'time', 'specialist', 'confirm'];
+        this.activeSteps = [...this.steps];
+        this.currentStep = 'service';
+
+        this.services = [];
+        this.specialists = [];
+        this.calendarDate = new Date();
+
+        this.init();
+      }
+
+      async init() {
+        this.bindNav();
+        this.bindForm();
+        await this.loadServices();
+        this.checkUrlParams();
+        this.renderProgress();
+      }
+
+      /* ── Navigation ── */
+      bindNav() {
+        document.getElementById('backFromDate').addEventListener('click', () => this.goTo('service'));
+        document.getElementById('backFromTime').addEventListener('click', () => this.goTo('date'));
+        document.getElementById('backFromSpecialist').addEventListener('click', () => this.goTo('time'));
+        document.getElementById('backFromConfirm').addEventListener('click', () => {
+          const prev = this.activeSteps.includes('specialist') ? 'specialist' : 'time';
+          this.goTo(prev);
+        });
+      }
+
+      goTo(step) {
+        // Hide all
+        document.querySelectorAll('.wizard-page').forEach(p => p.classList.remove('active'));
+        // Show target
+        const page = document.getElementById(`page-${step}`);
+        if (page) {
+          page.classList.remove('active');
+          // Force reflow for animation
+          void page.offsetWidth;
+          page.classList.add('active');
+        }
+        this.currentStep = step;
+        this.renderProgress();
+        // Scroll to top of container
+        document.querySelector('.booking-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      renderProgress() {
+        const bar = document.getElementById('progressBar');
+        const labels = {
+          service: 'Услуга',
+          date: 'Дата',
+          time: 'Время',
+          specialist: 'Специалист',
+          confirm: 'Запись',
+        };
+
+        const steps = this.activeSteps;
+        const currentIdx = steps.indexOf(this.currentStep);
+
+        bar.innerHTML = steps.map((step, i) => {
+          let cls = '';
+          if (i < currentIdx) cls = 'done';
+          else if (i === currentIdx) cls = 'active';
+
+          return `
+            <div class="progress-step ${cls}">
+              <div class="progress-dot">${cls === 'done' ? '✓' : i + 1}</div>
+              <span class="progress-label">${labels[step]}</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      updateActiveSteps() {
+        if (this.specialists.length <= 1) {
+          this.activeSteps = this.steps.filter(s => s !== 'specialist');
+        } else {
+          this.activeSteps = [...this.steps];
+        }
+      }
+
+      /* ── Services ── */
+      async loadServices() {
+        const grid = document.getElementById('serviceGrid');
+        try {
+          this.services = await BookingAPI.getServices();
+          grid.innerHTML = '';
+          this.services.forEach(s => {
+            const card = document.createElement('div');
+            card.className = 'service-card';
+            card.dataset.id = s.id;
+            card.dataset.slug = s.slug;
+            card.innerHTML = `
+              <div class="icon">${s.icon}</div>
+              <div class="service-info">
+                <div class="service-name">${s.name}</div>
+                <div class="service-meta">${s.duration_min}–${s.duration_max} мин · ${s.category}</div>
+              </div>
+              <div class="service-price">${s.price.toLocaleString('ru-RU')} ₽</div>
+              <div class="check-mark">✓</div>
+            `;
+            card.addEventListener('click', () => this.selectService(s, card));
+            grid.appendChild(card);
+          });
+        } catch (e) {
+          grid.innerHTML = '<p style="text-align:center;color:var(--danger);padding:2rem">Не удалось загрузить услуги. Попробуйте позже.</p>';
+        }
+      }
+
+      selectService(service, card) {
+        document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        this.state.service = service;
+        // Reset downstream
+        this.state.date = null;
+        this.state.time = null;
+        this.state.specialist = null;
+
+        // Small delay then advance
+        setTimeout(() => {
+          this.prepareCalendar();
+          this.goTo('date');
+        }, 250);
+      }
+
+      checkUrlParams() {
+        const params = new URLSearchParams(window.location.search);
+        const slug = params.get('service');
+        if (slug) {
+          const service = this.services.find(s => s.slug === slug);
+          if (service) {
+            const card = document.querySelector(`.service-card[data-slug="${slug}"]`);
+            if (card) this.selectService(service, card);
+          }
+        }
+      }
+
+      /* ── Calendar ── */
+      prepareCalendar() {
+        const today = new Date();
+        this.calendarDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        document.getElementById('calPrev').addEventListener('click', () => this.navMonth(-1));
+        document.getElementById('calNext').addEventListener('click', () => this.navMonth(1));
+        this.renderCalendar();
+        document.getElementById('dateSubtitle').textContent =
+          `${this.state.service.name} · ${this.state.service.duration_min}–${this.state.service.duration_max} мин`;
+      }
+
+      navMonth(dir) {
+        this.calendarDate.setMonth(this.calendarDate.getMonth() + dir);
+        this.renderCalendar();
+      }
+
+      renderCalendar() {
+        const grid = document.getElementById('calendarDays');
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        const year = this.calendarDate.getFullYear();
+        const month = this.calendarDate.getMonth();
+
+        const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь',
+                            'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+        document.getElementById('calendarMonth').textContent = `${monthNames[month]} ${year}`;
+
+        // Disable prev if current month
+        const prevBtn = document.getElementById('calPrev');
+        prevBtn.disabled = (year === today.getFullYear() && month === today.getMonth());
+
+        // Max 3 months ahead
+        const maxDate = new Date(today);
+        maxDate.setMonth(maxDate.getMonth() + 3);
+        document.getElementById('calNext').disabled = (year >= maxDate.getFullYear() && month >= maxDate.getMonth());
+
+        const firstDay = new Date(year, month, 1);
+        let startDay = firstDay.getDay() - 1; // Mon=0
+        if (startDay < 0) startDay = 6;
+
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        grid.innerHTML = '';
+
+        // Empty cells before first day
+        for (let i = 0; i < startDay; i++) {
+          const empty = document.createElement('div');
+          empty.className = 'cal-day empty';
+          grid.appendChild(empty);
+        }
+
+        // Minimum booking date: tomorrow
+        const minDate = new Date(today);
+        minDate.setDate(minDate.getDate() + 1);
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(year, month, d);
+          const el = document.createElement('div');
+          el.className = 'cal-day';
+          el.textContent = d;
+
+          const iso = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          el.dataset.date = iso;
+
+          if (date < minDate || date.getDay() === 0) {
+            el.classList.add('disabled');
+          } else {
+            el.addEventListener('click', () => this.selectDate(iso, el));
+          }
+
+          if (date.getTime() === today.getTime()) {
+            el.classList.add('today');
+          }
+          if (this.state.date === iso) {
+            el.classList.add('selected');
+          }
+
+          grid.appendChild(el);
+        }
+      }
+
+      async selectDate(iso, el) {
+        document.querySelectorAll('.cal-day').forEach(d => d.classList.remove('selected'));
+        el.classList.add('selected');
+        this.state.date = iso;
+        this.state.time = null;
+
+        // Auto-advance to time
+        setTimeout(() => {
+          this.goTo('time');
+          this.loadTimeSlots();
+        }, 200);
+      }
+
+      /* ── Time Slots ── */
+      async loadTimeSlots() {
+        const section = document.getElementById('timeSection');
+        const loading = document.getElementById('timeLoading');
+        section.innerHTML = '';
+        section.appendChild(loading);
+        loading.style.display = 'flex';
+
+        // Show chosen date in subtitle
+        const dateObj = new Date(this.state.date + 'T00:00:00');
+        const formatted = dateObj.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+        document.getElementById('timeSubtitle').textContent =
+          `${this.state.service.name} · ${formatted}`;
+
+        try {
+          const slots = await BookingAPI.getAvailableSlots(this.state.service.id, this.state.date);
+          loading.style.display = 'none';
+
+          // Group by period
+          const periods = {
+            'Утро': slots.filter(s => { const h = parseInt(s.time); return h >= 9 && h < 12; }),
+            'День': slots.filter(s => { const h = parseInt(s.time); return h >= 12 && h < 18; }),
+            'Вечер': slots.filter(s => { const h = parseInt(s.time); return h >= 18; }),
+          };
+
+          let hasAny = false;
+          Object.entries(periods).forEach(([label, pSlots]) => {
+            const available = pSlots.filter(s => s.available);
+            if (available.length === 0 && pSlots.length === 0) return;
+
+            hasAny = hasAny || available.length > 0;
+
+            const period = document.createElement('div');
+            period.className = 'time-period';
+            period.innerHTML = `<div class="time-period-label">${label}</div>`;
+
+            const grid = document.createElement('div');
+            grid.className = 'time-grid';
+
+            pSlots.forEach(slot => {
+              const el = document.createElement('div');
+              el.className = `time-slot ${slot.available ? '' : 'disabled'}`;
+              el.textContent = slot.time;
+              if (slot.available) {
+                el.addEventListener('click', () => this.selectTime(slot.time, el));
+              }
+              grid.appendChild(el);
+            });
+
+            period.appendChild(grid);
+            section.appendChild(period);
+          });
+
+          if (!hasAny) {
+            section.innerHTML = '<div class="time-empty">На этот день нет свободных слотов. Попробуйте выбрать другую дату.</div>';
+          }
+
+        } catch (e) {
+          loading.style.display = 'none';
+          section.innerHTML = '<div class="time-empty" style="color:var(--danger)">Ошибка загрузки. Попробуйте позже.</div>';
+        }
+      }
+
+      async selectTime(time, el) {
+        document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+        el.classList.add('selected');
+        this.state.time = time;
+
+        // Load specialists to decide if step is needed
+        this.specialists = await BookingAPI.getSpecialists(this.state.service.id);
+        this.updateActiveSteps();
+
+        setTimeout(() => {
+          if (this.specialists.length > 1) {
+            this.renderSpecialists();
+            this.goTo('specialist');
+          } else {
+            // Auto-assign sole specialist
+            this.state.specialist = this.specialists[0] || null;
+            this.renderSummary();
+            this.goTo('confirm');
+          }
+        }, 200);
+      }
+
+      /* ── Specialists ── */
+      renderSpecialists() {
+        const grid = document.getElementById('specialistGrid');
+        grid.innerHTML = '';
+
+        const dateObj = new Date(this.state.date + 'T00:00:00');
+        const formatted = dateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+        document.getElementById('specialistSubtitle').textContent =
+          `${this.state.service.name} · ${formatted} в ${this.state.time}`;
+
+        // "Any specialist" option
+        const anyCard = this.createSpecialistCard({ id: null, name: 'Любой специалист', description: 'Первый свободный' }, '🎲');
+        grid.appendChild(anyCard);
+
+        this.specialists.forEach(sp => {
+          const initials = sp.name ? sp.name.split(' ').map(w => w[0]).join('') : '?';
+          grid.appendChild(this.createSpecialistCard(sp, initials));
+        });
+      }
+
+      createSpecialistCard(sp, avatarContent) {
+        const card = document.createElement('div');
+        card.className = 'specialist-card';
+        card.innerHTML = `
+          <div class="specialist-avatar">${avatarContent}</div>
+          <div class="specialist-name">${sp.name || ''}</div>
+          <div class="specialist-role">${sp.description || ''}</div>
+        `;
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.specialist-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          this.state.specialist = sp.id ? sp : null;
+
+          setTimeout(() => {
+            this.renderSummary();
+            this.goTo('confirm');
+          }, 250);
+        });
+        return card;
+      }
+
+      /* ── Summary & Submit ── */
+      async renderSummary() {
+        const dateObj = new Date(this.state.date + 'T00:00:00');
+        const dateStr = dateObj.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+
+        const endTime = this.calcEndTime(this.state.time, this.state.service.duration_min);
+
+        let rows = `
+          <div class="summary-row">
+            <span class="summary-label">Услуга</span>
+            <span class="summary-value">${this.state.service.name}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Дата</span>
+            <span class="summary-value">${dateStr}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Время</span>
+            <span class="summary-value">${this.state.time} – ${endTime}</span>
+          </div>
+        `;
+
+        if (this.state.specialist) {
+          rows += `
+            <div class="summary-row">
+              <span class="summary-label">Специалист</span>
+              <span class="summary-value">${this.state.specialist.name || ''}</span>
+            </div>
+          `;
+        }
+
+        rows += `
+          <div class="summary-row total">
+            <span class="summary-label">Стоимость</span>
+            <span class="summary-value">${this.state.service.price.toLocaleString('ru-RU')} ₽</span>
+          </div>
+        `;
+
+        document.getElementById('summaryCard').innerHTML = rows;
+
+        // Reserve the slot (5 min hold)
+        try {
+          const reservation = await BookingAPI.reserveSlot(
+            this.state.service.id,
+            this.state.date,
+            this.state.time,
+            this.state.specialist?.id
+          );
+          this.state.reserveUuid = reservation.uuid;
+        } catch (e) {
+          // Slot may have been taken
+          document.getElementById('summaryCard').innerHTML += `
+            <div class="summary-row" style="color:var(--danger); margin-top:0.5rem;">
+              Время уже занято. Вернитесь и выберите другой слот.
+            </div>`;
+          document.getElementById('btnSubmit').disabled = true;
+        }
+      }
+
+      calcEndTime(start, durationMin) {
+        const [h, m] = start.split(':').map(Number);
+        const total = h * 60 + m + durationMin;
+        return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+      }
+
+      bindForm() {
+        const phone = document.getElementById('clientPhone');
+        phone.addEventListener('input', (e) => {
+          let val = e.target.value.replace(/\D/g, '');
+          if (val.startsWith('8')) val = '7' + val.slice(1);
+          if (!val.startsWith('7') && val.length > 0) val = '7' + val;
+
+          let formatted = '';
+          if (val.length > 0) formatted = '+' + val[0];
+          if (val.length > 1) formatted += ' (' + val.substring(1, 4);
+          if (val.length > 4) formatted += ') ' + val.substring(4, 7);
+          if (val.length > 7) formatted += '-' + val.substring(7, 9);
+          if (val.length > 9) formatted += '-' + val.substring(9, 11);
+
+          e.target.value = formatted;
+        });
+
+        document.getElementById('btnSubmit').addEventListener('click', () => this.submit());
+      }
+
+      async submit() {
+        const name = document.getElementById('clientName').value.trim();
+        const phone = document.getElementById('clientPhone').value.trim();
+        const email = document.getElementById('clientEmail').value.trim();
+
+        if (!name) { document.getElementById('clientName').focus(); return; }
+        if (phone.replace(/\D/g, '').length < 11) { document.getElementById('clientPhone').focus(); return; }
+
+        if (!this.state.reserveUuid) {
+          alert('Слот не зарезервирован. Вернитесь и выберите время заново.');
+          return;
+        }
+
+        const btn = document.getElementById('btnSubmit');
+        btn.disabled = true;
+        btn.textContent = 'Записываем…';
+
+        try {
+          const result = await BookingAPI.submitBooking({
+            reserve_uuid: this.state.reserveUuid,
+            client_name: name,
+            client_phone: phone.replace(/\D/g, ''),
+          });
+
+          if (result.success) {
+            this.renderSuccess(result.booking_id);
+            this.goTo('success');
+          }
+        } catch (e) {
+          btn.disabled = false;
+          btn.textContent = 'Записаться';
+          alert('Произошла ошибка. Попробуйте ещё раз.');
+        }
+      }
+
+      renderSuccess(bookingId) {
+        const dateObj = new Date(this.state.date + 'T00:00:00');
+        const dateStr = dateObj.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long' });
+
+        document.getElementById('successDetails').innerHTML = `
+          <div class="summary-row">
+            <span class="summary-label">Номер записи</span>
+            <span class="summary-value">${bookingId}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Услуга</span>
+            <span class="summary-value">${this.state.service.name}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Когда</span>
+            <span class="summary-value">${dateStr}, ${this.state.time}</span>
+          </div>
+        `;
+
+        // Hide progress bar for success
+        document.getElementById('progressBar').style.display = 'none';
+      }
+    }
+
+    /* ═══════════════════════════════════════
+       THEME & NAV (shared logic)
+       ═══════════════════════════════════════ */
+    const themeToggle = document.getElementById('themeToggle');
+    const stored = localStorage.getItem('theme');
+    if (stored) document.documentElement.dataset.theme = stored;
+    themeToggle.textContent = document.documentElement.dataset.theme === 'dark' ? '🌙' : '☀️';
+    themeToggle.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem('theme', next);
+      themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
+    });
+
+    document.getElementById('mobileToggle').addEventListener('click', () => {
+      document.getElementById('navLinks').classList.toggle('open');
+    });
+
+    const nav = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 10);
+    }, { passive: true });
+
+    /* ── Start ── */
+    document.addEventListener('DOMContentLoaded', () => new BookingWizard());
+  </script>
 </body>
 </html>

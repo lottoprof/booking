@@ -98,12 +98,12 @@ app.include_router(web_booking_router)
 FRONTEND_DIR = Path(__file__).parent.parent.parent / "frontend"
 
 # Mount static directories (if they exist)
-if (FRONTEND_DIR / "dist").exists():
-    app.mount("/dist", StaticFiles(directory=FRONTEND_DIR / "dist"), name="dist")
 if (FRONTEND_DIR / "css").exists():
     app.mount("/css", StaticFiles(directory=FRONTEND_DIR / "css"), name="css")
 if (FRONTEND_DIR / "images").exists():
     app.mount("/images", StaticFiles(directory=FRONTEND_DIR / "images"), name="images")
+if (FRONTEND_DIR / "blog").exists():
+    app.mount("/blog", StaticFiles(directory=FRONTEND_DIR / "blog", html=True), name="blog")
 
 
 # ===== HTML page routes =====
@@ -141,6 +141,15 @@ async def serve_miniapp():
     if html_path.exists():
         return FileResponse(html_path, media_type="text/html")
     return HTMLResponse("<h1>Mini App - Coming Soon</h1>", status_code=200)
+
+
+@app.get("/logo.svg", include_in_schema=False)
+async def serve_logo():
+    """Serve logo SVG."""
+    svg_path = FRONTEND_DIR / "logo.svg"
+    if svg_path.exists():
+        return FileResponse(svg_path, media_type="image/svg+xml")
+    raise HTTPException(status_code=404)
 
 
 # ===== Telegram webhook =====
