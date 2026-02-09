@@ -1,3 +1,7 @@
+# --- miniapp ---
+ru:miniapp:menu_button | "Записаться"
+en:miniapp:menu_button | "Book now"
+
 # --- language ---
 ru:common:lang:ru | "Русский"
 en:common:lang:en | "English"

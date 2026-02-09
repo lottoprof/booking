@@ -48,7 +48,23 @@ async def lifespan(app: FastAPI):
         logger.info(f"Warmup: Telegram API ready in {time.time() - start:.2f}s (@{me.username})")
     except Exception as e:
         logger.error(f"Warmup failed: {e}")
-    
+
+    # Set default Mini App menu button (for new users before language selection)
+    try:
+        from bot.app.config import MINIAPP_URL
+        from bot.app.i18n.loader import t, DEFAULT_LANG
+        if MINIAPP_URL:
+            from aiogram.types import MenuButtonWebApp, WebAppInfo
+            await bot.set_chat_menu_button(
+                menu_button=MenuButtonWebApp(
+                    text=t("miniapp:menu_button", DEFAULT_LANG),
+                    web_app=WebAppInfo(url=MINIAPP_URL),
+                ),
+            )
+            logger.info(f"Default menu button set: {MINIAPP_URL}")
+    except Exception as e:
+        logger.warning(f"Failed to set default menu button: {e}")
+
     logger.info("Gateway started")
 
     # Start event consumer loops

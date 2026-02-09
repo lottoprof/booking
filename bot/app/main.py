@@ -12,7 +12,7 @@ from aiogram.types import Update, Message, CallbackQuery, TelegramObject
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.fsm.context import FSMContext
 
-from bot.app.config import BOT_TOKEN
+from bot.app.config import BOT_TOKEN, MINIAPP_URL
 from bot.app.i18n.loader import load_messages, t, DEFAULT_LANG
 from bot.app.keyboards.common import language_inline
 from bot.app.keyboards.admin import admin_main
@@ -139,6 +139,27 @@ async def create_user_without_phone(message: Message) -> Optional[int]:
 
 
 # ===============================
+# MINI APP MENU BUTTON
+# ===============================
+
+async def set_miniapp_menu_button(chat_id: int, lang: str):
+    """Set Mini App menu button for a specific user."""
+    if not MINIAPP_URL:
+        return
+    from aiogram.types import MenuButtonWebApp, WebAppInfo
+    try:
+        await bot.set_chat_menu_button(
+            chat_id=chat_id,
+            menu_button=MenuButtonWebApp(
+                text=t("miniapp:menu_button", lang),
+                web_app=WebAppInfo(url=MINIAPP_URL),
+            ),
+        )
+    except Exception as e:
+        logger.warning(f"Failed to set menu button: {e}")
+
+
+# ===============================
 # ENTRYPOINTS
 # ===============================
 
@@ -189,7 +210,9 @@ async def start_handler(message: Message, state: FSMContext):
     # Если языков меньше 2 — используем дефолтный
     lang = DEFAULT_LANG
     user_lang[tg_id] = lang
-    
+
+    await set_miniapp_menu_button(message.chat.id, lang)
+
     # Показать меню по роли
     await route_by_role(message, lang)
 
@@ -205,6 +228,8 @@ async def language_callback(callback: CallbackQuery, state: FSMContext):
 
     # Сохраняем язык
     user_lang[tg_id] = lang
+
+    await set_miniapp_menu_button(chat_id, lang)
 
     # Удаляем сообщение с выбором языка
     try:
