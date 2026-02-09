@@ -44,3 +44,6 @@ CHANNEL_URL=https://t.me/channel
 GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=xxx
 GOOGLE_REDIRECT_URI=https://example.com/oauth/google/callback
+
+# Miniapp
+MINIAPP_URL=https://example.com/miniapp

@@ -132,6 +132,27 @@
     },
 
     {
+      "name": "web-booking-tg",
+      "path": ["/web/me"],
+      "methods": ["GET"],
+      "allow": ["tg_client"]
+    },
+
+    {
+      "name": "web-booking-public",
+      "path": ["/web/services", "/web/specialists", "/web/locations", "/web/slots/*"],
+      "methods": ["GET"],
+      "allow": ["public", "tg_client"]
+    },
+
+    {
+      "name": "web-booking-write",
+      "path": ["/web/reserve", "/web/reserve/*", "/web/booking", "/web/booking/*"],
+      "methods": ["GET", "POST", "DELETE"],
+      "allow": ["public", "tg_client"]
+    },
+
+    {
       "name": "push-subscriptions",
       "path": ["/push_subscriptions", "/push_subscriptions/*"],
       "methods": ["GET", "POST", "DELETE"],

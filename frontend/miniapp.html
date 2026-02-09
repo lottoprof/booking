@@ -521,7 +521,7 @@
 
       async fetchAPI(endpoint, options) {
         const headers = { 'Content-Type': 'application/json' };
-        if (this.tg.initData) headers['X-Telegram-Init-Data'] = this.tg.initData;
+        if (this.tg.initData) headers['X-TG-Init-Data'] = this.tg.initData;
 
         const res = await fetch(endpoint, { ...options, headers: { ...headers, ...(options?.headers || {}) } });
         if (!res.ok) {
@@ -532,9 +532,7 @@
       }
 
       async verifyUser() {
-        const user = this.tg.initDataUnsafe.user;
-        if (!user) throw new Error('User not found in initData');
-        const userData = await this.fetchAPI(`/users/by_tg/${user.id}`);
+        const userData = await this.fetchAPI('/web/me');
         return { client_id: userData.id };
       }
 

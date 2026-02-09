@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta
 from uuid import uuid4
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from ..redis_client import redis_client
@@ -185,6 +185,32 @@ def _get_cached_or_empty(cache_key: str) -> list[dict] | None:
     if cached:
         return json.loads(cached)
     return None
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Current user (from initData)
+# ──────────────────────────────────────────────────────────────────────────────
+
+@router.get("/me")
+async def web_me(request: Request):
+    """Return current user's client_id from verified initData."""
+    identity = getattr(request.state, "identity", None)
+    if not identity or not identity.get("tg_id"):
+        raise HTTPException(401, "Not authenticated")
+
+    import httpx
+    tg_id = identity["tg_id"]
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{DOMAIN_API_URL}/users/by_tg/{tg_id}",
+            timeout=10.0,
+        )
+
+    if resp.status_code != 200:
+        raise HTTPException(404, "User not found")
+
+    user = resp.json()
+    return {"id": user["id"], "first_name": user.get("first_name")}
 
 
 # ──────────────────────────────────────────────────────────────────────────────

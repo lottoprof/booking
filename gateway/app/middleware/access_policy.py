@@ -42,8 +42,10 @@ policy = AccessPolicy()
 async def access_policy_middleware(request: Request, call_next):
     path = request.url.path
 
-    # Инфраструктурные endpoints — без policy check
+    # Инфраструктурные и frontend endpoints — без policy check
     if path in ("/tg/webhook", "/oauth/google/callback"):
+        return await call_next(request)
+    if path in ("/", "/book", "/pricing", "/miniapp", "/logo.svg") or path.startswith(("/blog", "/css/")):
         return await call_next(request)
 
     client_type = request.state.client_type
