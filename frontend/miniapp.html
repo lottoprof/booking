@@ -1054,11 +1054,12 @@
         const startOffset = (firstDay.getDay() + 6) % 7;
         const today = new Date(); today.setHours(0,0,0,0);
 
-        // Nav limits: no past months, max 3 months ahead
-        const minMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const maxMonth = new Date(today.getFullYear(), today.getMonth() + 3, 1);
-        document.getElementById('prev-month').disabled = (year === minMonth.getFullYear() && month <= minMonth.getMonth());
-        document.getElementById('next-month').disabled = (year === maxMonth.getFullYear() && month >= maxMonth.getMonth());
+        // Nav limits: no past months, max 3 months ahead (year-safe)
+        const cur = year * 12 + month;
+        const min = today.getFullYear() * 12 + today.getMonth();
+        const max = min + 3;
+        document.getElementById('prev-month').disabled = cur <= min;
+        document.getElementById('next-month').disabled = cur >= max;
 
         let html = '';
         for (let i = 0; i < startOffset; i++) html += '<div class="calendar-day empty"></div>';
@@ -1089,43 +1090,37 @@
         document.getElementById('prev-month').onclick = () => this.navigateMonth(-1);
         document.getElementById('next-month').onclick = () => this.navigateMonth(1);
 
-        // Swipe gestures
-        this.initCalendarSwipe();
+        // Init swipe once
+        if (!this._swipeReady) {
+          this._swipeReady = true;
+          this.initCalendarSwipe();
+        }
       }
 
       navigateMonth(dir) {
-        const container = document.getElementById('calendar-days');
+        if (this._navigating) return;
         const btn = document.getElementById(dir > 0 ? 'next-month' : 'prev-month');
         if (btn?.disabled) return;
 
-        container.classList.add('calendar-swipe', dir > 0 ? 'swipe-left' : 'swipe-right');
-        setTimeout(() => {
-          this.currentMonth.setMonth(this.currentMonth.getMonth() + dir);
-          this.renderCalendar();
-          container.classList.remove('swipe-left', 'swipe-right');
-          container.classList.add(dir > 0 ? 'swipe-right' : 'swipe-left');
-          requestAnimationFrame(() => {
-            container.classList.remove('swipe-left', 'swipe-right');
-          });
-        }, 200);
+        this._navigating = true;
+        this.currentMonth.setMonth(this.currentMonth.getMonth() + dir);
+        this.renderCalendar();
+        setTimeout(() => { this._navigating = false; }, 300);
       }
 
       initCalendarSwipe() {
         const el = document.getElementById('step-calendar');
-        let startX = 0, startY = 0, tracking = false;
+        let startX = 0, startY = 0;
 
         el.addEventListener('touchstart', e => {
           startX = e.touches[0].clientX;
           startY = e.touches[0].clientY;
-          tracking = true;
         }, { passive: true });
 
         el.addEventListener('touchend', e => {
-          if (!tracking) return;
-          tracking = false;
           const dx = e.changedTouches[0].clientX - startX;
           const dy = e.changedTouches[0].clientY - startY;
-          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+          if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2) {
             this.navigateMonth(dx < 0 ? 1 : -1);
           }
         }, { passive: true });
