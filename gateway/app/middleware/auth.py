@@ -43,11 +43,6 @@ async def auth_middleware(request: Request, call_next):
         if auth_date == 0 or time.time() - auth_date > INITDATA_TTL:
             raise HTTPException(401, "initData expired")
 
-        # ===== ANTI-REPLAY (Redis) =====
-        key = _initdata_key(init_data)
-        if not redis_client.set(key, "1", nx=True, ex=ANTI_REPLAY_TTL):
-            raise HTTPException(401, "Replay detected")
-
         # ===== NORMALIZED IDENTITY =====
         user_raw = data.get("user") or "{}"
         user = json.loads(user_raw) if isinstance(user_raw, str) else user_raw
