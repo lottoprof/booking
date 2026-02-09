@@ -875,13 +875,15 @@
         });
 
         try {
-          const userData = await this.verifyUser();
+          const [userData, locations, services] = await Promise.all([
+            this.verifyUser(),
+            this.fetchAPI('/web/locations'),
+            this.fetchAPI('/web/services'),
+          ]);
+
           this.state.clientId = userData.client_id;
-
-          const locations = await this.fetchAPI('/web/locations');
           if (locations.length > 0) this.state.locationId = locations[0].id;
-
-          this.services = await this.fetchAPI('/web/services');
+          this.services = services;
 
           this.hideLoading();
           this.renderProgressBar();
