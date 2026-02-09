@@ -271,11 +271,16 @@ async def get_services():
         if not pkg.get("is_active", True):
             continue
         try:
-            items = json.loads(pkg.get("package_items", "{}"))
+            items = json.loads(pkg.get("package_items", "[]"))
         except (json.JSONDecodeError, TypeError):
             continue
-        for sid_str, qty in items.items():
-            sid = int(sid_str)
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            sid = item.get("service_id")
+            qty = item.get("quantity", 1)
+            if not sid:
+                continue
             svc_packages.setdefault(sid, []).append({
                 "name": pkg["name"],
                 "price": pkg["package_price"],
