@@ -395,50 +395,37 @@ async def get_slots_calendar(
     """
     Get calendar of available days for booking.
 
-    Reads from Redis Level 1 cache (slots:day:{location_id}:{date}).
+    Proxies to backend /slots/calendar which handles config, cache and calculation.
     """
-    today = date.today()
-    horizon_days = 30  # Default horizon
+    import httpx
 
+    params = {"location_id": location_id}
     if start_date:
-        start = date.fromisoformat(start_date)
-        if start < today:
-            start = today
-    else:
-        start = today
-
+        params["start_date"] = start_date
     if end_date:
-        end = date.fromisoformat(end_date)
-        if end > today + timedelta(days=horizon_days):
-            end = today + timedelta(days=horizon_days)
-    else:
-        end = start + timedelta(days=horizon_days)
+        params["end_date"] = end_date
 
-    days = []
-    current = start
-    now_ts = datetime.now().timestamp()
+    try:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            resp = await client.get(
+                f"{DOMAIN_API_URL}/slots/calendar",
+                params=params,
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+    except Exception as e:
+        logger.error(f"Backend /slots/calendar failed: {e}")
+        raise HTTPException(status_code=502, detail="Slot calendar unavailable")
 
-    while current <= end:
-        key = f"slots:day:{location_id}:{current.isoformat()}"
-
-        # Count available slots (score > now_ts)
-        if redis_client.exists(key):
-            count = redis_client.zcount(key, now_ts, "+inf")
-            days.append(WebDayStatus(
-                date=current.isoformat(),
-                has_slots=count > 0,
-                open_slots_count=count
-            ))
-        else:
-            # Cache miss - mark as unknown (has_slots=False for now)
-            # The frontend should request specific day to trigger calculation
-            days.append(WebDayStatus(
-                date=current.isoformat(),
-                has_slots=False,
-                open_slots_count=0
-            ))
-
-        current += timedelta(days=1)
+    days = [
+        WebDayStatus(
+            date=d["date"],
+            has_slots=d.get("has_slots", False),
+            open_slots_count=d.get("open_slots_count", 0),
+        )
+        for d in data.get("days", [])
+    ]
 
     return WebCalendarResponse(location_id=location_id, days=days)
 
