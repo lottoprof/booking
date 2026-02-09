@@ -147,7 +147,7 @@
 
     {
       "name": "web-booking-write",
-      "path": ["/web/reserve", "/web/reserve/*", "/web/booking", "/web/booking/*"],
+      "path": ["/web/bookings", "/web/reserve", "/web/reserve/*", "/web/booking", "/web/booking/*"],
       "methods": ["GET", "POST", "DELETE"],
       "allow": ["public", "tg_client"]
     },

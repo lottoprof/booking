@@ -503,10 +503,10 @@
           const userData = await this.verifyUser();
           this.state.clientId = userData.client_id;
 
-          const locations = await this.fetchAPI('/locations');
+          const locations = await this.fetchAPI('/web/locations');
           if (locations.length > 0) this.state.locationId = locations[0].id;
 
-          this.services = await this.fetchAPI('/services');
+          this.services = await this.fetchAPI('/web/services');
 
           this.hideLoading();
           this.renderServices();
@@ -619,7 +619,7 @@
         if (!this.state.service) return;
         try {
           const data = await this.fetchAPI(
-            `/slots/calendar?location_id=${this.state.locationId}&start_date=&end_date=`
+            `/web/slots/calendar?location_id=${this.state.locationId}&service_id=${this.state.service.id}`
           );
           this.availableDays.clear();
           for (const day of data.days) this.availableDays.set(day.date, day.has_slots);
@@ -696,9 +696,9 @@
         if (!this.state.service) return;
         try {
           const data = await this.fetchAPI(
-            `/slots/day?location_id=${this.state.locationId}&service_id=${this.state.service.id}&date=${this.state.date}`
+            `/web/slots/day?location_id=${this.state.locationId}&service_id=${this.state.service.id}&date=${this.state.date}`
           );
-          this.timeSlots = data.available_times || [];
+          this.timeSlots = data.slots || [];
           this.renderTimeSlots();
 
           const d = new Date(this.state.date);
@@ -760,7 +760,7 @@
           const start = new Date(`${this.state.date}T${this.state.time}:00`);
           const end = new Date(start.getTime() + this.state.service.duration_min * 60000);
 
-          const result = await this.fetchAPI('/bookings', {
+          const result = await this.fetchAPI('/web/bookings', {
             method: 'POST',
             body: JSON.stringify({
               company_id: 1,

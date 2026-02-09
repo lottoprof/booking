@@ -214,6 +214,30 @@ async def web_me(request: Request):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Booking (proxy to backend for authenticated miniapp users)
+# ──────────────────────────────────────────────────────────────────────────────
+
+@router.post("/bookings")
+async def web_create_booking(request: Request):
+    """Proxy booking creation to backend for authenticated TG users."""
+    import httpx
+
+    body = await request.json()
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{DOMAIN_API_URL}/bookings",
+            json=body,
+            timeout=10.0,
+        )
+
+    if resp.status_code != 200:
+        detail = resp.json().get("detail", "Booking failed") if resp.headers.get("content-type", "").startswith("application/json") else "Booking failed"
+        raise HTTPException(resp.status_code, detail)
+
+    return resp.json()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Services
 # ──────────────────────────────────────────────────────────────────────────────
 
