@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="light">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -8,11 +8,11 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     /* ═══════════════════════════════════════
-       DESIGN TOKENS (UPGRADE)
+       DESIGN TOKENS
        ═══════════════════════════════════════ */
     :root {
       --teal:        #2BB5B8;
@@ -22,22 +22,30 @@
       --font-display:'Cormorant Garamond', Georgia, serif;
       --font-body:   'Manrope', system-ui, sans-serif;
 
-      /* Telegram theme integration — fallbacks to UPGRADE palette */
+      /* Telegram theme integration with UPGRADE fallbacks */
       --bg:          var(--tg-theme-bg-color, #FFFFFF);
-      --bg-secondary:var(--tg-theme-secondary-bg-color, #F8FBFB);
+      --bg-secondary:var(--tg-theme-secondary-bg-color, #F4F8F8);
       --text:        var(--tg-theme-text-color, #1A2B2B);
-      --text-hint:   var(--tg-theme-hint-color, #8FA5A5);
+      --text-hint:   var(--tg-theme-hint-color, #6B8080);
       --accent:      var(--tg-theme-button-color, #2BB5B8);
       --accent-text: var(--tg-theme-button-text-color, #FFFFFF);
       --link:        var(--tg-theme-link-color, #1E8E90);
-      --border:      #E0EDED;
-      --danger:      #E74C3C;
-      --success:     #27AE60;
 
-      --shadow-sm:   0 1px 3px rgba(43,181,184,0.06);
-      --shadow-md:   0 8px 24px rgba(43,181,184,0.10);
-      --radius:      12px;
-      --radius-sm:   8px;
+      /* Extended palette — auto-adapts via TG vars */
+      --text-strong:   var(--tg-theme-text-color, #0F1E1E);
+      --border:        var(--tg-theme-secondary-bg-color, #DAE5E5);
+      --border-active: var(--teal);
+      --card-bg:       var(--tg-theme-bg-color, #FFFFFF);
+      --card-hover:    var(--tg-theme-secondary-bg-color, #F0F6F6);
+      --danger:        #DC3545;
+      --success:       #22C55E;
+      --success-bg:    #DCFCE7;
+      --danger-bg:     #FEE2E2;
+
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md:   0 4px 16px rgba(0,0,0,0.08);
+      --radius:      14px;
+      --radius-sm:   10px;
     }
 
     /* ═══════════════════════════════════════
@@ -51,7 +59,9 @@
       color: var(--text);
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       min-height: 100vh;
+      font-weight: 400;
     }
 
     .hidden { display: none !important; }
@@ -63,6 +73,7 @@
       max-width: 480px;
       margin: 0 auto;
       padding: 16px;
+      padding-bottom: 32px;
     }
 
     /* ═══════════════════════════════════════
@@ -80,74 +91,110 @@
       border-radius: 2px;
       transition: background 0.3s;
     }
-    .progress-step.completed,
-    .progress-step.active {
-      background: var(--teal);
-    }
+    .progress-step.completed { background: var(--teal); }
+    .progress-step.active    { background: var(--teal); opacity: 0.6; }
 
     /* ═══════════════════════════════════════
-       STEPS
+       STEP TRANSITIONS
        ═══════════════════════════════════════ */
     .step {
       display: none;
-      animation: fadeIn 0.25s ease;
+      animation: stepIn 0.25s ease;
     }
     .step.active { display: block; }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
+    @keyframes stepIn {
+      from { opacity: 0; transform: translateY(10px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
     .step-title {
       font-family: var(--font-display);
-      font-size: 1.4rem;
+      font-size: 1.5rem;
       font-weight: 600;
-      color: var(--text);
+      color: var(--text-strong);
       margin-bottom: 4px;
     }
     .step-subtitle {
       font-size: 0.85rem;
       color: var(--text-hint);
       margin-bottom: 16px;
+      font-weight: 400;
     }
 
     /* ═══════════════════════════════════════
        SERVICE CARDS
        ═══════════════════════════════════════ */
-    .services-list { display: flex; flex-direction: column; gap: 10px; }
+    .services-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
     .service-card {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      background: var(--bg);
+      gap: 14px;
+      background: var(--card-bg);
       border: 1.5px solid var(--border);
       border-radius: var(--radius);
       padding: 14px 16px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
     }
     .service-card:active { transform: scale(0.98); }
     .service-card.selected {
       border-color: var(--teal);
       background: var(--teal-subtle);
+      box-shadow: 0 0 0 1px var(--teal);
     }
-    .service-card .name {
-      font-weight: 500;
-      font-size: 0.95rem;
-      color: var(--text);
+
+    .service-card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+      transition: background 0.2s;
     }
-    .service-card .details {
-      font-size: 0.8rem;
+    .service-card.selected .service-card-icon {
+      background: rgba(43,181,184,0.15);
+    }
+
+    .service-card-body { flex: 1; min-width: 0; }
+
+    .service-card-name {
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--text-strong);
+      line-height: 1.3;
+    }
+    .service-card-meta {
+      font-size: 0.78rem;
       color: var(--text-hint);
       margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .service-card .price {
-      font-weight: 600;
-      font-size: 1.05rem;
+    .service-card-meta .dot {
+      width: 3px; height: 3px;
+      border-radius: 50%;
+      background: var(--text-hint);
+      opacity: 0.5;
+    }
+
+    .service-card-price {
+      font-weight: 700;
+      font-size: 1rem;
       color: var(--teal-dark);
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     /* ═══════════════════════════════════════
@@ -162,33 +209,36 @@
     .calendar-month {
       font-family: var(--font-display);
       font-weight: 600;
-      font-size: 1.1rem;
+      font-size: 1.15rem;
+      color: var(--text-strong);
     }
     .calendar-nav {
-      display: flex; gap: 6px;
+      display: flex;
+      gap: 6px;
     }
     .calendar-nav button {
-      width: 32px; height: 32px;
-      border: 1px solid var(--border);
+      width: 36px; height: 36px;
+      border: 1.5px solid var(--border);
       border-radius: var(--radius-sm);
-      background: var(--bg);
-      color: var(--text);
-      font-size: 1rem;
+      background: var(--card-bg);
+      color: var(--text-strong);
+      font-size: 1.1rem;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
     }
-    .calendar-nav button:active { background: var(--teal-subtle); }
-    .calendar-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+    .calendar-nav button:active { background: var(--teal-subtle); border-color: var(--teal); }
+    .calendar-nav button:disabled { opacity: 0.3; cursor: not-allowed; }
 
     .calendar-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 3px;
+      gap: 5px;
     }
     .calendar-day-header {
       text-align: center;
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       font-weight: 600;
       color: var(--text-hint);
       padding: 6px 0;
@@ -196,19 +246,22 @@
       letter-spacing: 0.5px;
     }
     .calendar-day {
-      aspect-ratio: 1;
+      height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
       border-radius: var(--radius-sm);
-      font-size: 0.85rem;
+      font-size: 0.88rem;
+      font-weight: 500;
       cursor: pointer;
       transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      color: var(--text);
     }
     .calendar-day.empty { cursor: default; }
     .calendar-day.available {
-      background: var(--bg);
-      border: 1px solid var(--border);
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
     }
     .calendar-day.available:active {
       border-color: var(--teal);
@@ -221,14 +274,30 @@
     .calendar-day.selected {
       background: var(--teal);
       color: #fff;
-      font-weight: 600;
+      font-weight: 700;
       border-color: var(--teal);
     }
-    .calendar-day.today { font-weight: 600; color: var(--teal-dark); }
+    .calendar-day.today {
+      font-weight: 700;
+      color: var(--teal-dark);
+    }
+    .calendar-day.today.selected {
+      color: #fff;
+    }
 
     /* ═══════════════════════════════════════
        TIME SLOTS
        ═══════════════════════════════════════ */
+    .time-group { margin-bottom: 16px; }
+    .time-group-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-hint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+      padding-left: 2px;
+    }
     .time-slots-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -238,15 +307,17 @@
       .time-slots-grid { grid-template-columns: repeat(3, 1fr); }
     }
     .time-slot {
-      padding: 10px 6px;
+      padding: 12px 6px;
       text-align: center;
-      background: var(--bg);
+      background: var(--card-bg);
       border: 1.5px solid var(--border);
       border-radius: var(--radius-sm);
       cursor: pointer;
       transition: all 0.15s;
-      font-size: 0.85rem;
+      font-size: 0.88rem;
       font-weight: 500;
+      color: var(--text-strong);
+      -webkit-tap-highlight-color: transparent;
     }
     .time-slot:active {
       border-color: var(--teal);
@@ -256,16 +327,153 @@
       background: var(--teal);
       color: #fff;
       border-color: var(--teal);
-    }
-    .time-slot.unavailable {
-      opacity: 0.4;
-      cursor: not-allowed;
+      font-weight: 700;
     }
     .no-slots {
       text-align: center;
       padding: 40px 16px;
       color: var(--text-hint);
       font-size: 0.9rem;
+    }
+
+    /* ═══════════════════════════════════════
+       SPECIALIST CARDS
+       ═══════════════════════════════════════ */
+    .specialists-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .specialist-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .specialist-card:active { transform: scale(0.98); }
+    .specialist-card.selected {
+      border-color: var(--teal);
+      background: var(--teal-subtle);
+      box-shadow: 0 0 0 1px var(--teal);
+    }
+
+    .specialist-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+      color: var(--text-hint);
+      font-weight: 600;
+      overflow: hidden;
+    }
+    .specialist-avatar img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    .specialist-body { flex: 1; min-width: 0; }
+    .specialist-name {
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--text-strong);
+    }
+    .specialist-role {
+      font-size: 0.78rem;
+      color: var(--text-hint);
+      margin-top: 2px;
+    }
+
+    .specialist-check {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      font-size: 0.75rem;
+      color: transparent;
+    }
+    .specialist-card.selected .specialist-check {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #fff;
+    }
+
+    /* ═══════════════════════════════════════
+       CONFIRMATION CARD
+       ═══════════════════════════════════════ */
+    .confirm-card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .confirm-card-title {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text-strong);
+      margin-bottom: 14px;
+    }
+    .confirm-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
+    }
+    .confirm-row:last-child { border-bottom: none; }
+    .confirm-label {
+      color: var(--text-hint);
+      font-weight: 400;
+      flex-shrink: 0;
+    }
+    .confirm-value {
+      font-weight: 600;
+      color: var(--text-strong);
+      text-align: right;
+      margin-left: 12px;
+    }
+
+    .confirm-btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--teal);
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 16px rgba(43,181,184,0.25);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .confirm-btn:active {
+      transform: scale(0.98);
+      background: var(--teal-dark);
+    }
+    .confirm-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
     }
 
     /* ═══════════════════════════════════════
@@ -292,15 +500,16 @@
       border-top-color: var(--teal);
       animation: spin 0.8s linear infinite;
     }
-    .status-icon.success { background: #dcfce7; color: var(--success); }
-    .status-icon.error   { background: #fee2e2; color: var(--danger); }
+    .status-icon.success { background: var(--success-bg); color: var(--success); }
+    .status-icon.error   { background: var(--danger-bg); color: var(--danger); }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .status-title {
       font-family: var(--font-display);
-      font-size: 1.2rem;
+      font-size: 1.3rem;
       font-weight: 600;
+      color: var(--text-strong);
       margin-bottom: 6px;
     }
     .status-text {
@@ -309,9 +518,7 @@
       margin-bottom: 20px;
     }
 
-    /* ═══════════════════════════════════════
-       SUMMARY CARD
-       ═══════════════════════════════════════ */
+    /* Summary after success */
     .summary-card {
       width: 100%;
       background: var(--bg-secondary);
@@ -321,16 +528,88 @@
     .summary-row {
       display: flex;
       justify-content: space-between;
-      padding: 8px 0;
+      padding: 9px 0;
       border-bottom: 1px solid var(--border);
       font-size: 0.85rem;
     }
     .summary-row:last-child { border-bottom: none; }
     .summary-label { color: var(--text-hint); }
-    .summary-value { font-weight: 500; color: var(--text); }
+    .summary-value { font-weight: 600; color: var(--text-strong); }
 
     /* ═══════════════════════════════════════
-       LOADING
+       SKELETONS
+       ═══════════════════════════════════════ */
+    .skeleton-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .skeleton-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .skeleton-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: var(--bg-secondary);
+    }
+    .skeleton-lines { flex: 1; }
+    .skeleton-line {
+      height: 12px;
+      border-radius: 6px;
+      background: var(--bg-secondary);
+      margin-bottom: 6px;
+    }
+    .skeleton-line:last-child { margin-bottom: 0; }
+    .skeleton-line.w60 { width: 60%; }
+    .skeleton-line.w40 { width: 40%; }
+    .skeleton-line.w80 { width: 80%; }
+    .skeleton-price {
+      width: 56px; height: 18px;
+      border-radius: 6px;
+      background: var(--bg-secondary);
+      flex-shrink: 0;
+    }
+
+    .skeleton-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .skeleton-slot {
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+    }
+
+    /* Shimmer animation */
+    .skeleton-shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+    .skeleton-shimmer::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(43,181,184,0.04) 40%,
+        rgba(43,181,184,0.08) 50%,
+        rgba(43,181,184,0.04) 60%,
+        transparent 100%
+      );
+      animation: shimmer 1.6s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* ═══════════════════════════════════════
+       LOADING & ERROR SCREENS
        ═══════════════════════════════════════ */
     .loading-screen {
       display: flex;
@@ -352,9 +631,6 @@
       color: var(--text-hint);
     }
 
-    /* ═══════════════════════════════════════
-       ERROR SCREEN
-       ═══════════════════════════════════════ */
     .error-screen {
       text-align: center;
       padding: 48px 16px;
@@ -363,11 +639,40 @@
       font-family: var(--font-display);
       font-size: 1.2rem;
       font-weight: 600;
+      color: var(--text-strong);
       margin-bottom: 8px;
     }
     .error-screen .hint {
       font-size: 0.85rem;
       color: var(--text-hint);
+      margin-bottom: 20px;
+    }
+    .error-retry {
+      display: inline-flex;
+      padding: 10px 24px;
+      border: 1.5px solid var(--teal);
+      border-radius: 100px;
+      background: transparent;
+      color: var(--teal);
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .error-retry:active {
+      background: var(--teal);
+      color: #fff;
+    }
+
+    /* ═══════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.1s !important;
+      }
     }
   </style>
 </head>
@@ -380,38 +685,49 @@
       <span class="loading-text">Загрузка...</span>
     </div>
 
-    <!-- Main App (hidden until loaded) -->
+    <!-- Main App -->
     <div id="app-container" class="hidden">
 
-      <!-- Progress Bar -->
-      <div class="progress-bar" id="progress-bar">
-        <div class="progress-step" data-step="1"></div>
-        <div class="progress-step" data-step="2"></div>
-        <div class="progress-step" data-step="3"></div>
-        <div class="progress-step" data-step="4"></div>
-      </div>
+      <div class="progress-bar" id="progress-bar"></div>
 
-      <!-- Step 1: Service Selection -->
+      <!-- Step 1: Service -->
       <div id="step-service" class="step">
         <h1 class="step-title">Выберите услугу</h1>
-        <p class="step-subtitle">Какую процедуру вы хотите заказать?</p>
+        <p class="step-subtitle">Какую процедуру хотите записать?</p>
         <div id="services-list" class="services-list"></div>
+        <div id="services-skeleton" class="skeleton-list hidden">
+          <div class="skeleton-card skeleton-shimmer">
+            <div class="skeleton-icon"></div>
+            <div class="skeleton-lines"><div class="skeleton-line w80"></div><div class="skeleton-line w40"></div></div>
+            <div class="skeleton-price"></div>
+          </div>
+          <div class="skeleton-card skeleton-shimmer">
+            <div class="skeleton-icon"></div>
+            <div class="skeleton-lines"><div class="skeleton-line w60"></div><div class="skeleton-line w40"></div></div>
+            <div class="skeleton-price"></div>
+          </div>
+          <div class="skeleton-card skeleton-shimmer">
+            <div class="skeleton-icon"></div>
+            <div class="skeleton-lines"><div class="skeleton-line w80"></div><div class="skeleton-line w40"></div></div>
+            <div class="skeleton-price"></div>
+          </div>
+        </div>
       </div>
 
-      <!-- Step 2: Calendar Selection -->
+      <!-- Step 2: Calendar -->
       <div id="step-calendar" class="step">
         <h1 class="step-title">Выберите дату</h1>
-        <p class="step-subtitle">Доступные даты для записи</p>
+        <p class="step-subtitle">Доступные дни для записи</p>
 
         <div class="calendar-header">
           <span class="calendar-month" id="current-month"></span>
           <div class="calendar-nav">
-            <button id="prev-month">&#8249;</button>
-            <button id="next-month">&#8250;</button>
+            <button id="prev-month" aria-label="Предыдущий месяц">&#8249;</button>
+            <button id="next-month" aria-label="Следующий месяц">&#8250;</button>
           </div>
         </div>
 
-        <div class="calendar-grid" style="margin-bottom: 4px;">
+        <div class="calendar-grid" style="margin-bottom: 5px;">
           <div class="calendar-day-header">Пн</div>
           <div class="calendar-day-header">Вт</div>
           <div class="calendar-day-header">Ср</div>
@@ -423,20 +739,48 @@
         <div id="calendar-days" class="calendar-grid"></div>
       </div>
 
-      <!-- Step 3: Time Selection -->
+      <!-- Step 3: Time -->
       <div id="step-time" class="step">
         <h1 class="step-title">Выберите время</h1>
         <p class="step-subtitle" id="selected-date-display"></p>
-        <div id="time-slots" class="time-slots-grid"></div>
+        <div id="time-slots-container"></div>
+        <div id="time-skeleton" class="hidden">
+          <div class="skeleton-grid skeleton-shimmer">
+            <div class="skeleton-slot"></div><div class="skeleton-slot"></div>
+            <div class="skeleton-slot"></div><div class="skeleton-slot"></div>
+            <div class="skeleton-slot"></div><div class="skeleton-slot"></div>
+            <div class="skeleton-slot"></div><div class="skeleton-slot"></div>
+          </div>
+        </div>
         <div id="no-slots-message" class="no-slots hidden">
           Нет свободных слотов на эту дату
         </div>
       </div>
 
-      <!-- Step 4: Confirmation -->
+      <!-- Step 4: Specialist -->
+      <div id="step-specialist" class="step">
+        <h1 class="step-title">Выберите специалиста</h1>
+        <p class="step-subtitle" id="specialist-subtitle"></p>
+        <div id="specialists-list" class="specialists-list"></div>
+      </div>
+
+      <!-- Step 5: Confirm -->
       <div id="step-confirm" class="step">
+        <!-- Review before booking -->
+        <div id="confirm-review">
+          <h1 class="step-title">Подтвердите запись</h1>
+          <p class="step-subtitle">Проверьте данные и нажмите «Записаться»</p>
+
+          <div class="confirm-card">
+            <div class="confirm-card-title">Ваша запись</div>
+            <div id="confirm-details"></div>
+          </div>
+
+          <button class="confirm-btn" id="confirm-btn">Записаться</button>
+        </div>
+
         <!-- Pending -->
-        <div id="status-pending" class="status-screen">
+        <div id="status-pending" class="status-screen hidden">
           <div class="status-icon pending"></div>
           <h2 class="status-title">Обрабатываем запись...</h2>
           <p class="status-text">Это займёт несколько секунд</p>
@@ -444,7 +788,7 @@
 
         <!-- Success -->
         <div id="status-success" class="status-screen hidden">
-          <div class="status-icon success">&#10003;</div>
+          <div class="status-icon success">✓</div>
           <h2 class="status-title">Запись подтверждена!</h2>
           <p class="status-text">Мы пришлём напоминание</p>
           <div class="summary-card" id="booking-summary"></div>
@@ -452,7 +796,7 @@
 
         <!-- Error -->
         <div id="status-error" class="status-screen hidden">
-          <div class="status-icon error">&#10007;</div>
+          <div class="status-icon error">✕</div>
           <h2 class="status-title">Не удалось записаться</h2>
           <p class="status-text" id="error-message"></p>
         </div>
@@ -460,10 +804,11 @@
 
     </div>
 
-    <!-- Error State (for init errors) -->
+    <!-- Init Error -->
     <div id="error-screen" class="error-screen hidden">
       <p>Ошибка загрузки</p>
-      <p class="hint" id="init-error-message">Не удалось инициализировать приложение</p>
+      <p class="hint" id="init-error-message">Не удалось загрузить данные</p>
+      <button class="error-retry" id="retry-btn">Попробовать снова</button>
     </div>
 
   </div>
@@ -471,7 +816,6 @@
   <script>
     /* ═══════════════════════════════════════
        MINI APP — Telegram WebApp booking
-       Trusted flow: initData verified by Gateway
        ═══════════════════════════════════════ */
 
     class MiniApp {
@@ -484,13 +828,20 @@
           date: '',
           time: '',
           specialistId: null,
+          specialistName: '',
         };
         this.services = [];
         this.availableDays = new Map();
         this.timeSlots = [];
+        this.specialists = [];
         this.currentMonth = new Date();
         this.currentStep = 'service';
         this.mainButtonCallback = null;
+        this.hasMultipleSpecialists = false;
+
+        // Steps order — dynamic, specialist step inserted only when needed
+        this.steps = ['service', 'calendar', 'time', 'confirm'];
+
         this.init();
       }
 
@@ -498,6 +849,13 @@
         this.tg.ready();
         this.tg.expand();
         this.tg.BackButton.onClick(() => this.handleBack());
+
+        // Retry button
+        document.getElementById('retry-btn')?.addEventListener('click', () => {
+          document.getElementById('error-screen').classList.add('hidden');
+          document.getElementById('loading-screen').classList.remove('hidden');
+          this.init();
+        });
 
         try {
           const userData = await this.verifyUser();
@@ -509,11 +867,12 @@
           this.services = await this.fetchAPI('/web/services');
 
           this.hideLoading();
+          this.renderProgressBar();
           this.renderServices();
           this.showStep('service');
         } catch (error) {
           console.error('Init error:', error);
-          this.showInitError(error.message || 'Unknown error');
+          this.showInitError(error.message || 'Ошибка соединения');
         }
       }
 
@@ -523,10 +882,14 @@
         const headers = { 'Content-Type': 'application/json' };
         if (this.tg.initData) headers['X-TG-Init-Data'] = this.tg.initData;
 
-        const res = await fetch(endpoint, { ...options, headers: { ...headers, ...(options?.headers || {}) } });
+        const res = await fetch(endpoint, {
+          ...options,
+          headers: { ...headers, ...(options?.headers || {}) },
+        });
+
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          throw new Error(err.detail || `API error: ${res.status}`);
+          throw new Error(err.detail || `Ошибка сервера: ${res.status}`);
         }
         return res.json();
       }
@@ -549,12 +912,18 @@
         document.getElementById('init-error-message').textContent = message;
       }
 
+      renderProgressBar() {
+        const bar = document.getElementById('progress-bar');
+        bar.innerHTML = this.steps
+          .map((_, i) => `<div class="progress-step" data-step="${i + 1}"></div>`)
+          .join('');
+      }
+
       showStep(step) {
         document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
         document.getElementById(`step-${step}`).classList.add('active');
 
-        const steps = ['service', 'calendar', 'time', 'confirm'];
-        const idx = steps.indexOf(step);
+        const idx = this.steps.indexOf(step);
         document.querySelectorAll('.progress-step').forEach((el, i) => {
           el.classList.remove('completed', 'active');
           if (i < idx) el.classList.add('completed');
@@ -576,23 +945,40 @@
 
       handleBack() {
         this.tg.HapticFeedback.selectionChanged();
-        const map = { calendar: 'service', time: 'calendar', confirm: 'time' };
-        if (map[this.currentStep]) this.showStep(map[this.currentStep]);
+        const idx = this.steps.indexOf(this.currentStep);
+        if (idx > 0) this.showStep(this.steps[idx - 1]);
       }
 
-      /* ── Services ── */
+      /* ── Step 1: Services ── */
 
       renderServices() {
         const container = document.getElementById('services-list');
-        container.innerHTML = this.services.map(s => `
-          <div class="service-card" data-id="${s.id}">
-            <div>
-              <div class="name">${this.esc(s.name)}</div>
-              <div class="details">${s.duration_min} мин</div>
+        const iconMap = {
+          'lpg':          '✦',
+          'роликовый':    '◎',
+          'прессотерапия':'◇',
+          'индибо':       '≋',
+          'обёртывание':  '❋',
+          'обертывание':  '❋',
+        };
+
+        container.innerHTML = this.services.map(s => {
+          const key = Object.keys(iconMap).find(k => s.name.toLowerCase().includes(k));
+          const icon = key ? iconMap[key] : '◈';
+          return `
+            <div class="service-card" data-id="${s.id}">
+              <div class="service-card-icon">${icon}</div>
+              <div class="service-card-body">
+                <div class="service-card-name">${this.esc(s.name)}</div>
+                <div class="service-card-meta">
+                  <span>${s.duration_min} мин</span>
+                  ${s.category ? `<span class="dot"></span><span>${this.esc(s.category)}</span>` : ''}
+                </div>
+              </div>
+              <div class="service-card-price">${this.fmtPrice(s.price)}</div>
             </div>
-            <div class="price">${this.fmtPrice(s.price)}</div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
 
         container.addEventListener('click', e => {
           const card = e.target.closest('.service-card');
@@ -613,7 +999,7 @@
         await this.loadCalendar();
       }
 
-      /* ── Calendar ── */
+      /* ── Step 2: Calendar ── */
 
       async loadCalendar() {
         if (!this.state.service) return;
@@ -651,6 +1037,12 @@
         const startOffset = (firstDay.getDay() + 6) % 7;
         const today = new Date(); today.setHours(0,0,0,0);
 
+        // Nav limits: no past months, max 3 months ahead
+        const minMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const maxMonth = new Date(today.getFullYear(), today.getMonth() + 3, 1);
+        document.getElementById('prev-month').disabled = (year === minMonth.getFullYear() && month <= minMonth.getMonth());
+        document.getElementById('next-month').disabled = (year === maxMonth.getFullYear() && month >= maxMonth.getMonth());
+
         let html = '';
         for (let i = 0; i < startOffset; i++) html += '<div class="calendar-day empty"></div>';
 
@@ -659,9 +1051,15 @@
           const iso = date.toISOString().split('T')[0];
           const isPast = date < today;
           const avail = !isPast && this.availableDays.get(iso);
+          const isToday = date.getTime() === today.getTime();
+          const isSelected = iso === this.state.date;
+
           const cls = ['calendar-day'];
-          if (date.getTime() === today.getTime()) cls.push('today');
-          if (avail) cls.push('available'); else cls.push('unavailable');
+          if (isToday) cls.push('today');
+          if (isSelected) cls.push('selected');
+          if (avail) cls.push('available');
+          else cls.push('unavailable');
+
           html += `<div class="${cls.join(' ')}" data-date="${iso}">${d}</div>`;
         }
 
@@ -690,30 +1088,38 @@
         await this.loadTimeSlots();
       }
 
-      /* ── Time Slots ── */
+      /* ── Step 3: Time Slots ── */
 
       async loadTimeSlots() {
         if (!this.state.service) return;
+
+        // Show skeleton
+        document.getElementById('time-skeleton').classList.remove('hidden');
+        document.getElementById('time-slots-container').innerHTML = '';
+        document.getElementById('no-slots-message').classList.add('hidden');
+
+        this.showStep('time');
+
+        const d = new Date(this.state.date);
+        document.getElementById('selected-date-display').textContent =
+          d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+
         try {
           const data = await this.fetchAPI(
             `/web/slots/day?location_id=${this.state.locationId}&service_id=${this.state.service.id}&date=${this.state.date}`
           );
           this.timeSlots = data.slots || [];
+          document.getElementById('time-skeleton').classList.add('hidden');
           this.renderTimeSlots();
-
-          const d = new Date(this.state.date);
-          document.getElementById('selected-date-display').textContent =
-            d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
-
-          this.showStep('time');
         } catch (e) {
           console.error('Time slots load failed:', e);
+          document.getElementById('time-skeleton').classList.add('hidden');
           this.tg.HapticFeedback.notificationOccurred('error');
         }
       }
 
       renderTimeSlots() {
-        const container = document.getElementById('time-slots');
+        const container = document.getElementById('time-slots-container');
         const noMsg = document.getElementById('no-slots-message');
 
         if (this.timeSlots.length === 0) {
@@ -721,11 +1127,32 @@
           noMsg.classList.remove('hidden');
           return;
         }
-
         noMsg.classList.add('hidden');
-        container.innerHTML = this.timeSlots.map(s =>
-          `<div class="time-slot" data-time="${s.time}">${s.time}</div>`
-        ).join('');
+
+        // Group by period
+        const groups = { morning: [], afternoon: [], evening: [] };
+        const labels = { morning: 'Утро', afternoon: 'День', evening: 'Вечер' };
+
+        for (const s of this.timeSlots) {
+          const h = parseInt(s.time.split(':')[0]);
+          if (h < 12) groups.morning.push(s);
+          else if (h < 17) groups.afternoon.push(s);
+          else groups.evening.push(s);
+        }
+
+        let html = '';
+        for (const [key, slots] of Object.entries(groups)) {
+          if (slots.length === 0) continue;
+          html += `
+            <div class="time-group">
+              <div class="time-group-label">${labels[key]}</div>
+              <div class="time-slots-grid">
+                ${slots.map(s => `<div class="time-slot" data-time="${s.time}">${s.time}</div>`).join('')}
+              </div>
+            </div>
+          `;
+        }
+        container.innerHTML = html;
 
         container.onclick = e => {
           const el = e.target.closest('.time-slot');
@@ -739,26 +1166,166 @@
         if (!slot) return;
 
         this.state.time = time;
-        if (slot.specialists?.length > 0) this.state.specialistId = slot.specialists[0].id;
+        this.specialists = slot.specialists || [];
 
         document.querySelectorAll('.time-slot').forEach(el => {
           el.classList.toggle('selected', el.dataset.time === time);
         });
 
-        await this.createBooking();
+        // Decide: specialist step or straight to confirm
+        if (this.specialists.length > 1) {
+          this.hasMultipleSpecialists = true;
+          this.steps = ['service', 'calendar', 'time', 'specialist', 'confirm'];
+          this.renderProgressBar();
+          this.renderSpecialists();
+          this.showStep('specialist');
+        } else {
+          // Auto-select the only specialist (or first available)
+          if (this.specialists.length === 1) {
+            this.state.specialistId = this.specialists[0].id;
+            this.state.specialistName = this.specialists[0].name || '';
+          }
+          this.hasMultipleSpecialists = false;
+          this.steps = ['service', 'calendar', 'time', 'confirm'];
+          this.renderProgressBar();
+          this.showConfirmation();
+        }
+      }
+
+      /* ── Step 4: Specialist ── */
+
+      renderSpecialists() {
+        const container = document.getElementById('specialists-list');
+        const subtitle = document.getElementById('specialist-subtitle');
+        subtitle.textContent = `${this.state.service.name} · ${this.state.time}`;
+
+        container.innerHTML = this.specialists.map(sp => {
+          const initials = (sp.name || 'С')
+            .split(' ')
+            .map(w => w[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+
+          return `
+            <div class="specialist-card" data-id="${sp.id}">
+              <div class="specialist-avatar">
+                ${sp.photo_url
+                  ? `<img src="${this.esc(sp.photo_url)}" alt="${this.esc(sp.name)}">`
+                  : initials
+                }
+              </div>
+              <div class="specialist-body">
+                <div class="specialist-name">${this.esc(sp.name || 'Специалист')}</div>
+                ${sp.role ? `<div class="specialist-role">${this.esc(sp.role)}</div>` : ''}
+              </div>
+              <div class="specialist-check">✓</div>
+            </div>
+          `;
+        }).join('');
+
+        container.onclick = e => {
+          const card = e.target.closest('.specialist-card');
+          if (card) this.selectSpecialist(parseInt(card.dataset.id));
+        };
+      }
+
+      selectSpecialist(id) {
+        const sp = this.specialists.find(s => s.id === id);
+        if (!sp) return;
+        this.tg.HapticFeedback.selectionChanged();
+
+        this.state.specialistId = sp.id;
+        this.state.specialistName = sp.name || '';
+
+        document.querySelectorAll('.specialist-card').forEach(el => {
+          el.classList.toggle('selected', el.dataset.id === String(id));
+        });
+
+        // Auto-advance to confirm after short delay
+        setTimeout(() => this.showConfirmation(), 250);
+      }
+
+      /* ── Step 5: Confirmation ── */
+
+      showConfirmation() {
+        const details = document.getElementById('confirm-details');
+        const d = new Date(this.state.date);
+        const dateStr = d.toLocaleDateString('ru-RU', {
+          weekday: 'short', day: 'numeric', month: 'long',
+        });
+
+        let rows = `
+          <div class="confirm-row">
+            <span class="confirm-label">Услуга</span>
+            <span class="confirm-value">${this.esc(this.state.service.name)}</span>
+          </div>
+          <div class="confirm-row">
+            <span class="confirm-label">Дата</span>
+            <span class="confirm-value">${dateStr}</span>
+          </div>
+          <div class="confirm-row">
+            <span class="confirm-label">Время</span>
+            <span class="confirm-value">${this.state.time}</span>
+          </div>
+        `;
+
+        if (this.state.specialistName) {
+          rows += `
+            <div class="confirm-row">
+              <span class="confirm-label">Специалист</span>
+              <span class="confirm-value">${this.esc(this.state.specialistName)}</span>
+            </div>
+          `;
+        }
+
+        rows += `
+          <div class="confirm-row">
+            <span class="confirm-label">Стоимость</span>
+            <span class="confirm-value">${this.fmtPrice(this.state.service.price)}</span>
+          </div>
+        `;
+
+        details.innerHTML = rows;
+
+        // Show review, hide statuses
+        document.getElementById('confirm-review').classList.remove('hidden');
+        document.getElementById('status-pending').classList.add('hidden');
+        document.getElementById('status-success').classList.add('hidden');
+        document.getElementById('status-error').classList.add('hidden');
+
+        const btn = document.getElementById('confirm-btn');
+        btn.disabled = false;
+        btn.textContent = 'Записаться';
+        btn.onclick = () => this.createBooking();
+
+        this.showStep('confirm');
       }
 
       /* ── Booking ── */
 
       async createBooking() {
-        if (!this.state.service || !this.state.specialistId) return;
+        if (!this.state.service || !this.state.specialistId) {
+          this.showError('Не выбран специалист. Попробуйте выбрать другое время.');
+          return;
+        }
 
-        this.showStep('confirm');
-        this.showPending();
+        // Disable button, show pending
+        const btn = document.getElementById('confirm-btn');
+        btn.disabled = true;
+        btn.textContent = 'Отправка...';
+
+        document.getElementById('confirm-review').classList.add('hidden');
+        document.getElementById('status-pending').classList.remove('hidden');
 
         try {
           const start = new Date(`${this.state.date}T${this.state.time}:00`);
           const end = new Date(start.getTime() + this.state.service.duration_min * 60000);
+
+          const fmt = (d) => {
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+          };
 
           const result = await this.fetchAPI('/web/bookings', {
             method: 'POST',
@@ -768,8 +1335,8 @@
               service_id: this.state.service.id,
               client_id: this.state.clientId,
               specialist_id: this.state.specialistId,
-              date_start: start.toISOString().replace('T', ' ').split('.')[0],
-              date_end: end.toISOString().replace('T', ' ').split('.')[0],
+              date_start: fmt(start),
+              date_end: fmt(end),
               duration_minutes: this.state.service.duration_min,
               break_minutes: this.state.service.break_min || 0,
             }),
@@ -780,14 +1347,8 @@
         } catch (e) {
           console.error('Booking failed:', e);
           this.tg.HapticFeedback.notificationOccurred('error');
-          this.showError(e.message || 'Unknown error');
+          this.showError(e.message || 'Неизвестная ошибка');
         }
-      }
-
-      showPending() {
-        document.getElementById('status-pending').classList.remove('hidden');
-        document.getElementById('status-success').classList.add('hidden');
-        document.getElementById('status-error').classList.add('hidden');
       }
 
       showSuccess(bookingId) {
@@ -798,7 +1359,7 @@
         const summary = document.getElementById('booking-summary');
         if (summary && this.state.service) {
           const d = new Date(this.state.date);
-          summary.innerHTML = `
+          let rows = `
             <div class="summary-row">
               <span class="summary-label">Услуга</span>
               <span class="summary-value">${this.esc(this.state.service.name)}</span>
@@ -811,12 +1372,26 @@
               <span class="summary-label">Время</span>
               <span class="summary-value">${this.state.time}</span>
             </div>
+          `;
+          if (this.state.specialistName) {
+            rows += `
+              <div class="summary-row">
+                <span class="summary-label">Специалист</span>
+                <span class="summary-value">${this.esc(this.state.specialistName)}</span>
+              </div>
+            `;
+          }
+          rows += `
             <div class="summary-row">
               <span class="summary-label">Стоимость</span>
               <span class="summary-value">${this.fmtPrice(this.state.service.price)}</span>
             </div>
           `;
+          summary.innerHTML = rows;
         }
+
+        // Block back navigation after success
+        this.tg.BackButton.hide();
 
         this.tg.MainButton.text = 'Закрыть';
         this.tg.MainButton.show();
@@ -827,12 +1402,16 @@
       showError(message) {
         document.getElementById('status-pending').classList.add('hidden');
         document.getElementById('status-success').classList.add('hidden');
+        document.getElementById('confirm-review').classList.add('hidden');
         document.getElementById('status-error').classList.remove('hidden');
         document.getElementById('error-message').textContent = message;
 
         this.tg.MainButton.text = 'Попробовать снова';
         this.tg.MainButton.show();
-        this.mainButtonCallback = () => this.showStep('time');
+        this.mainButtonCallback = () => {
+          // Return to time selection, not confirm — avoids double booking
+          this.showStep('time');
+        };
         this.tg.MainButton.onClick(this.mainButtonCallback);
       }
 
