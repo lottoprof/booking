@@ -5,7 +5,7 @@
 # - Domain relation: specialists -> services
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
 
 from ..database import get_db
@@ -25,18 +25,30 @@ router = APIRouter(prefix="/specialists", tags=["specialists"])
 
 @router.get("/", response_model=list[SpecialistRead])
 def list_specialists(db: Session = Depends(get_db)):
-    return (
+    specs = (
         db.query(DBSpecialists)
+        .options(joinedload(DBSpecialists.user))
         .filter(DBSpecialists.is_active == 1)
         .all()
     )
+    for s in specs:
+        if not s.display_name and s.user:
+            s.display_name = s.user.first_name
+    return specs
 
 
 @router.get("/{id}", response_model=SpecialistRead)
 def get_specialist(id: int, db: Session = Depends(get_db)):
-    obj = db.get(DBSpecialists, id)
+    obj = (
+        db.query(DBSpecialists)
+        .options(joinedload(DBSpecialists.user))
+        .filter(DBSpecialists.id == id)
+        .first()
+    )
     if not obj:
         raise HTTPException(status_code=404, detail="Not found")
+    if not obj.display_name and obj.user:
+        obj.display_name = obj.user.first_name
     return obj
 
 

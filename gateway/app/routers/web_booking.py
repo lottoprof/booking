@@ -342,7 +342,7 @@ async def get_specialists(service_id: Optional[int] = None):
     specialists = [
         WebSpecialist(
             id=s["id"],
-            name=s.get("display_name") or f"Specialist {s['id']}",
+            name=s.get("display_name") or f"Специалист {s['id']}",
             description=s.get("description"),
             photo_url=s.get("photo_url")
         )

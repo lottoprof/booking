@@ -123,10 +123,7 @@ def calculate_service_availability(
         if spec.display_name:
             name = spec.display_name
         elif spec.user and spec.user.first_name:
-            parts = [spec.user.first_name]
-            if spec.user.last_name:
-                parts.append(spec.user.last_name)
-            name = " ".join(parts)
+            name = spec.user.first_name
         else:
             name = f"Специалист {spec.id}"
         specialist_times[spec.id] = (name, times)
