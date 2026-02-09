@@ -4,6 +4,7 @@ from app.utils.telegram import verify_init_data
 from app.config import TG_BOT_TOKEN
 from app.redis_client import redis_client
 import hashlib
+import json
 import time
 
 ANTI_REPLAY_TTL = 60
@@ -48,7 +49,8 @@ async def auth_middleware(request: Request, call_next):
             raise HTTPException(401, "Replay detected")
 
         # ===== NORMALIZED IDENTITY =====
-        user = data.get("user") or {}
+        user_raw = data.get("user") or "{}"
+        user = json.loads(user_raw) if isinstance(user_raw, str) else user_raw
         request.state.identity = {
             "tg_id": user.get("id"),
             "username": user.get("username"),
