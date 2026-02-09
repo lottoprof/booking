@@ -32,112 +32,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/shared.css">
 
   <style>
-    /* ═══════════════════════════════════════
-       SHARED DESIGN TOKENS
-       (в продакшене — вынести в shared.css)
-       ═══════════════════════════════════════ */
-    :root {
-      --teal:        #2BB5B8;
-      --teal-light:  #5DD3D5;
-      --teal-dark:   #1E8E90;
-      --teal-subtle: #E8F7F7;
-      --font-display: 'Cormorant Garamond', Georgia, serif;
-      --font-body:    'Manrope', system-ui, sans-serif;
-    }
-
+    /* ═══ PAGE-SPECIFIC VARIABLES ═══ */
     [data-theme="light"] {
-      --bg-primary:    #FFFFFF;
-      --bg-secondary:  #F8FBFB;
-      --bg-card:       #FFFFFF;
-      --text-primary:  #1A2B2B;
-      --text-secondary:#5A7070;
-      --text-muted:    #8FA5A5;
-      --border:        #E0EDED;
-      --border-light:  #F0F5F5;
-      --shadow-sm:     0 1px 3px rgba(43,181,184,0.06);
-      --shadow-md:     0 8px 32px rgba(43,181,184,0.08);
-      --shadow-lg:     0 16px 48px rgba(43,181,184,0.12);
-      --nav-bg:        rgba(255,255,255,0.85);
       --badge-bg:      rgba(43,181,184,0.08);
       --badge-border:  rgba(43,181,184,0.15);
     }
-
     [data-theme="dark"] {
-      --bg-primary:    #0F1A1A;
-      --bg-secondary:  #162222;
-      --bg-card:       #1A2D2D;
-      --text-primary:  #E8F0F0;
-      --text-secondary:#9BB5B5;
-      --text-muted:    #6A8585;
-      --border:        #253838;
-      --border-light:  #1E3030;
-      --shadow-sm:     0 1px 3px rgba(0,0,0,0.2);
-      --shadow-md:     0 8px 32px rgba(0,0,0,0.3);
-      --shadow-lg:     0 16px 48px rgba(0,0,0,0.4);
-      --nav-bg:        rgba(15,26,26,0.9);
       --badge-bg:      rgba(43,181,184,0.12);
       --badge-border:  rgba(43,181,184,0.25);
     }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; font-size: 16px; }
-
-    body {
-      font-family: var(--font-body);
-      font-weight: 400;
-      color: var(--text-primary);
-      background: var(--bg-primary);
-      line-height: 1.6;
-      overflow-x: hidden;
-      transition: background 0.4s ease, color 0.4s ease;
-    }
-
-    /* ═══ NAV (shared) ═══ */
-    .nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      padding: 0 2rem; height: 72px;
-      display: flex; align-items: center; justify-content: space-between;
-      background: var(--nav-bg);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border-light);
-      transition: all 0.3s ease;
-    }
-    .nav.scrolled { height: 60px; box-shadow: var(--shadow-sm); }
-    .nav-logo { display: flex; align-items: center; text-decoration: none; line-height: 1; }
-    .nav-logo img { height: 48px; width: auto; transition: height 0.3s ease; }
-    .nav.scrolled .nav-logo img { height: 38px; }
-    .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
-    .nav-links a { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); text-decoration: none; letter-spacing: 0.04em; text-transform: uppercase; transition: color 0.2s; }
-    .nav-links a:hover { color: var(--teal); }
-    .nav-links a[aria-current="page"] { color: var(--teal); }
-    .nav-right { display: flex; align-items: center; gap: 1rem; }
-
-    .theme-toggle { width: 44px; height: 24px; border-radius: 12px; background: var(--border); border: none; cursor: pointer; position: relative; transition: background 0.3s; }
-    .theme-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--teal); transition: transform 0.3s ease; }
-    [data-theme="dark"] .theme-toggle::after { transform: translateX(20px); }
-    .theme-toggle-icon { position: absolute; top: 50%; transform: translateY(-50%); font-size: 11px; line-height: 1; pointer-events: none; }
-    .theme-toggle-icon.sun { left: 5px; }
-    .theme-toggle-icon.moon { right: 5px; }
-
-    .nav-burger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
-    .nav-burger span { width: 22px; height: 2px; background: var(--text-primary); border-radius: 1px; transition: all 0.3s; }
-
-    /* ═══ MOBILE MENU ═══ */
-    .mobile-menu { display: none; position: fixed; inset: 0; z-index: 99; background: var(--bg-primary); flex-direction: column; align-items: center; justify-content: center; gap: 2rem; }
-    .mobile-menu.active { display: flex; }
-    .mobile-menu a { font-family: var(--font-display); font-size: 1.8rem; color: var(--text-primary); text-decoration: none; transition: color 0.2s; }
-    .mobile-menu a:hover { color: var(--teal); }
-    .mobile-close { position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; font-size: 1.5rem; color: var(--text-primary); cursor: pointer; }
-
-    /* ═══ BUTTONS ═══ */
-    .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 14px 32px; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; border-radius: 100px; border: none; cursor: pointer; transition: all 0.3s ease; }
-    .btn-primary { background: var(--teal); color: #fff; box-shadow: 0 4px 20px rgba(43,181,184,0.3); }
-    .btn-primary:hover { background: var(--teal-dark); box-shadow: 0 6px 28px rgba(43,181,184,0.4); transform: translateY(-2px); }
-    .btn-sm { padding: 10px 24px; font-size: 0.78rem; }
-    .btn-outline { background: transparent; color: var(--text-primary); border: 1.5px solid var(--border); }
-    .btn-outline:hover { border-color: var(--teal); color: var(--teal); }
 
     /* ═══ PAGE HEADER ═══ */
     .page-header {
@@ -463,29 +369,11 @@
     .price-card:nth-child(5) { animation-delay: 0.32s; }
     .price-card:nth-child(6) { animation-delay: 0.40s; }
 
-    /* ═══ FOOTER ═══ */
-    footer {
-      padding: 3rem 2rem;
-      border-top: 1px solid var(--border);
-      background: var(--bg-secondary);
-    }
-    .footer-inner { max-width: 1120px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
-    .footer-logo { display: flex; align-items: center; line-height: 1; }
-    .footer-logo img { height: 36px; width: auto; }
-    .footer-links { display: flex; gap: 2rem; list-style: none; }
-    .footer-links a { font-size: 0.82rem; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
-    .footer-links a:hover { color: var(--teal); }
-    .footer-copy { font-size: 0.78rem; color: var(--text-muted); width: 100%; text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-light); }
-
     /* ═══ RESPONSIVE ═══ */
     @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .nav-burger { display: flex; }
       .pricing-grid { grid-template-columns: 1fr; }
       .filters { gap: 0.35rem; }
       .filter-btn { padding: 6px 14px; font-size: 0.78rem; }
-      .footer-inner { justify-content: center; text-align: center; }
-      .footer-links { justify-content: center; }
     }
   </style>
 </head>
@@ -502,7 +390,7 @@
       <li><a href="/blog.html">Блог</a></li>
     </ul>
     <div class="nav-right">
-      <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+      <button class="theme-toggle-slider" id="themeToggle" aria-label="Переключить тему">
         <span class="theme-toggle-icon sun">☀️</span>
         <span class="theme-toggle-icon moon">🌙</span>
       </button>

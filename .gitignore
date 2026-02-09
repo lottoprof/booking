@@ -83,4 +83,5 @@ Thumbs.db
 tmp/
 logs/
 *.log
-
+.claude
+.aider*

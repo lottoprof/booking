@@ -1,0 +1,292 @@
+/* ═══════════════════════════════════════
+   UPGRADE — Shared Design System
+   Extracted from inline styles across pages.
+   Used by: index, book, pricing, blog, article
+   NOT used by: miniapp (Telegram WebView)
+   ═══════════════════════════════════════ */
+
+/* ═══════════════════════════════════════
+   1. CSS CUSTOM PROPERTIES
+   ═══════════════════════════════════════ */
+:root {
+  --teal:        #2BB5B8;
+  --teal-light:  #5DD3D5;
+  --teal-dark:   #1E8E90;
+  --teal-subtle: #E8F7F7;
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Manrope', system-ui, sans-serif;
+}
+
+[data-theme="light"] {
+  --bg-primary:    #FFFFFF;
+  --bg-secondary:  #F8FBFB;
+  --bg-card:       #FFFFFF;
+  --text-primary:  #1A2B2B;
+  --text-secondary:#5A7070;
+  --text-muted:    #8FA5A5;
+  --border:        #E0EDED;
+  --border-light:  #F0F5F5;
+  --shadow-sm:     0 1px 3px rgba(43,181,184,0.06);
+  --shadow-md:     0 8px 32px rgba(43,181,184,0.08);
+  --shadow-lg:     0 16px 48px rgba(43,181,184,0.12);
+  --nav-bg:        rgba(255,255,255,0.85);
+}
+
+[data-theme="dark"] {
+  --bg-primary:    #0F1A1A;
+  --bg-secondary:  #162222;
+  --bg-card:       #1A2D2D;
+  --text-primary:  #E8F0F0;
+  --text-secondary:#9BB5B5;
+  --text-muted:    #6A8585;
+  --border:        #253838;
+  --border-light:  #1E3030;
+  --shadow-sm:     0 1px 3px rgba(0,0,0,0.2);
+  --shadow-md:     0 8px 32px rgba(0,0,0,0.3);
+  --shadow-lg:     0 16px 48px rgba(0,0,0,0.4);
+  --nav-bg:        rgba(15,26,26,0.9);
+}
+
+/* ═══════════════════════════════════════
+   2. RESET & BASE
+   ═══════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+/* ═══════════════════════════════════════
+   3. NAVIGATION — core
+   ═══════════════════════════════════════ */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 0 2rem; height: 72px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--nav-bg);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+}
+.nav.scrolled { height: 60px; box-shadow: var(--shadow-sm); }
+.nav-logo { display: flex; align-items: center; text-decoration: none; line-height: 1; }
+.nav-logo img { height: 48px; width: auto; transition: height 0.3s ease; }
+.nav.scrolled .nav-logo img { height: 38px; }
+.nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
+.nav-links a {
+  font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);
+  text-decoration: none; letter-spacing: 0.03em; text-transform: uppercase;
+  transition: color 0.3s ease; position: relative;
+}
+.nav-links a:hover { color: var(--teal); }
+.nav-links a[aria-current="page"] { color: var(--teal); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+
+/* ═══════════════════════════════════════
+   3a. NAV — underline variant (book, blog, article)
+   ═══════════════════════════════════════ */
+.nav-links a::after {
+  content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1.5px;
+  background: var(--teal); transition: width 0.3s ease;
+}
+.nav-links a:hover::after { width: 100%; }
+
+/* ═══════════════════════════════════════
+   4a. THEME TOGGLE — slider variant (index, pricing)
+   ═══════════════════════════════════════ */
+.theme-toggle-slider {
+  width: 44px; height: 24px; border-radius: 12px;
+  background: var(--border); border: none; cursor: pointer;
+  position: relative; transition: background 0.3s;
+}
+.theme-toggle-slider::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--teal); transition: transform 0.3s ease;
+}
+[data-theme="dark"] .theme-toggle-slider::after { transform: translateX(20px); }
+.theme-toggle-icon {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  font-size: 11px; line-height: 1; pointer-events: none;
+}
+.theme-toggle-icon.sun { left: 5px; }
+.theme-toggle-icon.moon { right: 5px; }
+
+/* ═══════════════════════════════════════
+   4b. THEME TOGGLE — circle variant (book, blog, article)
+   ═══════════════════════════════════════ */
+.theme-toggle {
+  background: none; border: 1px solid var(--border); border-radius: 50%;
+  width: 36px; height: 36px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; font-size: 1rem;
+  color: var(--text-secondary); transition: all 0.3s ease;
+}
+.theme-toggle:hover { border-color: var(--teal); color: var(--teal); }
+
+/* ═══════════════════════════════════════
+   5a. BURGER — index/pricing variant
+   ═══════════════════════════════════════ */
+.nav-burger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 4px;
+}
+.nav-burger span {
+  width: 22px; height: 2px; background: var(--text-primary);
+  border-radius: 1px; transition: all 0.3s;
+}
+
+/* ═══════════════════════════════════════
+   5b. BURGER — book/blog/article variant
+   ═══════════════════════════════════════ */
+.mobile-toggle {
+  display: none; background: none; border: none; cursor: pointer;
+  width: 36px; height: 36px; position: relative;
+}
+.mobile-toggle span {
+  display: block; width: 20px; height: 1.5px; background: var(--text-primary);
+  position: absolute; left: 8px; transition: all 0.3s ease;
+}
+.mobile-toggle span:nth-child(1) { top: 12px; }
+.mobile-toggle span:nth-child(2) { top: 17px; }
+.mobile-toggle span:nth-child(3) { top: 22px; }
+
+/* ═══════════════════════════════════════
+   6a. MOBILE MENU — fullscreen overlay (index, pricing)
+   ═══════════════════════════════════════ */
+.mobile-menu {
+  display: none; position: fixed; inset: 0; z-index: 99;
+  background: var(--bg-primary); flex-direction: column;
+  align-items: center; justify-content: center; gap: 2rem;
+}
+.mobile-menu.active { display: flex; }
+.mobile-menu a {
+  font-family: var(--font-display); font-size: 1.8rem;
+  color: var(--text-primary); text-decoration: none; transition: color 0.2s;
+}
+.mobile-menu a:hover { color: var(--teal); }
+.mobile-close {
+  position: absolute; top: 1.5rem; right: 1.5rem;
+  background: none; border: none; font-size: 1.5rem;
+  color: var(--text-primary); cursor: pointer;
+}
+
+/* ═══════════════════════════════════════
+   6b. MOBILE NAV — slide-down (book, blog, article)
+   ═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .nav { padding: 0 1rem; }
+  .mobile-toggle { display: block; }
+  .nav-links {
+    position: fixed; top: 72px; left: 0; right: 0;
+    background: var(--bg-primary); flex-direction: column;
+    padding: 1.5rem; gap: 1.25rem; border-bottom: 1px solid var(--border);
+    transform: translateY(-120%); transition: transform 0.4s ease;
+  }
+  .nav-links.open { transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════
+   7. BUTTONS
+   ═══════════════════════════════════════ */
+.btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 14px 32px; font-family: var(--font-body);
+  font-size: 0.85rem; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; text-decoration: none;
+  border-radius: 100px; border: none; cursor: pointer;
+  transition: all 0.3s ease;
+}
+.btn-primary {
+  background: var(--teal); color: #fff;
+  box-shadow: 0 4px 20px rgba(43,181,184,0.3);
+}
+.btn-primary:hover {
+  background: var(--teal-dark);
+  box-shadow: 0 6px 28px rgba(43,181,184,0.4);
+  transform: translateY(-2px);
+}
+.btn-sm { padding: 10px 24px; font-size: 0.78rem; }
+.btn-outline {
+  background: transparent; color: var(--text-primary);
+  border: 1.5px solid var(--border);
+}
+.btn-outline:hover { border-color: var(--teal); color: var(--teal); }
+
+/* ═══════════════════════════════════════
+   8a. FOOTER — full variant (index, pricing)
+   ═══════════════════════════════════════ */
+footer {
+  padding: 3rem 2rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+footer .footer-inner {
+  max-width: 1120px; margin: 0 auto;
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 1rem;
+}
+footer .footer-copy {
+  font-size: 0.78rem; color: var(--text-muted);
+  width: 100%; text-align: center;
+  margin-top: 1.5rem; padding-top: 1.5rem;
+  border-top: 1px solid var(--border-light);
+}
+
+/* ═══════════════════════════════════════
+   8b. FOOTER — compact variant (book, blog, article)
+   ═══════════════════════════════════════ */
+.footer {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-light);
+  padding: 1.5rem 2rem;
+  margin-top: auto;
+}
+.footer .footer-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 1rem;
+}
+.footer .footer-copy {
+  font-size: 0.75rem; color: var(--text-muted);
+  width: 100%; text-align: center; margin-top: 0.75rem;
+}
+
+/* ═══════════════════════════════════════
+   8c. FOOTER — shared parts
+   ═══════════════════════════════════════ */
+.footer-logo { display: flex; align-items: center; line-height: 1; }
+.footer-logo img { height: 36px; width: auto; }
+.footer-links { display: flex; gap: 2rem; list-style: none; }
+.footer-links a {
+  font-size: 0.82rem; color: var(--text-muted);
+  text-decoration: none; transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--teal); }
+
+/* ═══════════════════════════════════════
+   9. RESPONSIVE — shared nav/footer
+   ═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .nav-burger { display: flex; }
+  .footer-inner { justify-content: center; text-align: center; }
+  .footer-links { justify-content: center; }
+  .footer { padding: 1.25rem 1rem; }
+}
+
+/* ═══════════════════════════════════════
+   10. REDUCED MOTION
+   ═══════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.15s !important;
+  }
+}
