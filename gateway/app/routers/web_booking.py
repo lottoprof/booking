@@ -162,7 +162,7 @@ async def _fetch_and_cache_from_backend(
     import httpx
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
             response = await client.get(
                 f"{DOMAIN_API_URL}{endpoint}",
                 timeout=10.0
@@ -200,7 +200,7 @@ async def web_me(request: Request):
 
     import httpx
     tg_id = identity["tg_id"]
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(follow_redirects=True) as client:
         resp = await client.get(
             f"{DOMAIN_API_URL}/users/by_tg/{tg_id}",
             timeout=10.0,
@@ -223,7 +223,7 @@ async def web_create_booking(request: Request):
     import httpx
 
     body = await request.json()
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(follow_redirects=True) as client:
         resp = await client.post(
             f"{DOMAIN_API_URL}/bookings",
             json=body,
@@ -459,7 +459,7 @@ async def get_slots_day(
 
     # Fetch from Backend for accurate Level 2 calculation
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
             params = {
                 "location_id": location_id,
                 "service_id": service_id,
