@@ -120,7 +120,15 @@ def calculate_service_availability(
         booked = _get_booked_times(bookings, config)
         times -= booked
 
-        name = spec.display_name or f"Specialist {spec.id}"
+        if spec.display_name:
+            name = spec.display_name
+        elif spec.user and spec.user.first_name:
+            parts = [spec.user.first_name]
+            if spec.user.last_name:
+                parts.append(spec.user.last_name)
+            name = " ".join(parts)
+        else:
+            name = f"Специалист {spec.id}"
         specialist_times[spec.id] = (name, times)
 
     # Step 5: Find available start times (need slots_needed consecutive)
@@ -303,10 +311,12 @@ def _get_service(db: Session, service_id: int):
 
 def _get_service_specialists(db: Session, service_id: int) -> list:
     """Get active specialists who provide this service."""
+    from sqlalchemy.orm import joinedload
     from ...models.generated import Specialists, t_specialist_services
 
     return (
         db.query(Specialists)
+        .options(joinedload(Specialists.user))
         .join(
             t_specialist_services,
             Specialists.id == t_specialist_services.c.specialist_id

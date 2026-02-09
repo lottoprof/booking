@@ -166,7 +166,7 @@
       background: rgba(43,181,184,0.15);
     }
 
-    .service-card-body { flex: 1; min-width: 0; }
+    .service-card-info { flex: 1; min-width: 0; }
 
     .service-card-name {
       font-weight: 600;
@@ -262,6 +262,7 @@
     .calendar-day.available {
       background: var(--card-bg);
       border: 1.5px solid var(--border);
+      box-shadow: var(--shadow-sm);
     }
     .calendar-day.available:active {
       border-color: var(--teal);
@@ -318,6 +319,7 @@
       font-weight: 500;
       color: var(--text-strong);
       -webkit-tap-highlight-color: transparent;
+      box-shadow: var(--shadow-sm);
     }
     .time-slot:active {
       border-color: var(--teal);
@@ -383,7 +385,7 @@
       object-fit: cover;
     }
 
-    .specialist-body { flex: 1; min-width: 0; }
+    .specialist-info { flex: 1; min-width: 0; }
     .specialist-name {
       font-weight: 600;
       font-size: 0.92rem;
@@ -663,6 +665,21 @@
     .error-retry:active {
       background: var(--teal);
       color: #fff;
+    }
+
+    /* ═══════════════════════════════════════
+       SWIPE TRANSITION
+       ═══════════════════════════════════════ */
+    .calendar-swipe {
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .calendar-swipe.swipe-left {
+      transform: translateX(-30px);
+      opacity: 0;
+    }
+    .calendar-swipe.swipe-right {
+      transform: translateX(30px);
+      opacity: 0;
     }
 
     /* ═══════════════════════════════════════
@@ -968,7 +985,7 @@
           return `
             <div class="service-card" data-id="${s.id}">
               <div class="service-card-icon">${icon}</div>
-              <div class="service-card-body">
+              <div class="service-card-info">
                 <div class="service-card-name">${this.esc(s.name)}</div>
                 <div class="service-card-meta">
                   <span>${s.duration_min} мин</span>
@@ -1069,14 +1086,49 @@
           if (el?.classList.contains('available')) this.selectDate(el.dataset.date);
         };
 
-        document.getElementById('prev-month').onclick = () => {
-          this.currentMonth.setMonth(this.currentMonth.getMonth() - 1);
+        document.getElementById('prev-month').onclick = () => this.navigateMonth(-1);
+        document.getElementById('next-month').onclick = () => this.navigateMonth(1);
+
+        // Swipe gestures
+        this.initCalendarSwipe();
+      }
+
+      navigateMonth(dir) {
+        const container = document.getElementById('calendar-days');
+        const btn = document.getElementById(dir > 0 ? 'next-month' : 'prev-month');
+        if (btn?.disabled) return;
+
+        container.classList.add('calendar-swipe', dir > 0 ? 'swipe-left' : 'swipe-right');
+        setTimeout(() => {
+          this.currentMonth.setMonth(this.currentMonth.getMonth() + dir);
           this.renderCalendar();
-        };
-        document.getElementById('next-month').onclick = () => {
-          this.currentMonth.setMonth(this.currentMonth.getMonth() + 1);
-          this.renderCalendar();
-        };
+          container.classList.remove('swipe-left', 'swipe-right');
+          container.classList.add(dir > 0 ? 'swipe-right' : 'swipe-left');
+          requestAnimationFrame(() => {
+            container.classList.remove('swipe-left', 'swipe-right');
+          });
+        }, 200);
+      }
+
+      initCalendarSwipe() {
+        const el = document.getElementById('step-calendar');
+        let startX = 0, startY = 0, tracking = false;
+
+        el.addEventListener('touchstart', e => {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          tracking = true;
+        }, { passive: true });
+
+        el.addEventListener('touchend', e => {
+          if (!tracking) return;
+          tracking = false;
+          const dx = e.changedTouches[0].clientX - startX;
+          const dy = e.changedTouches[0].clientY - startY;
+          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+            this.navigateMonth(dx < 0 ? 1 : -1);
+          }
+        }, { passive: true });
       }
 
       async selectDate(date) {
@@ -1215,7 +1267,7 @@
                   : initials
                 }
               </div>
-              <div class="specialist-body">
+              <div class="specialist-info">
                 <div class="specialist-name">${this.esc(sp.name || 'Специалист')}</div>
                 ${sp.role ? `<div class="specialist-role">${this.esc(sp.role)}</div>` : ''}
               </div>
