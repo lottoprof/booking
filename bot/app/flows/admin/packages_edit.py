@@ -368,7 +368,7 @@ def setup(mc, get_user_role):
 
     @router.callback_query(F.data.startswith("pkg_edit:items_done:"))
     async def edit_items_done(callback: CallbackQuery, state: FSMContext):
-        pkg_id = int(callback.data.split(":")[3])
+        pkg_id = int(callback.data.split(":")[2])
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
         data = await state.get_data()
