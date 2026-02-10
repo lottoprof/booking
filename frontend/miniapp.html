@@ -988,7 +988,7 @@
             <div class="service-card" data-id="${s.id}">
               <div class="service-card-icon">${icon}</div>
               <div class="service-card-info">
-                <div class="service-card-name">${this.esc(s.name)}</div>
+                <div class="service-card-name">${this.esc(s.name)}${s.description ? ` (${this.esc(s.description)})` : ''}</div>
                 <div class="service-card-meta">
                   <span>${s.duration_min} мин</span>
                   ${s.category ? `<span class="dot"></span><span>${this.esc(s.category)}</span>` : ''}
