@@ -305,12 +305,9 @@ def setup(mc, get_user_role):
         name = message.text.strip()
         
         if len(name) < 2:
-            err_msg = await message.answer(t("admin:location:error_name", lang))
-            await mc._add_inline_id(message.chat.id, err_msg.message_id)
-            try:
-                await message.delete()
-            except Exception:
-                pass
+            data = await state.get_data()
+            loc_id = data.get("edit_loc_id")
+            await mc.show_inline_input(message, t("admin:location:error_name", lang), location_edit_cancel_inline(loc_id, lang))
             return
         
         data = await state.get_data()
@@ -324,14 +321,9 @@ def setup(mc, get_user_role):
         loc = data.get("original", {})
         text = build_location_edit_text(loc, changes, lang)
         kb = location_edit_inline(loc_id, lang)
-        
-        try:
-            await message.delete()
-        except Exception:
-            pass
-        
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
-    
+
+        await mc.show_inline_readonly(message, text, kb)
+
     # ==========================================================
     # EDIT: city
     # ==========================================================
@@ -355,12 +347,9 @@ def setup(mc, get_user_role):
         city = message.text.strip()
         
         if len(city) < 2:
-            err_msg = await message.answer(t("admin:location:error_city", lang))
-            await mc._add_inline_id(message.chat.id, err_msg.message_id)
-            try:
-                await message.delete()
-            except Exception:
-                pass
+            data = await state.get_data()
+            loc_id = data.get("edit_loc_id")
+            await mc.show_inline_input(message, t("admin:location:error_city", lang), location_edit_cancel_inline(loc_id, lang))
             return
         
         data = await state.get_data()
@@ -374,14 +363,9 @@ def setup(mc, get_user_role):
         loc = data.get("original", {})
         text = build_location_edit_text(loc, changes, lang)
         kb = location_edit_inline(loc_id, lang)
-        
-        try:
-            await message.delete()
-        except Exception:
-            pass
-        
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
-    
+
+        await mc.show_inline_readonly(message, text, kb)
+
     # ==========================================================
     # EDIT: address (street + house одним полем)
     # ==========================================================
@@ -432,14 +416,9 @@ def setup(mc, get_user_role):
         loc = data.get("original", {})
         text = build_location_edit_text(loc, changes, lang)
         kb = location_edit_inline(loc_id, lang)
-        
-        try:
-            await message.delete()
-        except Exception:
-            pass
-        
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
-    
+
+        await mc.show_inline_readonly(message, text, kb)
+
     # ==========================================================
     # EDIT: schedule
     # ==========================================================
@@ -503,12 +482,9 @@ def setup(mc, get_user_role):
         result = parse_time_input(text_input)
         
         if result == "error":
-            try:
-                await message.delete()
-            except Exception:
-                pass
-            err_msg = await message.answer(t("schedule:invalid", lang))
-            await mc._add_inline_id(message.chat.id, err_msg.message_id)
+            data = await state.get_data()
+            loc_id = data.get("edit_loc_id")
+            await mc.show_inline_input(message, t("schedule:invalid", lang), location_edit_cancel_inline(loc_id, lang))
             return
         
         data = await state.get_data()
@@ -521,13 +497,8 @@ def setup(mc, get_user_role):
         
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="loc_edit_sched")
-        
-        try:
-            await message.delete()
-        except Exception:
-            pass
-        
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
+
+        await mc.show_inline_readonly(message, text, kb)
     
     @router.callback_query(F.data.startswith("loc_edit_sched:dayoff:"))
     async def edit_sched_day_off(callback: CallbackQuery, state: FSMContext):

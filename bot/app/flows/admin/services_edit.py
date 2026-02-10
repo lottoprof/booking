@@ -331,12 +331,9 @@ def setup(mc, get_user_role):
         name = message.text.strip()
 
         if len(name) < 2:
-            err_msg = await message.answer(t("admin:service:error_name", lang))
-            await mc._add_inline_id(message.chat.id, err_msg.message_id)
-            try:
-                await message.delete()
-            except Exception:
-                pass
+            data = await state.get_data()
+            svc_id = data.get("edit_svc_id")
+            await mc.show_inline_input(message, t("admin:service:error_name", lang), service_edit_cancel_inline(svc_id, lang))
             return
 
         data = await state.get_data()
@@ -351,12 +348,7 @@ def setup(mc, get_user_role):
         text = build_service_edit_text(service, changes, lang)
         kb = service_edit_inline(svc_id, lang)
 
-        try:
-            await message.delete()
-        except Exception:
-            pass
-
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
+        await mc.show_inline_readonly(message, text, kb)
 
     # ==========================================================
     # EDIT: description
@@ -392,12 +384,7 @@ def setup(mc, get_user_role):
         text = build_service_edit_text(service, changes, lang)
         kb = service_edit_inline(svc_id, lang)
 
-        try:
-            await message.delete()
-        except Exception:
-            pass
-
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
+        await mc.show_inline_readonly(message, text, kb)
 
     # ==========================================================
     # EDIT: duration
@@ -425,12 +412,9 @@ def setup(mc, get_user_role):
             if duration <= 0:
                 raise ValueError()
         except ValueError:
-            err_msg = await message.answer(t("admin:service:error_duration", lang))
-            await mc._add_inline_id(message.chat.id, err_msg.message_id)
-            try:
-                await message.delete()
-            except Exception:
-                pass
+            data = await state.get_data()
+            svc_id = data.get("edit_svc_id")
+            await mc.show_inline_input(message, t("admin:service:error_duration", lang), service_edit_cancel_inline(svc_id, lang))
             return
 
         data = await state.get_data()
@@ -445,12 +429,7 @@ def setup(mc, get_user_role):
         text = build_service_edit_text(service, changes, lang)
         kb = service_edit_inline(svc_id, lang)
 
-        try:
-            await message.delete()
-        except Exception:
-            pass
-
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
+        await mc.show_inline_readonly(message, text, kb)
 
     # ==========================================================
     # EDIT: break_min
@@ -478,12 +457,9 @@ def setup(mc, get_user_role):
             if break_min < 0:
                 raise ValueError()
         except ValueError:
-            err_msg = await message.answer(t("admin:service:error_break", lang))
-            await mc._add_inline_id(message.chat.id, err_msg.message_id)
-            try:
-                await message.delete()
-            except Exception:
-                pass
+            data = await state.get_data()
+            svc_id = data.get("edit_svc_id")
+            await mc.show_inline_input(message, t("admin:service:error_break", lang), service_edit_cancel_inline(svc_id, lang))
             return
 
         data = await state.get_data()
@@ -498,12 +474,7 @@ def setup(mc, get_user_role):
         text = build_service_edit_text(service, changes, lang)
         kb = service_edit_inline(svc_id, lang)
 
-        try:
-            await message.delete()
-        except Exception:
-            pass
-
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
+        await mc.show_inline_readonly(message, text, kb)
 
     # ==========================================================
     # EDIT: price
@@ -532,12 +503,9 @@ def setup(mc, get_user_role):
             if price < 0:
                 raise ValueError()
         except ValueError:
-            err_msg = await message.answer(t("admin:service:error_price", lang))
-            await mc._add_inline_id(message.chat.id, err_msg.message_id)
-            try:
-                await message.delete()
-            except Exception:
-                pass
+            data = await state.get_data()
+            svc_id = data.get("edit_svc_id")
+            await mc.show_inline_input(message, t("admin:service:error_price", lang), service_edit_cancel_inline(svc_id, lang))
             return
 
         data = await state.get_data()
@@ -552,12 +520,7 @@ def setup(mc, get_user_role):
         text = build_service_edit_text(service, changes, lang)
         kb = service_edit_inline(svc_id, lang)
 
-        try:
-            await message.delete()
-        except Exception:
-            pass
-
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
+        await mc.show_inline_readonly(message, text, kb)
 
     # ==========================================================
     # EDIT: color

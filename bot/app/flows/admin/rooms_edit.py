@@ -352,12 +352,9 @@ def setup(mc, get_user_role):
         name = message.text.strip()
 
         if len(name) < 2:
-            err_msg = await message.answer(t("admin:room:error_name", lang))
-            await mc._add_inline_id(message.chat.id, err_msg.message_id)
-            try:
-                await message.delete()
-            except Exception:
-                pass
+            data = await state.get_data()
+            room_id = data.get("edit_room_id")
+            await mc.show_inline_input(message, t("admin:room:error_name", lang), room_edit_cancel_inline(room_id, lang))
             return
 
         data = await state.get_data()
@@ -372,12 +369,7 @@ def setup(mc, get_user_role):
         text = build_room_edit_text(room, changes, lang)
         kb = room_edit_inline(room_id, lang)
 
-        try:
-            await message.delete()
-        except Exception:
-            pass
-
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
+        await mc.show_inline_readonly(message, text, kb)
 
     # ==========================================================
     # EDIT: notes
@@ -413,12 +405,7 @@ def setup(mc, get_user_role):
         text = build_room_edit_text(room, changes, lang)
         kb = room_edit_inline(room_id, lang)
 
-        try:
-            await message.delete()
-        except Exception:
-            pass
-
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
+        await mc.show_inline_readonly(message, text, kb)
 
     # ==========================================================
     # EDIT: display_order
@@ -444,12 +431,9 @@ def setup(mc, get_user_role):
         try:
             display_order = int(message.text.strip())
         except ValueError:
-            err_msg = await message.answer(t("admin:room:error_order", lang))
-            await mc._add_inline_id(message.chat.id, err_msg.message_id)
-            try:
-                await message.delete()
-            except Exception:
-                pass
+            data = await state.get_data()
+            room_id = data.get("edit_room_id")
+            await mc.show_inline_input(message, t("admin:room:error_order", lang), room_edit_cancel_inline(room_id, lang))
             return
 
         data = await state.get_data()
@@ -464,12 +448,7 @@ def setup(mc, get_user_role):
         text = build_room_edit_text(room, changes, lang)
         kb = room_edit_inline(room_id, lang)
 
-        try:
-            await message.delete()
-        except Exception:
-            pass
-
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
+        await mc.show_inline_readonly(message, text, kb)
 
     # ==========================================================
     # EDIT: services (multi-select)

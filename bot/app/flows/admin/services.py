@@ -503,13 +503,6 @@ def setup(mc, get_user_role):
 
     router.start_create = start_create
 
-    async def send_step(message: Message, text: str, kb: InlineKeyboardMarkup):
-        try:
-            await message.delete()
-        except Exception:
-            pass
-        return await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
-
     # ---- name
     @router.message(ServiceCreate.name)
     async def create_name(message: Message, state: FSMContext):
@@ -517,15 +510,14 @@ def setup(mc, get_user_role):
         name = message.text.strip()
 
         if len(name) < 2:
-            err = await message.answer(t("admin:service:error_name", lang))
-            await mc._add_inline_id(message.chat.id, err.message_id)
+            await mc.show_inline_input(message, t("admin:service:error_name", lang), service_cancel_inline(lang))
             return
 
         await state.update_data(name=name)
         await state.set_state(ServiceCreate.description)
 
         data = await state.get_data()
-        await send_step(
+        await mc.show_inline_input(
             message,
             build_progress_text(data, lang, "admin:service:enter_description"),
             service_skip_inline(lang),
@@ -553,7 +545,7 @@ def setup(mc, get_user_role):
         await state.set_state(ServiceCreate.duration)
 
         data = await state.get_data()
-        await send_step(
+        await mc.show_inline_input(
             message,
             build_progress_text(data, lang, "admin:service:enter_duration"),
             service_cancel_inline(lang),
@@ -569,15 +561,14 @@ def setup(mc, get_user_role):
             if duration <= 0:
                 raise ValueError()
         except ValueError:
-            err = await message.answer(t("admin:service:error_duration", lang))
-            await mc._add_inline_id(message.chat.id, err.message_id)
+            await mc.show_inline_input(message, t("admin:service:error_duration", lang), service_cancel_inline(lang))
             return
 
         await state.update_data(duration=duration)
         await state.set_state(ServiceCreate.break_min)
 
         data = await state.get_data()
-        await send_step(
+        await mc.show_inline_input(
             message,
             build_progress_text(data, lang, "admin:service:enter_break"),
             service_skip_inline(lang),
@@ -607,15 +598,14 @@ def setup(mc, get_user_role):
             if break_min < 0:
                 raise ValueError()
         except ValueError:
-            err = await message.answer(t("admin:service:error_break", lang))
-            await mc._add_inline_id(message.chat.id, err.message_id)
+            await mc.show_inline_input(message, t("admin:service:error_break", lang), service_skip_inline(lang))
             return
 
         await state.update_data(break_min=break_min)
         await state.set_state(ServiceCreate.price)
 
         data = await state.get_data()
-        await send_step(
+        await mc.show_inline_input(
             message,
             build_progress_text(data, lang, "admin:service:enter_price"),
             service_cancel_inline(lang),
@@ -631,15 +621,14 @@ def setup(mc, get_user_role):
             if price < 0:
                 raise ValueError()
         except ValueError:
-            err = await message.answer(t("admin:service:error_price", lang))
-            await mc._add_inline_id(message.chat.id, err.message_id)
+            await mc.show_inline_input(message, t("admin:service:error_price", lang), service_cancel_inline(lang))
             return
 
         await state.update_data(price=price)
         await state.set_state(ServiceCreate.color)
 
         data = await state.get_data()
-        await send_step(
+        await mc.show_inline_input(
             message,
             build_progress_text(data, lang, "admin:service:choose_color"),
             color_picker_inline(lang),

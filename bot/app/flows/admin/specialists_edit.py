@@ -422,14 +422,9 @@ def setup(mc, get_user_role):
         spec = data.get("original", {})
         text = build_specialist_edit_text(spec, changes, lang)
         kb = specialist_edit_inline(spec_id, lang)
-        
-        try:
-            await message.delete()
-        except Exception:
-            pass
-        
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
-    
+
+        await mc.show_inline_readonly(message, text, kb)
+
     # ==========================================================
     # EDIT: description
     # ==========================================================
@@ -463,14 +458,9 @@ def setup(mc, get_user_role):
         spec = data.get("original", {})
         text = build_specialist_edit_text(spec, changes, lang)
         kb = specialist_edit_inline(spec_id, lang)
-        
-        try:
-            await message.delete()
-        except Exception:
-            pass
-        
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
-    
+
+        await mc.show_inline_readonly(message, text, kb)
+
     # ==========================================================
     # EDIT: photo (STUB)
     # ==========================================================
@@ -544,12 +534,9 @@ def setup(mc, get_user_role):
         result = parse_time_input(text_input)
         
         if result == "error":
-            try:
-                await message.delete()
-            except Exception:
-                pass
-            err_msg = await message.answer(t("schedule:invalid", lang))
-            await mc._add_inline_id(message.chat.id, err_msg.message_id)
+            data = await state.get_data()
+            spec_id = data.get("edit_spec_id")
+            await mc.show_inline_input(message, t("schedule:invalid", lang), specialist_edit_cancel_inline(spec_id, lang))
             return
         
         data = await state.get_data()
@@ -562,13 +549,8 @@ def setup(mc, get_user_role):
         
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="spec_edit_sched")
-        
-        try:
-            await message.delete()
-        except Exception:
-            pass
-        
-        await mc.send_inline_in_flow(message.bot, message.chat.id, text, kb)
+
+        await mc.show_inline_readonly(message, text, kb)
     
     @router.callback_query(F.data.startswith("spec_edit_sched:dayoff:"))
     async def edit_sched_day_off(callback: CallbackQuery, state: FSMContext):
