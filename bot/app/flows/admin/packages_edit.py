@@ -14,6 +14,7 @@ EDIT-FSM for Service Packages (admin).
 - Можно сохранить без description (None)
 """
 
+import json
 import logging
 import math
 from typing import Any
@@ -433,7 +434,7 @@ def setup(mc, get_user_role):
                 package_items.append({"service_id": int(s), "quantity": q})
 
             changes: dict[str, Any] = dict(data.get("changes") or {})
-            changes["package_items"] = package_items
+            changes["package_items"] = json.dumps(package_items)
             await state.update_data(changes=changes)
             await state.set_state(None)
 
