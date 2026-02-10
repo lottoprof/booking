@@ -8,7 +8,7 @@ import json
 import time
 
 ANTI_REPLAY_TTL = 60
-INITDATA_TTL = 300  # ЖЁСТКИЙ TTL (5 минут)
+INITDATA_TTL = 1800  # 30 минут
 
 
 def _initdata_key(init_data: str) -> str:
