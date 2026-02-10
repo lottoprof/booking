@@ -11,6 +11,7 @@ from ..schemas.services import (
     ServiceUpdate,
     ServiceRead,
 )
+from ..services.web_cache import invalidate_services_cache
 
 router = APIRouter(prefix="/services", tags=["services"])
 
@@ -41,6 +42,7 @@ def create_service(
     db.add(obj)
     db.commit()
     db.refresh(obj)
+    invalidate_services_cache()
     return obj
 
 
@@ -59,6 +61,7 @@ def update_service(
 
     db.commit()
     db.refresh(obj)
+    invalidate_services_cache()
     return obj
 
 
@@ -70,4 +73,5 @@ def delete_service(id: int, db: Session = Depends(get_db)):
 
     obj.is_active = 0
     db.commit()
+    invalidate_services_cache()
 

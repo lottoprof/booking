@@ -13,6 +13,7 @@ from ..schemas.locations import (
     LocationRead,
 )
 from ..services.slots.invalidator import invalidate_location_cache
+from ..services.web_cache import invalidate_locations_cache
 
 router = APIRouter(prefix="/locations", tags=["locations"])
 
@@ -43,6 +44,7 @@ def create_location(
     db.add(obj)
     db.commit()
     db.refresh(obj)
+    invalidate_locations_cache()
     return obj
 
 
@@ -63,10 +65,11 @@ def update_location(
     db.commit()
     db.refresh(obj)
     
+    invalidate_locations_cache()
     # Invalidate slots cache when work_schedule changes
     if "work_schedule" in changes:
         invalidate_location_cache(redis_client, id)
-    
+
     return obj
 
 
@@ -78,7 +81,8 @@ def delete_location(id: int, db: Session = Depends(get_db)):
 
     obj.is_active = 0
     db.commit()
-    
+    invalidate_locations_cache()
+
     # Invalidate slots cache when location is deactivated
     invalidate_location_cache(redis_client, id)
 

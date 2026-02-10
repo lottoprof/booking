@@ -15,6 +15,7 @@ from ..schemas.specialists import (
     SpecialistUpdate,
     SpecialistRead,
 )
+from ..services.web_cache import invalidate_specialists_cache
 
 router = APIRouter(prefix="/specialists", tags=["specialists"])
 
@@ -61,6 +62,7 @@ def create_specialist(
     db.add(obj)
     db.commit()
     db.refresh(obj)
+    invalidate_specialists_cache()
     return obj
 
 
@@ -79,6 +81,7 @@ def update_specialist(
 
     db.commit()
     db.refresh(obj)
+    invalidate_specialists_cache()
     return obj
 
 
@@ -90,6 +93,7 @@ def delete_specialist(id: int, db: Session = Depends(get_db)):
 
     obj.is_active = 0
     db.commit()
+    invalidate_specialists_cache()
 
 
 # ---------------------------------------------------------------------
@@ -142,6 +146,7 @@ def add_service_to_specialist(
         },
     )
     db.commit()
+    invalidate_specialists_cache()
 
 
 @router.patch("/{id}/services/{service_id}")
@@ -171,6 +176,7 @@ def update_specialist_service(
         {"sid": id, "service_id": service_id, **fields},
     )
     db.commit()
+    invalidate_specialists_cache()
 
 
 @router.delete("/{id}/services/{service_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -191,4 +197,5 @@ def delete_specialist_service(
         {"sid": id, "service_id": service_id},
     )
     db.commit()
+    invalidate_specialists_cache()
 
