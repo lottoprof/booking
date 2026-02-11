@@ -7,33 +7,45 @@
 ## 1. Архитектура — три блока
 
 ```mermaid
-flowchart TB
-  subgraph TIME ["⏱ Блок ВРЕМЯ"]
-    direction TB
-    T1["Локации (расписание)"]
-    T2["Специалисты (график)"]
-    T3["Кабинеты"]
-    T4["Calendar overrides"]
-    T1 ~~~ T2 ~~~ T3 ~~~ T4
-  end
+classDiagram
+  class ВРЕМЯ {
+    Локации (расписание)
+    Специалисты (график)
+    Кабинеты
+    Calendar overrides
+    --
+    Выход: доступные окна
+    (время + кто)
+  }
 
-  subgraph SVC ["📋 Блок УСЛУГИ"]
-    direction TB
-    S1["Услуги (цена, время)"]
-    S2["Пакеты / Пресеты"]
-    S3["Скидки"]
-    S1 ~~~ S2 ~~~ S3
-  end
+  class УСЛУГИ {
+    Услуги (цена, время)
+    Пакеты / Пресеты
+    Скидки
+  }
 
-  subgraph MONEY ["💰 Блок ДЕНЬГИ (автономный)"]
-    direction TB
-    M1["Кошелёк"]
-    M2["Транзакции (иммутабельный аудит)"]
-    M1 ~~~ M2
-  end
+  class ДЕНЬГИ {
+    <<автономный>>
+    Кошелёк
+    Транзакции (аудит)
+    --
+    Не знает про слоты
+    расписание, кабинеты
+  }
 
-  TIME <-- "Сеанс (Booking)\nduration + service_ids" --> SVC
-  SVC -- "done · refund · purchase" --> MONEY
+  class Booking {
+    <<мост>>
+    пресет + специалист
+    локация + кабинет
+    клиент + время
+    --
+    pending → confirmed
+    → done / cancelled / no_show
+  }
+
+  ВРЕМЯ <.. Booking : duration\nservice_ids
+  УСЛУГИ <.. Booking : пресет\nцена
+  УСЛУГИ --> ДЕНЬГИ : done · purchase\nrefund · correction
 ```
 
 **Границы между блоками:**
@@ -188,32 +200,31 @@ slots_needed = ceil(total_time / 15)
 ## 6. Связи между таблицами
 
 ```mermaid
-flowchart TB
-  subgraph TIME ["⏱ Блок ВРЕМЯ"]
-    locations -- "1:N" --> rooms
-    rooms -- "N:M" --> service_rooms
-    specialists -- "N:M" --> specialist_services
-    calendar_overrides
-  end
+erDiagram
+  %% Блок ВРЕМЯ
+  locations ||--o{ rooms : "содержит"
+  locations ||--o{ calendar_overrides : "исключения"
+  rooms ||--o{ service_rooms : ""
+  specialists ||--o{ specialist_services : ""
+  specialists ||--o{ calendar_overrides : "исключения"
 
-  subgraph SVC ["📋 Блок УСЛУГИ"]
-    services -- "N:M" --> specialist_services
-    services -- "1:N" --> service_packages
-    service_packages -- "1:N" --> client_packages
-    client_discounts
-  end
+  %% Блок УСЛУГИ
+  services ||--o{ service_rooms : ""
+  services ||--o{ specialist_services : ""
+  services ||--o{ service_packages : "входит в"
+  service_packages ||--o{ client_packages : "покупка"
+  client_discounts }o--|| users : "user_id или NULL"
 
-  service_rooms --- services
-  bookings
+  %% Мост
+  bookings }o--|| locations : ""
+  bookings }o--|| specialists : ""
+  bookings }o--|| services : ""
+  bookings }o--|| rooms : "если нужен"
+  bookings }o--|| users : "client"
+  bookings }o--o| client_packages : "если пакет"
 
-  locations -.-> bookings
-  specialists -.-> bookings
-  services -.-> bookings
-  client_packages -.-> bookings
-
-  subgraph MONEY ["💰 Блок ДЕНЬГИ"]
-    client_wallets -- "1:N" --> wallet_transactions
-  end
-
-  bookings -- "done · cancel" --> wallet_transactions
+  %% Блок ДЕНЬГИ
+  users ||--o| client_wallets : "один кошелёк"
+  client_wallets ||--o{ wallet_transactions : "аудит"
+  wallet_transactions }o--o| bookings : "при done"
 ```
