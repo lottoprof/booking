@@ -8,44 +8,34 @@
 
 ```mermaid
 classDiagram
-  class ВРЕМЯ {
-    Локации (расписание)
-    Специалисты (график)
+  class Time["Блок ВРЕМЯ"] {
+    Локации
+    Специалисты
     Кабинеты
     Calendar overrides
-    --
-    Выход: доступные окна
-    (время + кто)
   }
 
-  class УСЛУГИ {
-    Услуги (цена, время)
-    Пакеты / Пресеты
+  class Services["Блок УСЛУГИ"] {
+    Услуги
+    Пакеты и Пресеты
     Скидки
   }
 
-  class ДЕНЬГИ {
-    <<автономный>>
+  class Money["Блок ДЕНЬГИ"] {
     Кошелёк
-    Транзакции (аудит)
-    --
-    Не знает про слоты
-    расписание, кабинеты
+    Транзакции
+  }
+  note for Money "Автономный, постфактум.\nНе знает про слоты,\nрасписание, кабинеты."
+
+  class Booking["Сеанс"] {
+    pending
+    confirmed
+    done / cancelled / no_show
   }
 
-  class Booking {
-    <<мост>>
-    пресет + специалист
-    локация + кабинет
-    клиент + время
-    --
-    pending → confirmed
-    → done / cancelled / no_show
-  }
-
-  ВРЕМЯ <.. Booking : duration\nservice_ids
-  УСЛУГИ <.. Booking : пресет\nцена
-  УСЛУГИ --> ДЕНЬГИ : done · purchase\nrefund · correction
+  Time <.. Booking : duration + service_ids
+  Services <.. Booking : пресет + цена
+  Services --> Money : done / purchase / refund
 ```
 
 **Границы между блоками:**
