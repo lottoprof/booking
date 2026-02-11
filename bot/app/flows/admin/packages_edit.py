@@ -287,7 +287,9 @@ def setup(mc, get_user_role):
         data = await state.get_data()
         pkg_id = int(data.get("pkg_id") or 0)
         changes: dict[str, Any] = dict(data.get("changes") or {})
-        changes["package_price"] = round(price, 2)
+        # package_price is now computed from service price tiers;
+        # stored for reference but not persisted on service_packages
+        pass
         await state.update_data(changes=changes)
         await state.set_state(None)
 

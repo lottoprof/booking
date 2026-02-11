@@ -6,8 +6,9 @@ from pydantic import BaseModel
 
 
 class ClientDiscountCreate(BaseModel):
-    client_id: int
+    client_id: Optional[int] = None  # NULL = promo for all clients
     discount_percent: float
+    valid_from: Optional[date] = None
     valid_to: Optional[date] = None
     description: Optional[str] = None
 
@@ -15,7 +16,9 @@ class ClientDiscountCreate(BaseModel):
 
 
 class ClientDiscountUpdate(BaseModel):
+    client_id: Optional[int] = None
     discount_percent: Optional[float] = None
+    valid_from: Optional[date] = None
     valid_to: Optional[date] = None
     description: Optional[str] = None
 
@@ -24,11 +27,10 @@ class ClientDiscountUpdate(BaseModel):
 
 class ClientDiscountRead(BaseModel):
     id: int
-    client_id: int
+    client_id: Optional[int] = None
     discount_percent: float
+    valid_from: Optional[date] = None
     valid_to: Optional[date] = None
     description: Optional[str] = None
-    created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
-

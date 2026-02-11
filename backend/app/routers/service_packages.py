@@ -12,17 +12,26 @@ from ..schemas.service_packages import (
     ServicePackageRead,
 )
 from ..services.web_cache import invalidate_services_cache
+from ..services.package_pricing import enrich_package_price
 
 router = APIRouter(prefix="/service_packages", tags=["service_packages"])
 
 
+def _to_read(obj: DBServicePackages, db: Session) -> dict:
+    """Convert DB object to read dict with computed package_price."""
+    data = ServicePackageRead.model_validate(obj).model_dump()
+    data["package_price"] = enrich_package_price(obj, db)
+    return data
+
+
 @router.get("/", response_model=list[ServicePackageRead])
 def list_service_packages(db: Session = Depends(get_db)):
-    return (
+    packages = (
         db.query(DBServicePackages)
         .filter(DBServicePackages.is_active == 1)
         .all()
     )
+    return [_to_read(p, db) for p in packages]
 
 
 @router.get("/{id}", response_model=ServicePackageRead)
@@ -30,7 +39,7 @@ def get_service_package(id: int, db: Session = Depends(get_db)):
     obj = db.get(DBServicePackages, id)
     if not obj:
         raise HTTPException(status_code=404, detail="Not found")
-    return obj
+    return _to_read(obj, db)
 
 
 @router.post(
@@ -45,7 +54,7 @@ def create_service_package(
     db.commit()
     db.refresh(obj)
     invalidate_services_cache()
-    return obj
+    return _to_read(obj, db)
 
 
 @router.patch("/{id}", response_model=ServicePackageRead)
@@ -64,7 +73,7 @@ def update_service_package(
     db.commit()
     db.refresh(obj)
     invalidate_services_cache()
-    return obj
+    return _to_read(obj, db)
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)

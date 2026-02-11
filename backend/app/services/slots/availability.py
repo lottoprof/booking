@@ -26,13 +26,18 @@ from .redis_store import SlotsRedisStore
 def calculate_service_availability(
     db: Session,
     location_id: int,
-    service_id: int,
-    target_date: date,
+    service_id: int | None = None,
+    target_date: date = None,
     config: BookingConfig | None = None,
     redis: Redis | None = None,
+    service_package_id: int | None = None,
 ) -> dict:
     """
-    Calculate available time slots for a service.
+    Calculate available time slots for a service or preset.
+
+    If service_package_id is given, uses preset logic:
+    - total_duration = sum(duration + break) across all services in preset
+    - specialist must provide ALL services in the preset
 
     Returns:
         Dict with available times (for SlotsDayResponse).
@@ -43,29 +48,50 @@ def calculate_service_availability(
     # Step 1: Get base location slots (Level 1)
     base_times = _get_base_times(db, location_id, target_date, config, now, redis)
 
-    # Step 2: Get service info
-    service = _get_service(db, service_id)
-    if not service:
-        return {
-            "location_id": location_id,
-            "service_id": service_id,
-            "date": target_date.isoformat(),
-            "service_duration_min": 0,
-            "slots_needed": 0,
-            "available_times": [],
-        }
+    # Step 2: Resolve services from preset or single service_id
+    if service_package_id:
+        services_list, total_min = _resolve_preset_services(db, service_package_id)
+        if not services_list:
+            return {
+                "location_id": location_id,
+                "service_id": service_id,
+                "service_package_id": service_package_id,
+                "date": target_date.isoformat(),
+                "service_duration_min": 0,
+                "slots_needed": 0,
+                "available_times": [],
+            }
+        duration_min = total_min
+        service_ids = [s.id for s in services_list]
+    else:
+        service = _get_service(db, service_id)
+        if not service:
+            return {
+                "location_id": location_id,
+                "service_id": service_id,
+                "date": target_date.isoformat(),
+                "service_duration_min": 0,
+                "slots_needed": 0,
+                "available_times": [],
+            }
+        duration_min = service.duration_min
+        break_min = service.break_min or 0
+        total_min = duration_min + break_min
+        service_ids = [service_id]
 
-    duration_min = service.duration_min
-    break_min = service.break_min or 0
-    total_min = duration_min + break_min
     slots_needed = ceil(total_min / config.slot_step_minutes)
 
-    # Step 3: Get specialists for this service
-    specialists = _get_service_specialists(db, service_id)
+    # Step 3: Get specialists — must provide ALL services in preset
+    if service_package_id and len(service_ids) > 1:
+        specialists = _get_preset_specialists(db, service_ids)
+    else:
+        specialists = _get_service_specialists(db, service_ids[0])
+
     if not specialists:
         return {
             "location_id": location_id,
             "service_id": service_id,
+            "service_package_id": service_package_id,
             "date": target_date.isoformat(),
             "service_duration_min": duration_min,
             "slots_needed": slots_needed,
@@ -151,7 +177,7 @@ def calculate_service_availability(
                 "specialists": available_specialists,
             })
 
-    return {
+    result = {
         "location_id": location_id,
         "service_id": service_id,
         "date": target_date.isoformat(),
@@ -159,6 +185,9 @@ def calculate_service_availability(
         "slots_needed": slots_needed,
         "available_times": available_times,
     }
+    if service_package_id:
+        result["service_package_id"] = service_package_id
+    return result
 
 
 # ── Base times (Level 1 with cache) ─────────────────────────────────────
@@ -297,6 +326,47 @@ def _consecutive_times(
 # ── Database helpers ─────────────────────────────────────────────────────
 
 
+def _resolve_preset_services(db: Session, service_package_id: int) -> tuple[list, int]:
+    """
+    Resolve preset into list of services and total duration.
+
+    Returns:
+        (services_list, total_minutes) or ([], 0) on error.
+    """
+    from ...models.generated import ServicePackages, Services
+
+    package = db.query(ServicePackages).filter(
+        ServicePackages.id == service_package_id,
+        ServicePackages.is_active == 1,
+    ).first()
+    if not package:
+        return [], 0
+
+    try:
+        items = json.loads(package.package_items) if package.package_items else []
+    except (json.JSONDecodeError, TypeError):
+        return [], 0
+
+    if not isinstance(items, list) or not items:
+        return [], 0
+
+    service_ids = [item["service_id"] for item in items if "service_id" in item]
+    if not service_ids:
+        return [], 0
+
+    services = (
+        db.query(Services)
+        .filter(Services.id.in_(service_ids), Services.is_active == 1)
+        .all()
+    )
+
+    if len(services) != len(service_ids):
+        return [], 0
+
+    total_min = sum((s.duration_min + (s.break_min or 0)) for s in services)
+    return services, total_min
+
+
 def _get_service(db: Session, service_id: int):
     """Get service by ID."""
     from ...models.generated import Services
@@ -304,6 +374,35 @@ def _get_service(db: Session, service_id: int):
         Services.id == service_id,
         Services.is_active == 1
     ).first()
+
+
+def _get_preset_specialists(db: Session, service_ids: list[int]) -> list:
+    """Get specialists who provide ALL services in the preset (intersection)."""
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import func
+    from ...models.generated import Specialists, t_specialist_services
+
+    # Specialists active for ALL service_ids
+    subq = (
+        db.query(t_specialist_services.c.specialist_id)
+        .filter(
+            t_specialist_services.c.service_id.in_(service_ids),
+            t_specialist_services.c.is_active == 1,
+        )
+        .group_by(t_specialist_services.c.specialist_id)
+        .having(func.count(t_specialist_services.c.service_id) == len(service_ids))
+        .subquery()
+    )
+
+    return (
+        db.query(Specialists)
+        .options(joinedload(Specialists.user))
+        .filter(
+            Specialists.id.in_(subq),
+            Specialists.is_active == 1,
+        )
+        .all()
+    )
 
 
 def _get_service_specialists(db: Session, service_id: int) -> list:

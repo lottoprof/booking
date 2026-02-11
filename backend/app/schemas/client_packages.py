@@ -24,6 +24,7 @@ class ClientPackageRead(BaseModel):
     purchased_at: datetime
     valid_to: Optional[datetime] = None
     notes: Optional[str] = None
+    purchase_price: Optional[float] = None
 
     model_config = {"from_attributes": True}
 

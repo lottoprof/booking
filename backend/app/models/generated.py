@@ -68,14 +68,16 @@ class ServicePackages(Base):
 
     company_id = Column(ForeignKey('company.id', ondelete='CASCADE'), nullable=False)
     name = Column(Text, nullable=False)
-    package_items = Column(Text, nullable=False, server_default=text("'{}'"))
-    package_price = Column(Float, nullable=False)
+    package_items = Column(Text, nullable=False, server_default=text("'[]'"))
     is_active = Column(Integer, nullable=False, server_default=text('1'))
     id = Column(Integer, primary_key=True)
     description = Column(Text)
+    show_on_pricing = Column(Integer, nullable=False, server_default=text('1'))
+    show_on_booking = Column(Integer, nullable=False, server_default=text('1'))
 
     company = relationship('Company', back_populates='service_packages')
     client_packages = relationship('ClientPackages', back_populates='package')
+    bookings = relationship('Bookings', back_populates='service_package')
 
 
 class Services(Base):
@@ -86,6 +88,8 @@ class Services(Base):
     duration_min = Column(Integer, nullable=False)
     break_min = Column(Integer, nullable=False, server_default=text('0'))
     price = Column(Float, nullable=False)
+    price_5 = Column(Float)
+    price_10 = Column(Float)
     is_active = Column(Integer, nullable=False, server_default=text('1'))
     id = Column(Integer, primary_key=True)
     description = Column(Text)
@@ -148,7 +152,7 @@ class CalendarOverrides(Base):
 class ClientDiscounts(Base):
     __tablename__ = 'client_discounts'
 
-    user_id = Column(ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(ForeignKey('users.id', ondelete='CASCADE'))  # NULL = promo for all
     discount_percent = Column(Float, nullable=False, server_default=text('0'))
     id = Column(Integer, primary_key=True)
     valid_from = Column(Text)
@@ -170,6 +174,7 @@ class ClientPackages(Base):
     notes = Column(Text)
     used_items = Column(Text, nullable=False, server_default=text("'{}'"))
     is_closed = Column(Integer, nullable=False, server_default=text('0'))
+    purchase_price = Column(Float)
 
     package = relationship('ServicePackages', back_populates='client_packages')
     user = relationship('Users', back_populates='client_packages')
@@ -257,7 +262,8 @@ class Bookings(Base):
 
     company_id = Column(ForeignKey('company.id', ondelete='CASCADE'), nullable=False)
     location_id = Column(ForeignKey('locations.id'), nullable=False)
-    service_id = Column(ForeignKey('services.id'), nullable=False)
+    service_id = Column(ForeignKey('services.id'))  # nullable for preset-based bookings
+    service_package_id = Column(ForeignKey('service_packages.id'))  # preset
     client_id = Column(ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     specialist_id = Column(ForeignKey('specialists.id', ondelete='CASCADE'), nullable=False)
     date_start = Column(Text, nullable=False)
@@ -279,6 +285,7 @@ class Bookings(Base):
     location = relationship('Locations', back_populates='bookings')
     room = relationship('Rooms', back_populates='bookings')
     service = relationship('Services', back_populates='bookings')
+    service_package = relationship('ServicePackages', back_populates='bookings')
     specialist = relationship('Specialists', back_populates='bookings')
     booking_discounts = relationship('BookingDiscounts', back_populates='booking')
     wallet_transactions = relationship('WalletTransactions', back_populates='booking')

@@ -131,6 +131,12 @@ def get_user_packages(
             cp.used_items,
         )
 
+        # Use snapshot purchase_price; fall back to dynamic computation
+        from ..services.package_pricing import enrich_package_price
+        pkg_price = cp.purchase_price
+        if pkg_price is None:
+            pkg_price = enrich_package_price(sp, db) or 0
+
         result.append(ClientPackageWithRemaining(
             id=cp.id,
             user_id=cp.user_id,
@@ -141,8 +147,9 @@ def get_user_packages(
             purchased_at=cp.purchased_at,
             valid_to=cp.valid_to,
             notes=cp.notes,
+            purchase_price=cp.purchase_price,
             package_name=sp.name,
-            package_price=sp.package_price,
+            package_price=pkg_price,
             remaining_items=remaining_items,
             total_quantity=total_quantity,
             total_remaining=total_remaining,

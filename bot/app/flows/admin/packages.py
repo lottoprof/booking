@@ -623,7 +623,6 @@ def setup(mc, get_user_role):
             "name": name,
             "description": description,
             "package_items": json.dumps(package_items),  # ← СЕРИАЛИЗУЕМ В JSON STRING
-            "package_price": round(price, 2),
         }
 
         created = await api.create_package(payload)

@@ -64,11 +64,11 @@ def _create_transaction(
     return tx
 
 
-def _calculate_unit_price(package_price: float, package_items: str) -> float:
-    """Calculate price per service unit in a package."""
+def _calculate_unit_price(purchase_price: float, package_items: str) -> float:
+    """Calculate price per service unit from snapshot purchase_price."""
     items = json.loads(package_items) if package_items else []
     total_qty = sum(item["quantity"] for item in items)
-    return package_price / total_qty if total_qty > 0 else 0
+    return purchase_price / total_qty if total_qty > 0 else 0
 
 
 def _find_active_package(
@@ -202,8 +202,14 @@ def process_booking_payment(
         # Use package
         client_package, service_package = package_result
 
+        # Use snapshot purchase_price; fall back to dynamic calc
+        pp = client_package.purchase_price
+        if pp is None:
+            from .package_pricing import enrich_package_price
+            pp = enrich_package_price(service_package, db) or 0
+
         unit_price = _calculate_unit_price(
-            service_package.package_price,
+            pp,
             service_package.package_items,
         )
 
@@ -248,8 +254,13 @@ def process_booking_payment(
         }
 
     else:
-        # Single service - deposit and withdraw
+        # Single service - deposit and withdraw, apply best discount
         price = service.price
+
+        from .discount_resolver import find_best_discount
+        discount_pct = find_best_discount(db, client_id, booking_id)
+        if discount_pct:
+            price = round(price * (1 - discount_pct / 100), 2)
 
         # Deposit (service rendered)
         tx_deposit = _create_transaction(
@@ -280,16 +291,21 @@ def process_booking_payment(
         # No package link
         booking.client_package_id = None
 
+        # Store final price on booking
+        booking.final_price = price
+
         db.flush()
 
         logger.info(
             f"Booking {booking_id} paid as single service: "
             f"+{price:.2f} / -{price:.2f} RUB"
+            f"{f' (discount {discount_pct}%)' if discount_pct else ''}"
         )
 
         return {
             "source": "single",
             "amount": price,
+            "discount_percent": discount_pct,
             "package_id": None,
             "client_package_id": None,
             "transactions": [tx.id for tx in transactions],

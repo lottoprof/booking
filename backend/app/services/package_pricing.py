@@ -1,0 +1,96 @@
+# backend/app/services/package_pricing.py
+"""
+Dynamic package price calculation.
+
+package_price is NOT stored in service_packages — it is computed from
+price_5/price_10 of the constituent services + package_items quantities.
+"""
+
+import json
+from typing import Optional
+
+from sqlalchemy.orm import Session
+
+from ..models.generated import Services as DBService, ServicePackages as DBServicePackage
+
+
+def calc_package_price(
+    package_items: list[dict],
+    services: dict[int, DBService],
+) -> Optional[float]:
+    """
+    Calculate dynamic package price from service tiers.
+
+    Args:
+        package_items: list of {"service_id": int, "quantity": int}
+        services: {service_id: DBService} lookup
+
+    Returns:
+        Computed price or None if data is insufficient.
+
+    Tier logic:
+        sum_qty <= 1  → service.price  (preset / single)
+        sum_qty <= 5  → service.price_5 (fallback to price)
+        sum_qty <= 10 → service.price_10 (fallback to price_5, then price)
+    """
+    if not package_items:
+        return None
+
+    sum_qty = sum(item.get("quantity", 1) for item in package_items)
+    total = 0.0
+
+    for item in package_items:
+        sid = item.get("service_id")
+        qty = item.get("quantity", 1)
+        svc = services.get(sid)
+        if not svc:
+            return None
+
+        unit_price = _tier_price(svc, sum_qty)
+        total += qty * unit_price
+
+    return round(total, 2)
+
+
+def _tier_price(service: DBService, sum_qty: int) -> float:
+    """Pick the right tier price for a service given total package quantity."""
+    if sum_qty <= 1:
+        return service.price
+    elif sum_qty <= 5:
+        return service.price_5 if service.price_5 is not None else service.price
+    else:
+        if service.price_10 is not None:
+            return service.price_10
+        if service.price_5 is not None:
+            return service.price_5
+        return service.price
+
+
+def enrich_package_price(
+    package: DBServicePackage,
+    db: Session,
+) -> Optional[float]:
+    """
+    Compute package_price for a single service_package row.
+    Returns the computed price or None.
+    """
+    try:
+        items = json.loads(package.package_items) if package.package_items else []
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+    if not isinstance(items, list) or not items:
+        return None
+
+    service_ids = [item["service_id"] for item in items if "service_id" in item]
+    if not service_ids:
+        return None
+
+    services_list = (
+        db.query(DBService)
+        .filter(DBService.id.in_(service_ids))
+        .all()
+    )
+    services_map = {s.id: s for s in services_list}
+
+    return calc_package_price(items, services_map)

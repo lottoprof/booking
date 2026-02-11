@@ -12,6 +12,8 @@ class ServiceCreate(BaseModel):
     duration_min: int
     break_min: int = 0
     price: float
+    price_5: Optional[float] = None
+    price_10: Optional[float] = None
     color_code: Optional[str] = None
 
     model_config = {"from_attributes": True}
@@ -25,6 +27,8 @@ class ServiceUpdate(BaseModel):
     duration_min: Optional[int] = None
     break_min: Optional[int] = None
     price: Optional[float] = None
+    price_5: Optional[float] = None
+    price_10: Optional[float] = None
     color_code: Optional[str] = None
 
     model_config = {"from_attributes": True}
@@ -39,6 +43,8 @@ class ServiceRead(BaseModel):
     duration_min: int
     break_min: int
     price: float
+    price_5: Optional[float] = None
+    price_10: Optional[float] = None
     color_code: Optional[str] = None
     is_active: bool
 

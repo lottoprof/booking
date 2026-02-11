@@ -414,7 +414,16 @@ def package_purchase(
             detail=f"Service package {data.package_id} is not active"
         )
 
-    # Create client_packages record
+    # Compute package price dynamically
+    from ..services.package_pricing import enrich_package_price
+    computed_price = enrich_package_price(package, db)
+    if computed_price is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot compute package price (missing service data)"
+        )
+
+    # Create client_packages record with purchase_price snapshot
     client_package = DBClientPackage(
         user_id=user_id,
         package_id=data.package_id,
@@ -422,6 +431,7 @@ def package_purchase(
         is_closed=0,
         valid_to=data.valid_to,
         notes=data.notes,
+        purchase_price=computed_price,
     )
     db.add(client_package)
     db.flush()  # Get the ID
@@ -430,14 +440,14 @@ def package_purchase(
     tx = create_transaction(
         db=db,
         wallet_id=wallet.id,
-        amount=package.package_price,
+        amount=computed_price,
         tx_type="deposit",
         description=f"Покупка пакета: {package.name}",
         created_by=data.created_by,
     )
 
     # Update balance
-    wallet.balance += package.package_price
+    wallet.balance += computed_price
 
     db.commit()
     db.refresh(client_package)
@@ -450,7 +460,7 @@ def package_purchase(
         wallet_transaction_id=tx.id,
         new_balance=wallet.balance,
         package_name=package.name,
-        package_price=package.package_price,
+        package_price=computed_price,
     )
 
 
@@ -547,11 +557,13 @@ def package_refund(
             detail="No remaining services to refund"
         )
 
-    # Calculate refund amount
-    unit_price = _calculate_unit_price(
-        service_package.package_price,
-        service_package.package_items,
-    )
+    # Calculate refund amount from snapshot purchase_price
+    pp = client_package.purchase_price
+    if pp is None:
+        from ..services.package_pricing import enrich_package_price
+        pp = enrich_package_price(service_package, db) or 0
+
+    unit_price = _calculate_unit_price(pp, service_package.package_items)
     refund_amount = unit_price * total_remaining
 
     # Check sufficient balance

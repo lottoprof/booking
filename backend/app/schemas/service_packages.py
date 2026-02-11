@@ -8,8 +8,9 @@ class ServicePackageCreate(BaseModel):
     company_id: int
     name: str
     description: Optional[str] = None
-    package_items: str = "{}"
-    package_price: float
+    package_items: str = "[]"
+    show_on_pricing: bool = True
+    show_on_booking: bool = True
 
     model_config = {"from_attributes": True}
 
@@ -19,7 +20,8 @@ class ServicePackageUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     package_items: Optional[str] = None
-    package_price: Optional[float] = None
+    show_on_pricing: Optional[bool] = None
+    show_on_booking: Optional[bool] = None
 
     model_config = {"from_attributes": True}
 
@@ -30,8 +32,9 @@ class ServicePackageRead(BaseModel):
     name: str
     description: Optional[str] = None
     package_items: str
-    package_price: float
     is_active: bool
+    show_on_pricing: bool
+    show_on_booking: bool
+    package_price: Optional[float] = None  # computed dynamically
 
     model_config = {"from_attributes": True}
-

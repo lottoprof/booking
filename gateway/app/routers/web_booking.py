@@ -115,14 +115,15 @@ class WebTimeSlot(BaseModel):
 
 class WebDaySlotsResponse(BaseModel):
     location_id: int
-    service_id: int
+    service_id: Optional[int] = None
     date: str
     slots: list[WebTimeSlot]
 
 
 class SlotReserveRequest(BaseModel):
     location_id: int
-    service_id: int
+    service_id: Optional[int] = None
+    service_package_id: Optional[int] = None  # preset
     specialist_id: Optional[int] = None
     date: str  # YYYY-MM-DD
     time: str  # HH:MM
@@ -266,9 +267,12 @@ async def get_services():
             packages = []
 
     # Build service_id → packages mapping from package_items
+    # Filter by show_on_booking for booking flow
     svc_packages: dict[int, list[dict]] = {}
     for pkg in (packages or []):
         if not pkg.get("is_active", True):
+            continue
+        if not pkg.get("show_on_booking", True):
             continue
         try:
             items = json.loads(pkg.get("package_items", "[]"))
@@ -276,6 +280,8 @@ async def get_services():
             continue
         if not isinstance(items, list):
             continue
+
+        pkg_price = pkg.get("package_price")  # computed by backend
         for item in items:
             sid = item.get("service_id")
             qty = item.get("quantity", 1)
@@ -283,7 +289,7 @@ async def get_services():
                 continue
             svc_packages.setdefault(sid, []).append({
                 "name": pkg["name"],
-                "price": pkg["package_price"],
+                "price": pkg_price or 0,
                 "qty": qty,
             })
 
@@ -437,7 +443,8 @@ async def get_slots_calendar(
 @router.get("/slots/day", response_model=WebDaySlotsResponse)
 async def get_slots_day(
     location_id: int,
-    service_id: int,
+    service_id: Optional[int] = None,
+    service_package_id: Optional[int] = None,
     target_date: str = Query(..., alias="date"),
     specialist_id: Optional[int] = None,
 ):
@@ -454,9 +461,12 @@ async def get_slots_day(
         async with httpx.AsyncClient(follow_redirects=True) as client:
             params = {
                 "location_id": location_id,
-                "service_id": service_id,
                 "date": target_date,
             }
+            if service_id:
+                params["service_id"] = service_id
+            if service_package_id:
+                params["service_package_id"] = service_package_id
             response = await client.get(
                 f"{DOMAIN_API_URL}/slots/day",
                 params=params,
@@ -478,7 +488,7 @@ async def get_slots_day(
         logger.error(f"Failed to fetch slots from backend: {e}")
         return WebDaySlotsResponse(
             location_id=location_id,
-            service_id=service_id,
+            service_id=service_id or 0,
             date=target_date,
             slots=[]
         )
@@ -563,6 +573,7 @@ async def create_slot_reserve(data: SlotReserveRequest):
     reserve_data = {
         "location_id": data.location_id,
         "service_id": data.service_id,
+        "service_package_id": data.service_package_id,
         "specialist_id": data.specialist_id,
         "date": data.date,
         "time": data.time,
@@ -629,7 +640,8 @@ async def create_pending_booking(data: WebBookingRequest):
 
     pending_data = {
         "location_id": reserve["location_id"],
-        "service_id": reserve["service_id"],
+        "service_id": reserve.get("service_id"),
+        "service_package_id": reserve.get("service_package_id"),
         "specialist_id": reserve.get("specialist_id"),
         "date": reserve["date"],
         "time": reserve["time"],

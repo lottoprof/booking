@@ -8,7 +8,8 @@ from pydantic import BaseModel
 class BookingCreate(BaseModel):
     company_id: int
     location_id: int
-    service_id: int
+    service_id: Optional[int] = None  # legacy; use service_package_id
+    service_package_id: Optional[int] = None  # preset
     client_id: int
     specialist_id: int
     room_id: Optional[int] = None
@@ -58,7 +59,8 @@ class BookingRead(BaseModel):
 
     company_id: int
     location_id: int
-    service_id: int
+    service_id: Optional[int] = None
+    service_package_id: Optional[int] = None
     client_id: int
     specialist_id: int
     room_id: Optional[int] = None

@@ -100,11 +100,15 @@ def get_slots_calendar(
 @router.get("/day", response_model=SlotsDayResponse)
 def get_slots_day(
     location_id: int,
-    service_id: int,
+    service_id: int | None = None,
+    service_package_id: int | None = None,
     target_date: date = Query(..., alias="date"),
     db: Session = Depends(get_db),
 ):
-    """Get available time slots for a service on a specific day (Level 2)."""
+    """Get available time slots for a service/preset on a specific day (Level 2)."""
+    if not service_id and not service_package_id:
+        raise HTTPException(status_code=400, detail="service_id or service_package_id required")
+
     config = get_booking_config()
 
     today = date.today()
@@ -123,6 +127,7 @@ def get_slots_day(
         target_date=target_date,
         config=config,
         redis=redis_client,
+        service_package_id=service_package_id,
     )
 
     return SlotsDayResponse(**result)

@@ -48,7 +48,8 @@ class AvailableTimeSlot(BaseModel):
 class SlotsDayResponse(BaseModel):
     """Response with detailed slots for a day (Level 2)."""
     location_id: int
-    service_id: int
+    service_id: int | None = None
+    service_package_id: int | None = None
     date: str  # ISO date string
     service_duration_min: int
     slots_needed: int
