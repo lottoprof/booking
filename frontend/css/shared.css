@@ -31,6 +31,8 @@
   --shadow-md:     0 8px 32px rgba(43,181,184,0.08);
   --shadow-lg:     0 16px 48px rgba(43,181,184,0.12);
   --nav-bg:        rgba(255,255,255,0.85);
+  --badge-bg:      rgba(43,181,184,0.08);
+  --badge-border:  rgba(43,181,184,0.15);
 }
 
 [data-theme="dark"] {
@@ -46,6 +48,8 @@
   --shadow-md:     0 8px 32px rgba(0,0,0,0.3);
   --shadow-lg:     0 16px 48px rgba(0,0,0,0.4);
   --nav-bg:        rgba(15,26,26,0.9);
+  --badge-bg:      rgba(43,181,184,0.12);
+  --badge-border:  rgba(43,181,184,0.25);
 }
 
 /* ═══════════════════════════════════════

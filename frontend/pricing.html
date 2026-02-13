@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Прайс-лист — UPGRADE">
   <meta property="og:description" content="Цены на LPG-массаж, прессотерапию, обёртывание. Разовые сеансы и пакеты.">
-  <meta property="og:url" content="https://upgrade-studio.ru/pricing.html">
+  <meta property="og:url" content="https://upgrade-studio.ru/pricing">
 
   <!-- Structured Data: OfferCatalog -->
   <script type="application/ld+json">
@@ -32,116 +32,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/shared.css">
   <link rel="icon" href="logo/favicon.svg" type="image/svg+xml">
 
   <style>
-    /* ═══════════════════════════════════════
-       SHARED DESIGN TOKENS
-       (в продакшене — вынести в shared.css)
-       ═══════════════════════════════════════ */
-    :root {
-      --teal:        #2BB5B8;
-      --teal-light:  #5DD3D5;
-      --teal-dark:   #1E8E90;
-      --teal-subtle: #E8F7F7;
-      --font-display: 'Cormorant Garamond', Georgia, serif;
-      --font-body:    'Manrope', system-ui, sans-serif;
-    }
-
-    [data-theme="light"] {
-      --bg-primary:    #FFFFFF;
-      --bg-secondary:  #F8FBFB;
-      --bg-card:       #FFFFFF;
-      --text-primary:  #1A2B2B;
-      --text-secondary:#5A7070;
-      --text-muted:    #8FA5A5;
-      --border:        #E0EDED;
-      --border-light:  #F0F5F5;
-      --shadow-sm:     0 1px 3px rgba(43,181,184,0.06);
-      --shadow-md:     0 8px 32px rgba(43,181,184,0.08);
-      --shadow-lg:     0 16px 48px rgba(43,181,184,0.12);
-      --nav-bg:        rgba(255,255,255,0.85);
-      --badge-bg:      rgba(43,181,184,0.08);
-      --badge-border:  rgba(43,181,184,0.15);
-    }
-
-    [data-theme="dark"] {
-      --bg-primary:    #0F1A1A;
-      --bg-secondary:  #162222;
-      --bg-card:       #1A2D2D;
-      --text-primary:  #E8F0F0;
-      --text-secondary:#9BB5B5;
-      --text-muted:    #6A8585;
-      --border:        #253838;
-      --border-light:  #1E3030;
-      --shadow-sm:     0 1px 3px rgba(0,0,0,0.2);
-      --shadow-md:     0 8px 32px rgba(0,0,0,0.3);
-      --shadow-lg:     0 16px 48px rgba(0,0,0,0.4);
-      --nav-bg:        rgba(15,26,26,0.9);
-      --badge-bg:      rgba(43,181,184,0.12);
-      --badge-border:  rgba(43,181,184,0.25);
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; font-size: 16px; }
-
-    body {
-      font-family: var(--font-body);
-      font-weight: 400;
-      color: var(--text-primary);
-      background: var(--bg-primary);
-      line-height: 1.6;
-      overflow-x: hidden;
-      transition: background 0.4s ease, color 0.4s ease;
-    }
-
-    /* ═══ NAV (shared) ═══ */
-    .nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      padding: 0 2rem; height: 72px;
-      display: flex; align-items: center; justify-content: space-between;
-      background: var(--nav-bg);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border-light);
-      transition: all 0.3s ease;
-    }
-    .nav.scrolled { height: 60px; box-shadow: var(--shadow-sm); }
-    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; line-height: 1; }
-    .nav-logo-icon { height: 44px; width: auto; transition: height 0.3s ease; }
-    .nav-logo-text { height: 13px; width: auto; transition: height 0.3s ease; }
-    .nav.scrolled .nav-logo-icon { height: 36px; }
-    .nav.scrolled .nav-logo-text { height: 11px; }
-    .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
-    .nav-links a { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); text-decoration: none; letter-spacing: 0.04em; text-transform: uppercase; transition: color 0.2s; }
-    .nav-links a:hover { color: var(--teal); }
-    .nav-links a[aria-current="page"] { color: var(--teal); }
-    .nav-right { display: flex; align-items: center; gap: 1rem; }
-
-    .theme-toggle { width: 44px; height: 24px; border-radius: 12px; background: var(--border); border: none; cursor: pointer; position: relative; transition: background 0.3s; }
-    .theme-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--teal); transition: transform 0.3s ease; }
-    [data-theme="dark"] .theme-toggle::after { transform: translateX(20px); }
-    .theme-toggle-icon { position: absolute; top: 50%; transform: translateY(-50%); font-size: 11px; line-height: 1; pointer-events: none; }
-    .theme-toggle-icon.sun { left: 5px; }
-    .theme-toggle-icon.moon { right: 5px; }
-
-    .nav-burger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
-    .nav-burger span { width: 22px; height: 2px; background: var(--text-primary); border-radius: 1px; transition: all 0.3s; }
-
-    /* ═══ MOBILE MENU ═══ */
-    .mobile-menu { display: none; position: fixed; inset: 0; z-index: 99; background: var(--bg-primary); flex-direction: column; align-items: center; justify-content: center; gap: 2rem; }
-    .mobile-menu.active { display: flex; }
-    .mobile-menu a { font-family: var(--font-display); font-size: 1.8rem; color: var(--text-primary); text-decoration: none; transition: color 0.2s; }
-    .mobile-menu a:hover { color: var(--teal); }
-    .mobile-close { position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; font-size: 1.5rem; color: var(--text-primary); cursor: pointer; }
-
-    /* ═══ BUTTONS ═══ */
-    .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 14px 32px; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; border-radius: 100px; border: none; cursor: pointer; transition: all 0.3s ease; }
-    .btn-primary { background: var(--teal); color: #fff; box-shadow: 0 4px 20px rgba(43,181,184,0.3); }
-    .btn-primary:hover { background: var(--teal-dark); box-shadow: 0 6px 28px rgba(43,181,184,0.4); transform: translateY(-2px); }
-    .btn-sm { padding: 10px 24px; font-size: 0.78rem; }
-    .btn-outline { background: transparent; color: var(--text-primary); border: 1.5px solid var(--border); }
-    .btn-outline:hover { border-color: var(--teal); color: var(--teal); }
-
     /* ═══ PAGE HEADER ═══ */
     .page-header {
       padding: 140px 2rem 60px;
@@ -470,29 +364,8 @@
     .price-card:nth-child(5) { animation-delay: 0.32s; }
     .price-card:nth-child(6) { animation-delay: 0.40s; }
 
-    /* ═══ FOOTER ═══ */
-    footer {
-      padding: 3rem 2rem;
-      border-top: 1px solid var(--border);
-      background: var(--bg-secondary);
-    }
-    .footer-inner { max-width: 1120px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
-    .footer-logo { display: flex; align-items: center; line-height: 1; }
-    .footer-logo img { height: 36px; width: auto; }
-    .footer-links { display: flex; gap: 2rem; list-style: none; }
-    .footer-links a { font-size: 0.82rem; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
-    .footer-links a:hover { color: var(--teal); }
-    .footer-copy { font-size: 0.78rem; color: var(--text-muted); width: 100%; text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-light); }
-
     /* ═══ RESPONSIVE ═══ */
     @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .nav-burger { display: flex; }
-      .nav-logo-icon { height: 38px; }
-      .nav-logo-text { height: 11px; }
-      .nav.scrolled .nav-logo-icon { height: 32px; }
-      .nav.scrolled .nav-logo-text { height: 9px; }
-
       /* Cards stack vertically */
       .pricing-section { padding: 1.5rem 0 3rem; }
       .pricing-inner { max-width: none; padding: 0 1rem; }
@@ -553,8 +426,6 @@
 
       .filters { gap: 0.35rem; padding: 1.5rem 1rem 0; }
       .filter-btn { padding: 6px 14px; font-size: 0.78rem; }
-      .footer-inner { justify-content: center; text-align: center; }
-      .footer-links { justify-content: center; }
     }
 
     /* Hide variant dots on desktop, hide card-level scroll dots always */
@@ -572,12 +443,12 @@
     <ul class="nav-links">
       <li><a href="/">Главная</a></li>
       <li><a href="/#services">Услуги</a></li>
-      <li><a href="/pricing.html" aria-current="page">Прайс</a></li>
+      <li><a href="/pricing" aria-current="page">Прайс</a></li>
       <li><a href="/#specialists">Специалисты</a></li>
-      <li><a href="/blog.html">Блог</a></li>
+      <li><a href="/blog">Блог</a></li>
     </ul>
     <div class="nav-right">
-      <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+      <button class="theme-toggle-slider" id="themeToggle" aria-label="Переключить тему">
         <span class="theme-toggle-icon sun">☀️</span>
         <span class="theme-toggle-icon moon">🌙</span>
       </button>
@@ -592,10 +463,10 @@
     <button class="mobile-close" id="mobileClose">✕</button>
     <a href="/" onclick="closeMobile()">Главная</a>
     <a href="/#services" onclick="closeMobile()">Услуги</a>
-    <a href="/pricing.html" onclick="closeMobile()">Прайс</a>
+    <a href="/pricing" onclick="closeMobile()">Прайс</a>
     <a href="/#specialists" onclick="closeMobile()">Специалисты</a>
-    <a href="/blog.html" onclick="closeMobile()">Блог</a>
-    <a href="/book.html" class="btn btn-primary" onclick="closeMobile()">Записаться</a>
+    <a href="/blog" onclick="closeMobile()">Блог</a>
+    <a href="/book" class="btn btn-primary" onclick="closeMobile()">Записаться</a>
   </div>
 
   <!-- ═══ PAGE HEADER ═══ -->
@@ -648,7 +519,7 @@
       <div class="footer-logo"><img src="logo/logo2.svg" style="height:32px;width:auto" alt="UPGRADE" /><img src="logo/logo1.svg" style="height:14px;width:auto;margin-left:8px" alt="" /></div>
       <ul class="footer-links">
         <li><a href="/#services">Услуги</a></li>
-        <li><a href="/pricing.html">Прайс</a></li>
+        <li><a href="/pricing">Прайс</a></li>
         <li><a href="https://www.instagram.com/upgrade.lpg" target="_blank" rel="noopener">Instagram</a></li>
         <li><a href="https://t.me/upgrade_lpg_bot" target="_blank" rel="noopener">Telegram</a></li>
       </ul>
@@ -660,97 +531,13 @@
     /* ══════════════════════════════════════════
        CONFIG
        ══════════════════════════════════════════ */
-    const API_BASE = ''; // e.g. 'https://api.upgrade-studio.ru'
-    const BOOK_URL = '/book.html';
-
-    /* ══════════════════════════════════════════
-       MOCK DATA (удалить когда API готов)
-       Формат: GET /web/services?view=pricing → WebService[]
-       ══════════════════════════════════════════ */
-    const MOCK_SERVICES = [
-      {
-        id: 1,
-        slug: 'lpg-massazh',
-        name: 'LPG-массаж',
-        category: 'Аппаратный массаж',
-        icon: '✦',
-        description: 'Аппаратный вакуумно-роликовой массаж для коррекции фигуры, уменьшения целлюлита и подтяжки кожи',
-        duration_min: 45,
-        price: 1800,
-        variants: [
-          { label: 'Разовый сеанс', price: 1800, old_price: null, per_session: null, total_duration_min: null },
-          { label: 'LPG', price: 8100, old_price: 9000, per_session: 1620, total_duration_min: 45 },
-          { label: 'LPG', price: 14400, old_price: 18000, per_session: 1440, total_duration_min: 45 },
-        ]
-      },
-      {
-        id: 2,
-        slug: 'rolikovyj-massazh',
-        name: 'Роликовый массаж',
-        category: 'Аппаратный массаж',
-        icon: '◎',
-        description: 'Интенсивное воздействие роликами для глубокой проработки проблемных зон и улучшения тургора кожи',
-        duration_min: 40,
-        price: 2500,
-        variants: [
-          { label: 'Разовый сеанс', price: 2500, old_price: null, per_session: null, total_duration_min: null },
-          { label: 'Роликовый', price: 10000, old_price: 12500, per_session: 2000, total_duration_min: 40 },
-        ]
-      },
-      {
-        id: 3,
-        slug: 'pressoterapiya',
-        name: 'Прессотерапия',
-        category: 'Лимфодренаж',
-        icon: '◇',
-        description: 'Аппаратный лимфодренаж для снятия отёков, улучшения кровообращения и вывода токсинов',
-        duration_min: 30,
-        price: 2000,
-        variants: [
-          { label: 'Разовый сеанс', price: 2000, old_price: null, per_session: null, total_duration_min: null },
-          { label: 'Прессотерапия', price: 16000, old_price: 20000, per_session: 1600, total_duration_min: 30 },
-        ]
-      },
-      {
-        id: 4,
-        slug: 'indibo',
-        name: 'Индибо',
-        category: 'Аппаратный массаж',
-        icon: '≋',
-        description: 'Механовакуумная терапия нового поколения — воздействует на глубокие слои для ремоделирования контуров',
-        duration_min: 40,
-        price: 3500,
-        variants: [
-          { label: 'Разовый сеанс', price: 3500, old_price: null, per_session: null, total_duration_min: null },
-          { label: 'Индибо', price: 28000, old_price: 35000, per_session: 2800, total_duration_min: 40 },
-        ]
-      },
-      {
-        id: 5,
-        slug: 'obyortyvaniye',
-        name: 'Обёртывание',
-        category: 'Уход за телом',
-        icon: '❋',
-        description: 'Детокс и питание кожи активными составами — для упругости, увлажнения и уменьшения объёмов',
-        duration_min: 50,
-        price: 2500,
-        variants: [
-          { label: 'Разовый сеанс', price: 2500, old_price: null, per_session: null, total_duration_min: null },
-          { label: 'Обёртывание', price: 12000, old_price: 15000, per_session: 2000, total_duration_min: 50 },
-        ]
-      },
-    ];
+    const BOOK_URL = '/book';
 
     /* ══════════════════════════════════════════
        DATA LAYER
        ══════════════════════════════════════════ */
     async function fetchServices() {
-      if (!API_BASE) {
-        await new Promise(r => setTimeout(r, 600));
-        return MOCK_SERVICES;
-      }
-
-      const res = await fetch(`${API_BASE}/web/services?view=pricing`);
+      const res = await fetch('/web/services?view=pricing');
       if (!res.ok) throw new Error(`API error: ${res.status}`);
       return res.json();
     }
