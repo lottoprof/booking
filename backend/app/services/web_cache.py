@@ -1,7 +1,7 @@
 """Invalidate gateway web cache keys after admin CRUD."""
 from ..redis_client import redis_client
 
-_SERVICES_KEYS = ("cache:web:services", "cache:web:packages")
+_SERVICES_KEYS = ("cache:web:services", "cache:web:services:pricing", "cache:web:services:default")
 _SPECIALISTS_KEY = "cache:web:specialists"
 _LOCATIONS_KEY = "cache:web:locations"
 

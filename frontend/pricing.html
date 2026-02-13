@@ -558,9 +558,9 @@
       return many;
     }
 
-    function renderVariant(v, servicePrice) {
+    function renderVariant(v) {
       // Single session — just label + price
-      if (v.per_session === null) {
+      if (v.qty <= 1) {
         return `
           <div class="variant">
             <div class="variant-label">${v.label}</div>
@@ -569,9 +569,8 @@
         `;
       }
 
-      // Package — compute qty, show old_price struck + price + per_session
-      const qty = Math.round(v.old_price / servicePrice);
-      const qtyText = `${qty} ${pluralize(qty, 'сеанс', 'сеанса', 'сеансов')}`;
+      // Package — qty comes from API
+      const qtyText = `${v.qty} ${pluralize(v.qty, 'сеанс', 'сеанса', 'сеансов')}`;
 
       return `
         <div class="variant variant--package">
@@ -587,7 +586,7 @@
 
     function renderCard(service, index) {
       const variantsHTML = service.variants
-        .map(v => renderVariant(v, service.price))
+        .map(v => renderVariant(v))
         .join('');
 
       return `

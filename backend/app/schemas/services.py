@@ -50,3 +50,24 @@ class ServiceRead(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
+class ServiceVariant(BaseModel):
+    label: str
+    qty: int = 1
+    price: float
+    old_price: Optional[float] = None
+    per_session: Optional[float] = None
+    total_duration_min: Optional[int] = None
+
+
+class ServiceWebRead(BaseModel):
+    id: int
+    name: str
+    slug: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    icon: str = "✦"
+    duration_min: int
+    price: float
+    variants: list[ServiceVariant] = []
+

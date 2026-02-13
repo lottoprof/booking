@@ -154,6 +154,15 @@ MenuController tracks message IDs in Redis (`tg:menu:{chat_id}`, `tg:inline:{cha
 - **Bot** is a UI layer only — it formats messages and handles user interaction via backend API
 - **Gateway** is a proxy + middleware layer — auth, rate limiting, audit, event consumers
 
+### Contract-First — `docs/contract.md`
+
+**All structural changes must follow the contract.** Before changing DB schema, entity relationships, block boundaries, or business rules:
+
+1. Update `docs/contract.md` (and linked docs: `docs/booking.md`, `docs/wallet.md`) first
+2. Then implement the code changes
+
+The contract defines three blocks (ВРЕМЯ, УСЛУГИ, ДЕНЬГИ), their boundaries, and entity relationships. Code must stay consistent with it.
+
 ### SQLite Timestamp Format
 
 Always use `"%Y-%m-%d %H:%M:%S"` for timestamps. Never use `datetime.isoformat()` — it produces `T` separator and microseconds that are inconsistent with SQLite `CURRENT_TIMESTAMP`.

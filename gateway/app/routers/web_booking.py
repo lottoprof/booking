@@ -13,7 +13,6 @@ Security model:
 
 import json
 import logging
-import re
 from datetime import date, datetime, timedelta
 from uuid import uuid4
 from typing import Optional
@@ -34,7 +33,6 @@ router = APIRouter(prefix="/web", tags=["web-booking"])
 # ──────────────────────────────────────────────────────────────────────────────
 
 CACHE_SERVICES_KEY = "cache:web:services"
-CACHE_PACKAGES_KEY = "cache:web:packages"
 CACHE_SPECIALISTS_KEY = "cache:web:specialists"
 CACHE_LOCATIONS_KEY = "cache:web:locations"
 CACHE_TTL = 300  # 5 minutes
@@ -46,43 +44,9 @@ PENDING_BOOKING_PREFIX = "pending_booking"  # pending_booking:{uuid}
 PENDING_BOOKING_TTL = 3600  # 1 hour
 
 
-# Cyrillic to Latin transliteration map
-_TRANSLIT = str.maketrans(
-    "абвгдеёжзийклмнопрстуфхцчшщъыьэюя",
-    "abvgdeejziyklmnoprstufhccss_y_eua",
-)
-
-
-def _slugify(text: str) -> str:
-    """Generate URL-safe slug from Russian/English text."""
-    s = text.lower().translate(_TRANSLIT)
-    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
-    return s or "service"
-
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Pydantic models
 # ──────────────────────────────────────────────────────────────────────────────
-
-class WebServiceVariant(BaseModel):
-    label: str
-    price: float
-    old_price: Optional[float] = None
-    per_session: Optional[float] = None
-    total_duration_min: Optional[int] = None
-
-
-class WebService(BaseModel):
-    id: int
-    name: str
-    slug: str = ""
-    description: Optional[str] = None
-    category: Optional[str] = None
-    icon: str = "✦"
-    duration_min: int
-    price: float
-    variants: list[WebServiceVariant] = []
-
 
 class WebSpecialist(BaseModel):
     id: int
@@ -243,97 +207,22 @@ async def web_create_booking(request: Request):
 # Services
 # ──────────────────────────────────────────────────────────────────────────────
 
-@router.get("/services", response_model=list[WebService])
+@router.get("/services")
 async def get_services(view: Optional[str] = None):
     """
     Get list of available services with package variants.
 
-    Reads from Redis cache, fetches from Backend on cache miss.
-    Query params:
-        view=pricing  → show packages (show_on_pricing=1)
-        default       → show presets (show_on_booking=1)
+    Proxies to backend GET /services/web, caches in Redis.
     """
-    # Fetch services
-    cached = _get_cached_or_empty(CACHE_SERVICES_KEY)
-    if cached is None:
-        cached = await _fetch_and_cache_from_backend("/services", CACHE_SERVICES_KEY)
+    cache_key = f"{CACHE_SERVICES_KEY}:{view or 'default'}"
+    cached = _get_cached_or_empty(cache_key)
+    if cached is not None:
+        return cached
 
-    services = [s for s in cached if s.get("is_active", True)]
-
-    # Fetch packages for variants
-    packages = _get_cached_or_empty(CACHE_PACKAGES_KEY)
-    if packages is None:
-        try:
-            packages = await _fetch_and_cache_from_backend(
-                "/service_packages", CACHE_PACKAGES_KEY
-            )
-        except Exception:
-            packages = []
-
-    # Build service_id → packages mapping from package_items
-    # view=pricing → show_on_pricing; default → show_on_booking
-    visibility_flag = "show_on_pricing" if view == "pricing" else "show_on_booking"
-    svc_packages: dict[int, list[dict]] = {}
-    for pkg in (packages or []):
-        if not pkg.get("is_active", True):
-            continue
-        if not pkg.get(visibility_flag, True):
-            continue
-        try:
-            items = json.loads(pkg.get("package_items", "[]"))
-        except (json.JSONDecodeError, TypeError):
-            continue
-        if not isinstance(items, list):
-            continue
-
-        pkg_price = pkg.get("package_price")  # computed by backend
-        pkg_duration = pkg.get("total_duration_min")  # computed by backend
-        for item in items:
-            sid = item.get("service_id")
-            qty = item.get("quantity", 1)
-            if not sid:
-                continue
-            svc_packages.setdefault(sid, []).append({
-                "name": pkg["name"],
-                "price": pkg_price or 0,
-                "qty": qty,
-                "total_duration_min": pkg_duration,
-            })
-
-    result = []
-    for s in services:
-        sid = s["id"]
-        base_price = s["price"]
-
-        # Build variants: single session + packages
-        variants = [
-            WebServiceVariant(label="Разовый сеанс", price=base_price)
-        ]
-        for pkg in svc_packages.get(sid, []):
-            qty = pkg["qty"]
-            per_session = round(pkg["price"] / qty) if qty > 0 else pkg["price"]
-            old_price = base_price * qty if pkg["price"] < base_price * qty else None
-            variants.append(WebServiceVariant(
-                label=pkg["name"],
-                price=pkg["price"],
-                old_price=old_price,
-                per_session=per_session,
-                total_duration_min=pkg.get("total_duration_min"),
-            ))
-
-        result.append(WebService(
-            id=sid,
-            name=s["name"],
-            slug=_slugify(s["name"]),
-            description=s.get("description"),
-            category=s.get("category"),
-            icon="✦",
-            duration_min=s["duration_min"],
-            price=base_price,
-            variants=variants,
-        ))
-
-    return result
+    url = "/services/web"
+    if view:
+        url += f"?view={view}"
+    return await _fetch_and_cache_from_backend(url, cache_key)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
