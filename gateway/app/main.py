@@ -118,6 +118,8 @@ if (FRONTEND_DIR / "css").exists():
     app.mount("/css", StaticFiles(directory=FRONTEND_DIR / "css"), name="css")
 if (FRONTEND_DIR / "images").exists():
     app.mount("/images", StaticFiles(directory=FRONTEND_DIR / "images"), name="images")
+if (FRONTEND_DIR / "logo").exists():
+    app.mount("/logo", StaticFiles(directory=FRONTEND_DIR / "logo"), name="logo")
 if (FRONTEND_DIR / "blog").exists():
     app.mount("/blog", StaticFiles(directory=FRONTEND_DIR / "blog", html=True), name="blog")
 
@@ -161,8 +163,8 @@ async def serve_miniapp():
 
 @app.get("/logo.svg", include_in_schema=False)
 async def serve_logo():
-    """Serve logo SVG."""
-    svg_path = FRONTEND_DIR / "logo.svg"
+    """Serve logo SVG (backwards compat: /logo.svg → /logo/logo.svg)."""
+    svg_path = FRONTEND_DIR / "logo" / "logo.svg"
     if svg_path.exists():
         return FileResponse(svg_path, media_type="image/svg+xml")
     raise HTTPException(status_code=404)
