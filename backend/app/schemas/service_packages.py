@@ -36,5 +36,6 @@ class ServicePackageRead(BaseModel):
     show_on_pricing: bool
     show_on_booking: bool
     package_price: Optional[float] = None  # computed dynamically
+    total_duration_min: Optional[int] = None  # computed dynamically
 
     model_config = {"from_attributes": True}

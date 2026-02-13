@@ -12,15 +12,17 @@ from ..schemas.service_packages import (
     ServicePackageRead,
 )
 from ..services.web_cache import invalidate_services_cache
-from ..services.package_pricing import enrich_package_price
+from ..services.package_pricing import enrich_package
 
 router = APIRouter(prefix="/service_packages", tags=["service_packages"])
 
 
 def _to_read(obj: DBServicePackages, db: Session) -> dict:
-    """Convert DB object to read dict with computed package_price."""
+    """Convert DB object to read dict with computed fields."""
     data = ServicePackageRead.model_validate(obj).model_dump()
-    data["package_price"] = enrich_package_price(obj, db)
+    price, duration = enrich_package(obj, db)
+    data["package_price"] = price
+    data["total_duration_min"] = duration
     return data
 
 
