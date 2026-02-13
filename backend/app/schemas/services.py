@@ -57,17 +57,14 @@ class ServiceVariant(BaseModel):
     price: float
     old_price: Optional[float] = None
     per_session: Optional[float] = None
-    total_duration_min: Optional[int] = None
 
 
-class ServiceWebRead(BaseModel):
-    id: int
+class PricingCard(BaseModel):
     name: str
     slug: str
     description: Optional[str] = None
     category: Optional[str] = None
     icon: str = "✦"
     duration_min: int
-    price: float
     variants: list[ServiceVariant] = []
 

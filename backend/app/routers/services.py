@@ -14,7 +14,7 @@ from ..schemas.services import (
     ServiceUpdate,
     ServiceRead,
     ServiceVariant,
-    ServiceWebRead,
+    PricingCard,
 )
 from ..services.package_pricing import calc_package_price
 from ..services.slug import slugify
@@ -32,13 +32,16 @@ def list_services(db: Session = Depends(get_db)):
     )
 
 
-@router.get("/web", response_model=list[ServiceWebRead])
+@router.get("/web", response_model=list[PricingCard])
 def list_services_web(
     view: Optional[str] = Query(None, description="pricing or booking"),
     db: Session = Depends(get_db),
 ):
     """
-    Services enriched with package variants for web frontend.
+    Pricing cards grouped by package name.
+
+    Each unique package name becomes a card; each qty level (1/5/10)
+    becomes a variant inside that card.
 
     view=pricing → packages with show_on_pricing=1
     default      → packages with show_on_booking=1
@@ -50,18 +53,16 @@ def list_services_web(
     )
     services_map = {s.id: s for s in services}
 
-    # Fetch active packages
     packages = (
         db.query(DBServicePackages)
         .filter(DBServicePackages.is_active == 1)
         .all()
     )
 
-    # Filter by visibility
     visibility_attr = "show_on_pricing" if view == "pricing" else "show_on_booking"
 
-    # Build service_id → package variants mapping
-    svc_packages: dict[int, list[dict]] = {}
+    # Group packages by name → list of (pkg, items, price)
+    cards: dict[str, list[tuple]] = {}
     for pkg in packages:
         if not getattr(pkg, visibility_attr, True):
             continue
@@ -69,56 +70,81 @@ def list_services_web(
             items = json.loads(pkg.package_items) if pkg.package_items else []
         except (json.JSONDecodeError, TypeError):
             continue
-        if not isinstance(items, list):
+        if not isinstance(items, list) or not items:
             continue
 
-        # Compute package price via tier logic
         pkg_price = calc_package_price(items, services_map)
+        if pkg_price is None:
+            continue
 
-        for item in items:
-            sid = item.get("service_id")
-            qty = item.get("quantity", 1)
-            if not sid:
-                continue
-            svc = services_map.get(sid)
-            if not svc:
-                continue
-            # Compute total duration for this service in the package
-            total_dur = svc.duration_min * qty
-            svc_packages.setdefault(sid, []).append({
-                "name": pkg.name,
-                "price": pkg_price or 0,
-                "qty": qty,
-                "total_duration_min": total_dur,
-            })
+        cards.setdefault(pkg.name, []).append((pkg, items, pkg_price))
 
     result = []
-    for s in services:
-        base_price = s.price
-        variants = [ServiceVariant(label="Разовый сеанс", price=base_price)]
+    for card_name, pkg_group in cards.items():
+        # Sort by total qty so variants are ordered 1 → 5 → 10
+        pkg_group.sort(key=lambda t: sum(i.get("quantity", 1) for i in t[1]))
 
-        for pkg in svc_packages.get(s.id, []):
-            qty = pkg["qty"]
-            per_session = round(pkg["price"] / qty) if qty > 0 else pkg["price"]
-            old_price = base_price * qty if pkg["price"] < base_price * qty else None
-            variants.append(ServiceVariant(
-                label=pkg["name"],
-                qty=qty,
-                price=pkg["price"],
-                old_price=old_price,
-                per_session=per_session,
-                total_duration_min=pkg.get("total_duration_min"),
-            ))
+        # Derive card metadata from first package's items
+        first_pkg, first_items, _ = pkg_group[0]
+        first_sid = first_items[0].get("service_id")
+        first_svc = services_map.get(first_sid)
 
-        result.append(ServiceWebRead(
-            id=s.id,
-            name=s.name,
-            slug=slugify(s.name),
-            description=s.description,
-            category=s.category,
+        # Determine category & duration from constituent services
+        svc_categories = set()
+        total_duration = 0
+        for item in first_items:
+            svc = services_map.get(item.get("service_id"))
+            if svc:
+                if svc.category:
+                    svc_categories.add(svc.category)
+                total_duration += svc.duration_min
+
+        category = first_svc.category if first_svc and len(first_items) == 1 else None
+        if len(svc_categories) == 1:
+            category = svc_categories.pop()
+
+        description = first_pkg.description or (first_svc.description if first_svc else None)
+
+        # Compute base single-session price for old_price comparison
+        base_price = None
+        for pkg, items, price in pkg_group:
+            total_qty = sum(i.get("quantity", 1) for i in items)
+            if total_qty == 1:
+                base_price = price
+                break
+
+        variants = []
+        for pkg, items, price in pkg_group:
+            total_qty = sum(i.get("quantity", 1) for i in items)
+
+            if total_qty == 1:
+                variants.append(ServiceVariant(
+                    label="Разовый сеанс",
+                    qty=1,
+                    price=price,
+                ))
+            else:
+                per_session = round(price / total_qty)
+                old_price = None
+                if base_price is not None:
+                    full = base_price * total_qty
+                    if price < full:
+                        old_price = full
+                variants.append(ServiceVariant(
+                    label=f"{total_qty} сеансов",
+                    qty=total_qty,
+                    price=price,
+                    old_price=old_price,
+                    per_session=per_session,
+                ))
+
+        result.append(PricingCard(
+            name=card_name,
+            slug=slugify(card_name),
+            description=description,
+            category=category,
             icon="✦",
-            duration_min=s.duration_min,
-            price=base_price,
+            duration_min=total_duration,
             variants=variants,
         ))
 

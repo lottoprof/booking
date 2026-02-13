@@ -595,11 +595,11 @@
             <div class="price-card-icon">${service.icon}</div>
             <div>
               <div class="price-card-title">${service.name}</div>
-              <div class="price-card-category">${service.category}</div>
+              ${service.category ? `<div class="price-card-category">${service.category}</div>` : ''}
             </div>
           </div>
           <div class="price-card-body">
-            <p class="price-card-desc">${service.description}</p>
+            ${service.description ? `<p class="price-card-desc">${service.description}</p>` : ''}
             <div class="price-card-meta">
               <span>⏱ ${service.duration_min} мин</span>
             </div>
@@ -630,7 +630,7 @@
        FILTERS
        ══════════════════════════════════════════ */
     function buildFilters(services) {
-      const categories = [...new Set(services.map(s => s.category))];
+      const categories = [...new Set(services.map(s => s.category).filter(Boolean))];
       const container = document.getElementById('filters');
 
       categories.forEach(cat => {
