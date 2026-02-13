@@ -493,43 +493,60 @@
       .nav.scrolled .nav-logo-icon { height: 32px; }
       .nav.scrolled .nav-logo-text { height: 9px; }
 
-      /* Horizontal scroll pricing */
-      .pricing-section { padding: 2rem 0 3rem; }
-      .pricing-inner { max-width: none; }
-
+      /* Cards stack vertically */
+      .pricing-section { padding: 1.5rem 0 3rem; }
+      .pricing-inner { max-width: none; padding: 0 1rem; }
       .pricing-grid {
-        display: flex;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .price-card-header { padding: 1.5rem 1.25rem 0; }
+      .price-card-body { padding: 1rem 1.25rem; }
+      .price-card-footer { padding: 1.25rem 1.25rem 1.5rem; }
+
+      /* Variants → horizontal scroll */
+      .price-card-variants {
+        flex-direction: row;
         overflow-x: auto;
         scroll-snap-type: x mandatory;
         -webkit-overflow-scrolling: touch;
-        gap: 1rem;
-        padding: 1rem 1.25rem 1.5rem;
-        margin-top: 1rem;
+        padding: 0 1.25rem 0.25rem;
+        gap: 0.6rem;
         scrollbar-width: none;
       }
-      .pricing-grid::-webkit-scrollbar { display: none; }
+      .price-card-variants::-webkit-scrollbar { display: none; }
 
-      .pricing-grid .price-card {
-        flex: 0 0 82vw;
-        max-width: 320px;
-        scroll-snap-align: center;
+      .price-card-variants .variant {
+        flex: 0 0 70%;
+        min-width: 0;
+        scroll-snap-align: start;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+        padding: 0.85rem 1rem;
       }
 
-      /* Scroll indicator dots */
-      .scroll-dots {
+      .price-card-variants .variant-price {
+        font-size: 1.15rem;
+      }
+
+      /* Variant dots inside card */
+      .variant-dots {
         display: flex;
         justify-content: center;
-        gap: 6px;
-        padding: 0.75rem 0 0;
+        gap: 5px;
+        padding: 0.5rem 0 0;
       }
-      .scroll-dot {
-        width: 6px; height: 6px;
+      .variant-dot {
+        width: 5px; height: 5px;
         border-radius: 50%;
         background: var(--border);
-        transition: all 0.3s ease;
+        transition: all 0.25s ease;
       }
-      .scroll-dot.active {
-        width: 20px;
+      .variant-dot.active {
+        width: 16px;
         border-radius: 3px;
         background: var(--teal);
       }
@@ -540,10 +557,11 @@
       .footer-links { justify-content: center; }
     }
 
-    /* Hide dots on desktop */
+    /* Hide variant dots on desktop, hide card-level scroll dots always */
     @media (min-width: 769px) {
-      .scroll-dots { display: none; }
+      .variant-dots { display: none; }
     }
+    .scroll-dots { display: none; }
   </style>
 </head>
 <body>
@@ -803,6 +821,7 @@
           <div class="price-card-variants">
             ${variantsHTML}
           </div>
+          <div class="variant-dots"></div>
           <div class="price-card-footer">
             <a href="${BOOK_URL}?service=${service.slug}" class="btn btn-primary btn-sm">Записаться</a>
           </div>
@@ -852,40 +871,41 @@
     }
 
     /* ══════════════════════════════════════════
-       SCROLL DOTS (mobile horizontal scroll)
+       VARIANT DOTS (mobile horizontal scroll per card)
        ══════════════════════════════════════════ */
-    function buildScrollDots() {
-      const grid = document.getElementById('pricingGrid');
-      const dots = document.getElementById('scrollDots');
-      const cards = grid.querySelectorAll('.price-card');
+    function buildVariantDots() {
+      document.querySelectorAll('.price-card').forEach(card => {
+        const container = card.querySelector('.price-card-variants');
+        const dots = card.querySelector('.variant-dots');
+        const variants = container.querySelectorAll('.variant');
 
-      dots.innerHTML = '';
-      if (cards.length <= 1) return;
+        dots.innerHTML = '';
+        if (variants.length <= 1) return;
 
-      cards.forEach((_, i) => {
-        const dot = document.createElement('span');
-        dot.className = 'scroll-dot' + (i === 0 ? ' active' : '');
-        dot.addEventListener('click', () => {
-          cards[i].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        });
-        dots.appendChild(dot);
-      });
-
-      // Track scroll position
-      let ticking = false;
-      grid.addEventListener('scroll', () => {
-        if (ticking) return;
-        ticking = true;
-        requestAnimationFrame(() => {
-          const scrollLeft = grid.scrollLeft;
-          const cardWidth = cards[0].offsetWidth + 16; // card + gap
-          const idx = Math.round(scrollLeft / cardWidth);
-          dots.querySelectorAll('.scroll-dot').forEach((d, i) => {
-            d.classList.toggle('active', i === idx);
+        variants.forEach((_, i) => {
+          const dot = document.createElement('span');
+          dot.className = 'variant-dot' + (i === 0 ? ' active' : '');
+          dot.addEventListener('click', () => {
+            variants[i].scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
           });
-          ticking = false;
+          dots.appendChild(dot);
         });
-      }, { passive: true });
+
+        let ticking = false;
+        container.addEventListener('scroll', () => {
+          if (ticking) return;
+          ticking = true;
+          requestAnimationFrame(() => {
+            const scrollLeft = container.scrollLeft;
+            const variantWidth = variants[0].offsetWidth + 10; // flex + gap
+            const idx = Math.round(scrollLeft / variantWidth);
+            dots.querySelectorAll('.variant-dot').forEach((d, i) => {
+              d.classList.toggle('active', i === idx);
+            });
+            ticking = false;
+          });
+        }, { passive: true });
+      });
     }
 
     /* ══════════════════════════════════════════
@@ -905,7 +925,7 @@
         buildFilters(allServices);
 
         // Scroll dots for mobile
-        buildScrollDots();
+        buildVariantDots();
 
         // Filter click handlers
         document.getElementById('filters').addEventListener('click', e => {
@@ -916,7 +936,7 @@
           btn.classList.add('active');
 
           applyFilter(allServices, btn.dataset.filter);
-          buildScrollDots(); // rebuild dots for filtered set
+          buildVariantDots(); // rebuild dots for filtered set
         });
 
       } catch (err) {
