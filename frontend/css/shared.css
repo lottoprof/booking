@@ -282,6 +282,196 @@ footer .footer-copy {
 }
 
 /* ═══════════════════════════════════════
+   9a. PROMO CARDS
+   SSG: section rendered from promotions table.
+   Grid auto-adapts via :has() — no JS classes needed.
+   0 active promos → section omitted from HTML entirely.
+   ═══════════════════════════════════════ */
+.promos {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.promos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+/* Auto-adapt: 2 cards → 2 columns centered */
+.promos-grid:has(> :last-child:nth-child(2)) {
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* Auto-adapt: 1 card → single column centered */
+.promos-grid:has(> :last-child:nth-child(1)) {
+  grid-template-columns: 1fr;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.promo-card {
+  position: relative;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+.promo-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--teal), var(--teal-light));
+  border-radius: 16px 16px 0 0;
+}
+.promo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(43,181,184,0.25);
+}
+
+.promo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 100px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  width: fit-content;
+  margin-bottom: 1rem;
+}
+.promo-badge.sale {
+  background: rgba(239,68,68,0.08);
+  color: #DC2626;
+  border: 1px solid rgba(239,68,68,0.15);
+}
+.promo-badge.gift {
+  background: rgba(43,181,184,0.08);
+  color: var(--teal-dark);
+  border: 1px solid rgba(43,181,184,0.15);
+}
+.promo-badge.new {
+  background: rgba(168,85,247,0.08);
+  color: #7C3AED;
+  border: 1px solid rgba(168,85,247,0.15);
+}
+
+[data-theme="dark"] .promo-badge.sale {
+  background: rgba(239,68,68,0.12);
+  color: #F87171;
+}
+[data-theme="dark"] .promo-badge.gift {
+  background: rgba(43,181,184,0.12);
+  color: var(--teal-light);
+}
+[data-theme="dark"] .promo-badge.new {
+  background: rgba(168,85,247,0.12);
+  color: #A78BFA;
+}
+
+.promo-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 500;
+  line-height: 1.25;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+.promo-card-desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+  flex: 1;
+}
+
+.promo-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.promo-price-new {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--teal);
+}
+.promo-price-old {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.promo-deadline {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+.promo-deadline strong {
+  color: var(--text-secondary);
+}
+
+.promo-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.5rem;
+  border-radius: 100px;
+  background: var(--teal);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  width: fit-content;
+  box-shadow: 0 2px 12px rgba(43,181,184,0.2);
+}
+.promo-cta:hover {
+  background: var(--teal-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(43,181,184,0.3);
+}
+
+/* 9b. PROMO — mobile: horizontal swipe */
+@media (max-width: 768px) {
+  .promos-grid,
+  .promos-grid:has(> :last-child:nth-child(2)),
+  .promos-grid:has(> :last-child:nth-child(1)) {
+    display: flex;
+    max-width: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+  }
+  .promos-grid::-webkit-scrollbar { display: none; }
+  .promo-card {
+    min-width: 280px;
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .promos-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ═══════════════════════════════════════
    10. REDUCED MOTION
    ═══════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

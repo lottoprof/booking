@@ -75,6 +75,50 @@
   }
   </script>
 
+  <!-- Structured Data: Offers
+       SSG: regenerated from promotions table.
+       If 0 active promos — this script tag is omitted. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HealthAndBeautyBusiness",
+    "name": "UPGRADE",
+    "url": "https://upgrade-studio.ru",
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Акции",
+      "itemListElement": [
+        {
+          "@type": "Offer",
+          "name": "Первый сеанс LPG со скидкой",
+          "description": "Попробуйте аппаратный массаж по специальной цене для новых клиентов",
+          "price": "1990",
+          "priceCurrency": "RUB",
+          "validThrough": "2026-03-31",
+          "url": "https://upgrade-studio.ru/book.html?service=lpg-massage"
+        },
+        {
+          "@type": "Offer",
+          "name": "Курс 10 сеансов LPG — 2 в подарок",
+          "description": "Купите курс из 10 процедур и получите 2 дополнительных сеанса бесплатно",
+          "price": "23000",
+          "priceCurrency": "RUB",
+          "validThrough": "2026-03-31",
+          "url": "https://upgrade-studio.ru/book.html?service=lpg-massage"
+        },
+        {
+          "@type": "Offer",
+          "name": "Прессотерапия + обёртывание",
+          "description": "Комбинированная программа: лимфодренаж и детокс-обёртывание за один визит",
+          "price": "3700",
+          "priceCurrency": "RUB",
+          "url": "https://upgrade-studio.ru/book.html?service=pressotherapy"
+        }
+      ]
+    }
+  }
+  </script>
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -669,6 +713,59 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PROMOS ═══ -->
+  <!-- SSG: rendered from promotions table.
+       0 active → entire section + Offer schema omitted.
+       Template: {% if promotions %} ... {% endif %} -->
+  <section class="promos" id="promos">
+    <div class="section-inner">
+      <div class="section-label reveal">Спецпредложения</div>
+      <h2 class="section-title reveal">Актуальные <em>акции</em></h2>
+
+      <div class="promos-grid stagger reveal">
+
+        <!-- SSG: {% for promo in promotions %} -->
+        <article class="promo-card">
+          <div class="promo-badge sale">🔥 Акция</div>
+          <h3>Первый сеанс LPG — со скидкой</h3>
+          <p class="promo-card-desc">Попробуйте аппаратный массаж по специальной цене. Для новых клиентов студии.</p>
+          <div class="promo-price">
+            <span class="promo-price-new">1 990 ₽</span>
+            <span class="promo-price-old">3 000 ₽</span>
+          </div>
+          <div class="promo-deadline">Действует до <strong>31 марта</strong></div>
+          <a href="/book.html?service=lpg-massage" class="promo-cta">Записаться →</a>
+        </article>
+
+        <article class="promo-card">
+          <div class="promo-badge gift">🎁 Подарок</div>
+          <h3>Курс 10 сеансов = 2 в подарок</h3>
+          <p class="promo-card-desc">Купите курс из 10 процедур LPG-массажа и&nbsp;получите 2 дополнительных сеанса бесплатно.</p>
+          <div class="promo-price">
+            <span class="promo-price-new">23 000 ₽</span>
+            <span class="promo-price-old">30 000 ₽</span>
+          </div>
+          <div class="promo-deadline">Действует до <strong>31 марта</strong></div>
+          <a href="/book.html?service=lpg-massage" class="promo-cta">Подробнее →</a>
+        </article>
+
+        <article class="promo-card">
+          <div class="promo-badge new">✨ Новинка</div>
+          <h3>Прессотерапия + обёртывание</h3>
+          <p class="promo-card-desc">Комбинированная программа: лимфодренаж и&nbsp;детокс-обёртывание за&nbsp;один визит. Экономия 30 минут и&nbsp;800&nbsp;₽.</p>
+          <div class="promo-price">
+            <span class="promo-price-new">3 700 ₽</span>
+            <span class="promo-price-old">4 500 ₽</span>
+          </div>
+          <div class="promo-deadline">Постоянное предложение</div>
+          <a href="/book.html?service=pressotherapy" class="promo-cta">Записаться →</a>
+        </article>
+        <!-- SSG: {% endfor %} -->
+
       </div>
     </div>
   </section>
