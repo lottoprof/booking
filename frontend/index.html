@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UPGRADE — Студия  эстетики тела</title>
+  <title>UPGRADE — Студия аппаратного массажа | LPG, прессотерапия, обёртывание</title>
   <meta name="description" content="Студия эстетики UPGRADE — аппаратный LPG-массаж, роликовый массаж, прессотерапия, обёртывание. Подтянутое тело за 10 сеансов. Запись онлайн.">
   <meta name="keywords" content="LPG массаж, аппаратный массаж, прессотерапия, обёртывание, роликовый массаж, индибо, антицеллюлитный массаж, студия эстетики">
 
@@ -20,7 +20,7 @@
     "@context": "https://schema.org",
     "@type": "HealthAndBeautyBusiness",
     "name": "UPGRADE",
-    "description": "Студия эстетики тела — LPG, прессотерапия, обёртывание",
+    "description": "Студия аппаратного массажа — LPG, прессотерапия, обёртывание",
     "url": "https://upgrade-studio.ru",
     "telephone": "+7-XXX-XXX-XX-XX",
     "address": {
@@ -124,7 +124,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/shared.css">
-  <link rel="icon" href="logo/logo2.svg" type="image/svg+xml">
+  <link rel="icon" href="logo/favicon.svg" type="image/svg+xml">
 
   <style>
     /* ═══════════════════════════════════════
@@ -599,7 +599,11 @@
        RESPONSIVE
        ═══════════════════════════════════════ */
     @media (max-width: 768px) {
-      .hero-content { padding: 100px 1.5rem 60px; }
+      .hero { min-height: auto; }
+      .hero-content { padding: 90px 1.5rem 48px; }
+      .hero-badge { margin-bottom: 1.25rem; }
+      .hero h1 { margin-bottom: 1rem; }
+      .hero-sub { margin-bottom: 2rem; }
 
       .about-grid {
         grid-template-columns: 1fr;
@@ -768,6 +772,7 @@
         <!-- SSG: {% endfor %} -->
 
       </div>
+      <div class="promo-dots" id="promoDots"></div>
     </div>
   </section>
 
@@ -1053,6 +1058,40 @@
         }
       });
     });
+
+    /* ── Promo scroll dots (mobile) ── */
+    (function() {
+      const grid = document.querySelector('.promos-grid');
+      const dots = document.getElementById('promoDots');
+      if (!grid || !dots) return;
+
+      const cards = grid.querySelectorAll('.promo-card');
+      if (cards.length <= 1) return;
+
+      cards.forEach((_, i) => {
+        const dot = document.createElement('span');
+        dot.className = 'promo-dot' + (i === 0 ? ' active' : '');
+        dot.addEventListener('click', () => {
+          cards[i].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        });
+        dots.appendChild(dot);
+      });
+
+      let ticking = false;
+      grid.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          const scrollLeft = grid.scrollLeft;
+          const cardWidth = cards[0].offsetWidth + 12; // card + gap
+          const idx = Math.round(scrollLeft / cardWidth);
+          dots.querySelectorAll('.promo-dot').forEach((d, i) => {
+            d.classList.toggle('active', i === idx);
+          });
+          ticking = false;
+        });
+      }, { passive: true });
+    })();
 
     /* ── Scroll reveal ── */
     const observer = new IntersectionObserver((entries) => {
