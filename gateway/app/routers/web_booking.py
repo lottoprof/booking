@@ -69,6 +69,7 @@ class WebServiceVariant(BaseModel):
     price: float
     old_price: Optional[float] = None
     per_session: Optional[float] = None
+    total_duration_min: Optional[int] = None
 
 
 class WebService(BaseModel):
@@ -243,11 +244,14 @@ async def web_create_booking(request: Request):
 # ──────────────────────────────────────────────────────────────────────────────
 
 @router.get("/services", response_model=list[WebService])
-async def get_services():
+async def get_services(view: Optional[str] = None):
     """
     Get list of available services with package variants.
 
     Reads from Redis cache, fetches from Backend on cache miss.
+    Query params:
+        view=pricing  → show packages (show_on_pricing=1)
+        default       → show presets (show_on_booking=1)
     """
     # Fetch services
     cached = _get_cached_or_empty(CACHE_SERVICES_KEY)
@@ -267,12 +271,13 @@ async def get_services():
             packages = []
 
     # Build service_id → packages mapping from package_items
-    # Filter by show_on_booking for booking flow
+    # view=pricing → show_on_pricing; default → show_on_booking
+    visibility_flag = "show_on_pricing" if view == "pricing" else "show_on_booking"
     svc_packages: dict[int, list[dict]] = {}
     for pkg in (packages or []):
         if not pkg.get("is_active", True):
             continue
-        if not pkg.get("show_on_booking", True):
+        if not pkg.get(visibility_flag, True):
             continue
         try:
             items = json.loads(pkg.get("package_items", "[]"))
@@ -282,6 +287,7 @@ async def get_services():
             continue
 
         pkg_price = pkg.get("package_price")  # computed by backend
+        pkg_duration = pkg.get("total_duration_min")  # computed by backend
         for item in items:
             sid = item.get("service_id")
             qty = item.get("quantity", 1)
@@ -291,6 +297,7 @@ async def get_services():
                 "name": pkg["name"],
                 "price": pkg_price or 0,
                 "qty": qty,
+                "total_duration_min": pkg_duration,
             })
 
     result = []
@@ -311,6 +318,7 @@ async def get_services():
                 price=pkg["price"],
                 old_price=old_price,
                 per_session=per_session,
+                total_duration_min=pkg.get("total_duration_min"),
             ))
 
         result.append(WebService(
