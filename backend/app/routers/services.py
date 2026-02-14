@@ -81,8 +81,8 @@ def list_services_web(
 
     result = []
     for card_name, pkg_group in cards.items():
-        # Sort by total qty so variants are ordered 1 → 5 → 10
-        pkg_group.sort(key=lambda t: sum(i.get("quantity", 1) for i in t[1]))
+        # Sort by qty so variants are ordered 1 → 5 → 10
+        pkg_group.sort(key=lambda t: t[1][0].get("quantity", 1))
 
         # Derive card metadata from first package's items
         first_pkg, first_items, _ = pkg_group[0]
@@ -105,34 +105,27 @@ def list_services_web(
 
         description = first_pkg.description or (first_svc.description if first_svc else None)
 
-        # Compute base single-session price for old_price comparison
-        base_price = None
-        for pkg, items, price in pkg_group:
-            total_qty = sum(i.get("quantity", 1) for i in items)
-            if total_qty == 1:
-                base_price = price
-                break
-
         variants = []
         for pkg, items, price in pkg_group:
-            total_qty = sum(i.get("quantity", 1) for i in items)
+            qty = items[0].get("quantity", 1)
 
-            if total_qty == 1:
+            if qty == 1:
                 variants.append(ServiceVariant(
                     label="Разовый сеанс",
                     qty=1,
                     price=price,
                 ))
             else:
-                per_session = round(price / total_qty)
-                old_price = None
-                if base_price is not None:
-                    full = base_price * total_qty
-                    if price < full:
-                        old_price = full
+                per_session = round(price / qty)
+                full = sum(
+                    services_map[it["service_id"]].price * it.get("quantity", 1)
+                    for it in items
+                    if it.get("service_id") in services_map
+                )
+                old_price = full if full > price else None
                 variants.append(ServiceVariant(
-                    label=f"{total_qty} сеансов",
-                    qty=total_qty,
+                    label=f"{qty} сеансов",
+                    qty=qty,
                     price=price,
                     old_price=old_price,
                     per_session=per_session,
