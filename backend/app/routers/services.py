@@ -114,6 +114,7 @@ def list_services_web(
                     label="Разовый сеанс",
                     qty=1,
                     price=price,
+                    package_id=pkg.id,
                 ))
             else:
                 per_session = round(price / qty)
@@ -129,6 +130,7 @@ def list_services_web(
                     price=price,
                     old_price=old_price,
                     per_session=per_session,
+                    package_id=pkg.id,
                 ))
 
         result.append(PricingCard(

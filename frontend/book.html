@@ -222,15 +222,15 @@
       color: var(--text-primary);
       margin-bottom: 0.15rem;
     }
+    .service-duration {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.1rem;
+    }
     .service-meta {
       font-size: 0.8rem;
       color: var(--text-secondary);
-    }
-    .service-price {
-      font-weight: 600;
-      font-size: 1rem;
-      color: var(--teal);
-      white-space: nowrap;
     }
     .service-card .check-mark {
       position: absolute; top: 10px; right: 10px;
@@ -339,12 +339,38 @@
     }
     .cal-day.selected::after { background: #fff; }
 
+    .cal-day.available {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+    }
+    .cal-day.available:hover {
+      border-color: var(--teal);
+      background: var(--teal-subtle);
+    }
+    .cal-day.unavailable {
+      color: var(--text-muted);
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
     .cal-day.disabled {
       color: var(--text-muted);
       opacity: 0.35;
       cursor: not-allowed;
     }
     .cal-day.empty { cursor: default; }
+
+    /* Calendar swipe animation */
+    .calendar-swipe {
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .calendar-swipe.swipe-left {
+      transform: translateX(-30px);
+      opacity: 0;
+    }
+    .calendar-swipe.swipe-right {
+      transform: translateX(30px);
+      opacity: 0;
+    }
 
     /* ═══════════════════════════════════════
        TIME SLOTS
@@ -781,11 +807,6 @@
           <input class="form-input" type="tel" id="clientPhone" placeholder="+7 (999) 123-45-67" required autocomplete="tel">
           <div class="form-hint">Для подтверждения записи</div>
         </div>
-        <div class="form-field">
-          <label class="form-label" for="clientEmail">Email <span style="color:var(--text-muted)">(необязательно)</span></label>
-          <input class="form-input" type="email" id="clientEmail" placeholder="anna@example.com" autocomplete="email">
-        </div>
-
         <div class="wizard-actions" style="flex-direction: column; gap: 0.75rem;">
           <button class="btn btn-confirm" id="btnSubmit">Записаться</button>
           <button class="btn btn-back" id="backFromConfirm" style="align-self: flex-start;">← Назад</button>
@@ -822,9 +843,6 @@
 
   <script>
     /* ═══════════════════════════════════════
-       MOCK API (replace with real endpoints)
-       ═══════════════════════════════════════ */
-    /* ═══════════════════════════════════════
        API LAYER — connects to /web/* endpoints
        ═══════════════════════════════════════ */
     let _locationId = null;
@@ -844,13 +862,21 @@
       static async getServices() {
         const res = await fetch('/web/services');
         if (!res.ok) throw new Error(`API error: ${res.status}`);
-        return res.json();
+        return res.json();  // PricingCard[]
       }
 
-      static async getAvailableSlots(serviceId, date) {
+      static async getCalendar(locationId) {
+        const res = await fetch(`/web/slots/calendar?location_id=${locationId}`);
+        if (!res.ok) throw new Error(`Calendar error: ${res.status}`);
+        return res.json();  // { days: [{date, has_slots}] }
+      }
+
+      static async getAvailableSlots(packageId, date) {
         const locationId = await _getLocationId();
         const params = new URLSearchParams({
-          location_id: locationId, service_id: serviceId, date: date
+          location_id: locationId,
+          service_package_id: packageId,
+          date: date,
         });
         const res = await fetch(`/web/slots/day?${params}`);
         if (!res.ok) return [];
@@ -862,20 +888,14 @@
         }));
       }
 
-      static async getSpecialists(serviceId) {
-        const res = await fetch(`/web/specialists?service_id=${serviceId}`);
-        if (!res.ok) return [];
-        return res.json();
-      }
-
-      static async reserveSlot(serviceId, date, time, specialistId) {
+      static async reserveSlot(packageId, date, time, specialistId) {
         const locationId = await _getLocationId();
         const res = await fetch('/web/reserve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             location_id: locationId,
-            service_id: serviceId,
+            service_package_id: packageId,
             specialist_id: specialistId || null,
             date: date,
             time: time,
@@ -921,12 +941,26 @@
     }
 
     /* ═══════════════════════════════════════
+       HELPERS
+       ═══════════════════════════════════════ */
+    function fmtPrice(n) {
+      return Math.round(n).toLocaleString('ru-RU');
+    }
+
+    function priceRange(variants) {
+      const perSession = variants.map(v => v.per_session ?? v.price);
+      const min = Math.min(...perSession);
+      const max = Math.max(...perSession);
+      return min === max ? `${fmtPrice(min)} ₽` : `${fmtPrice(min)} – ${fmtPrice(max)} ₽`;
+    }
+
+    /* ═══════════════════════════════════════
        BOOKING WIZARD
        ═══════════════════════════════════════ */
     class BookingWizard {
       constructor() {
         this.state = {
-          service: null,
+          service: null,   // { slug, name, duration_min, icon, category, packageId, price }
           date: null,
           time: null,
           specialist: null,
@@ -937,9 +971,11 @@
         this.activeSteps = [...this.steps];
         this.currentStep = 'service';
 
-        this.services = [];
-        this.specialists = [];
-        this.calendarDate = new Date();
+        this.services = [];       // PricingCard[]
+        this.availableDays = new Map();
+        this.currentMonth = new Date();
+        this._calendarBound = false;
+        this._swipeReady = false;
 
         this.init();
       }
@@ -964,19 +1000,15 @@
       }
 
       goTo(step) {
-        // Hide all
         document.querySelectorAll('.wizard-page').forEach(p => p.classList.remove('active'));
-        // Show target
         const page = document.getElementById(`page-${step}`);
         if (page) {
           page.classList.remove('active');
-          // Force reflow for animation
           void page.offsetWidth;
           page.classList.add('active');
         }
         this.currentStep = step;
         this.renderProgress();
-        // Scroll to top of container
         document.querySelector('.booking-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
@@ -1007,55 +1039,63 @@
         }).join('');
       }
 
-      updateActiveSteps() {
-        if (this.specialists.length <= 1) {
+      updateActiveSteps(specialists) {
+        if (!specialists || specialists.length <= 1) {
           this.activeSteps = this.steps.filter(s => s !== 'specialist');
         } else {
           this.activeSteps = [...this.steps];
         }
       }
 
-      /* ── Services ── */
+      /* ── Services (PricingCard[]) ── */
       async loadServices() {
         const grid = document.getElementById('serviceGrid');
         try {
           this.services = await BookingAPI.getServices();
           grid.innerHTML = '';
-          this.services.forEach(s => {
-            const card = document.createElement('div');
-            card.className = 'service-card';
-            card.dataset.id = s.id;
-            card.dataset.slug = s.slug;
-            card.innerHTML = `
-              <div class="icon">${s.icon}</div>
+          this.services.forEach(card => {
+            const presetVariant = card.variants.find(v => v.qty === 1) || card.variants[0];
+            if (!presetVariant) return;
+
+            const el = document.createElement('div');
+            el.className = 'service-card';
+            el.dataset.slug = card.slug;
+            el.innerHTML = `
+              <div class="icon">${card.icon}</div>
               <div class="service-info">
-                <div class="service-name">${s.name}</div>
-                <div class="service-meta">${s.duration_min}–${s.duration_max} мин · ${s.category}</div>
+                <div class="service-name">${card.name}</div>
+                <div class="service-duration">${card.duration_min} мин</div>
+                <div class="service-meta">от ${priceRange(card.variants)} за сеанс</div>
               </div>
-              <div class="service-price">${s.price.toLocaleString('ru-RU')} ₽</div>
               <div class="check-mark">✓</div>
             `;
-            card.addEventListener('click', () => this.selectService(s, card));
-            grid.appendChild(card);
+            el.addEventListener('click', () => this.selectService(card, presetVariant, el));
+            grid.appendChild(el);
           });
         } catch (e) {
           grid.innerHTML = '<p style="text-align:center;color:var(--danger);padding:2rem">Не удалось загрузить услуги. Попробуйте позже.</p>';
         }
       }
 
-      selectService(service, card) {
+      selectService(card, presetVariant, el) {
         document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        this.state.service = service;
+        el.classList.add('selected');
+        this.state.service = {
+          slug: card.slug,
+          name: card.name,
+          duration_min: card.duration_min,
+          icon: card.icon,
+          category: card.category,
+          packageId: presetVariant.package_id,
+          price: presetVariant.price,
+        };
         // Reset downstream
         this.state.date = null;
         this.state.time = null;
         this.state.specialist = null;
 
-        // Small delay then advance
         setTimeout(() => {
-          this.prepareCalendar();
-          this.goTo('date');
+          this.loadCalendar();
         }, 250);
       }
 
@@ -1063,28 +1103,64 @@
         const params = new URLSearchParams(window.location.search);
         const slug = params.get('service');
         if (slug) {
-          const service = this.services.find(s => s.slug === slug);
-          if (service) {
-            const card = document.querySelector(`.service-card[data-slug="${slug}"]`);
-            if (card) this.selectService(service, card);
+          const card = this.services.find(s => s.slug === slug);
+          if (card) {
+            const presetVariant = card.variants.find(v => v.qty === 1) || card.variants[0];
+            if (presetVariant) {
+              const el = document.querySelector(`.service-card[data-slug="${slug}"]`);
+              if (el) this.selectService(card, presetVariant, el);
+            }
           }
         }
       }
 
-      /* ── Calendar ── */
-      prepareCalendar() {
-        const today = new Date();
-        this.calendarDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        document.getElementById('calPrev').addEventListener('click', () => this.navMonth(-1));
-        document.getElementById('calNext').addEventListener('click', () => this.navMonth(1));
-        this.renderCalendar();
-        document.getElementById('dateSubtitle').textContent =
-          `${this.state.service.name} · ${this.state.service.duration_min}–${this.state.service.duration_max} мин`;
+      /* ── Calendar (availability API) ── */
+      async loadCalendar() {
+        try {
+          const locationId = await _getLocationId();
+          const data = await BookingAPI.getCalendar(locationId);
+          this.availableDays.clear();
+          for (const day of data.days) this.availableDays.set(day.date, day.has_slots);
+
+          // Jump to first available month
+          const first = data.days.find(d => d.has_slots);
+          if (first) {
+            this.currentMonth = new Date(first.date);
+          } else {
+            this.currentMonth = new Date();
+          }
+
+          if (!this._calendarBound) {
+            this._calendarBound = true;
+            document.getElementById('calPrev').addEventListener('click', () => this.navigateMonth(-1));
+            document.getElementById('calNext').addEventListener('click', () => this.navigateMonth(1));
+          }
+
+          this.renderCalendar();
+          this.goTo('date');
+
+          document.getElementById('dateSubtitle').textContent =
+            `${this.state.service.name} · ${this.state.service.duration_min} мин`;
+        } catch (e) {
+          console.error('Calendar load failed:', e);
+        }
       }
 
-      navMonth(dir) {
-        this.calendarDate.setMonth(this.calendarDate.getMonth() + dir);
-        this.renderCalendar();
+      navigateMonth(dir) {
+        if (this._navigating) return;
+        const btn = document.getElementById(dir > 0 ? 'calNext' : 'calPrev');
+        if (btn?.disabled) return;
+
+        this._navigating = true;
+        const grid = document.getElementById('calendarDays');
+        grid.classList.add('calendar-swipe', dir > 0 ? 'swipe-left' : 'swipe-right');
+
+        setTimeout(() => {
+          this.currentMonth.setMonth(this.currentMonth.getMonth() + dir);
+          this.renderCalendar();
+          grid.classList.remove('calendar-swipe', 'swipe-left', 'swipe-right');
+          this._navigating = false;
+        }, 250);
       }
 
       renderCalendar() {
@@ -1092,74 +1168,80 @@
         const today = new Date();
         today.setHours(0,0,0,0);
 
-        const year = this.calendarDate.getFullYear();
-        const month = this.calendarDate.getMonth();
+        const year = this.currentMonth.getFullYear();
+        const month = this.currentMonth.getMonth();
 
         const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь',
                             'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
         document.getElementById('calendarMonth').textContent = `${monthNames[month]} ${year}`;
 
-        // Disable prev if current month
-        const prevBtn = document.getElementById('calPrev');
-        prevBtn.disabled = (year === today.getFullYear() && month === today.getMonth());
-
-        // Max 3 months ahead
-        const maxDate = new Date(today);
-        maxDate.setMonth(maxDate.getMonth() + 3);
-        document.getElementById('calNext').disabled = (year >= maxDate.getFullYear() && month >= maxDate.getMonth());
+        // Nav limits
+        const cur = year * 12 + month;
+        const min = today.getFullYear() * 12 + today.getMonth();
+        const max = min + 3;
+        document.getElementById('calPrev').disabled = cur <= min;
+        document.getElementById('calNext').disabled = cur >= max;
 
         const firstDay = new Date(year, month, 1);
-        let startDay = firstDay.getDay() - 1; // Mon=0
-        if (startDay < 0) startDay = 6;
-
         const daysInMonth = new Date(year, month + 1, 0).getDate();
+        let startDay = (firstDay.getDay() + 6) % 7; // Mon=0
 
-        grid.innerHTML = '';
-
-        // Empty cells before first day
-        for (let i = 0; i < startDay; i++) {
-          const empty = document.createElement('div');
-          empty.className = 'cal-day empty';
-          grid.appendChild(empty);
-        }
-
-        // Minimum booking date: tomorrow
-        const minDate = new Date(today);
-        minDate.setDate(minDate.getDate() + 1);
+        let html = '';
+        for (let i = 0; i < startDay; i++) html += '<div class="cal-day empty"></div>';
 
         for (let d = 1; d <= daysInMonth; d++) {
           const date = new Date(year, month, d);
-          const el = document.createElement('div');
-          el.className = 'cal-day';
-          el.textContent = d;
-
           const iso = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-          el.dataset.date = iso;
+          const isPast = date < today;
+          const avail = !isPast && this.availableDays.get(iso);
+          const isToday = date.getTime() === today.getTime();
+          const isSelected = iso === this.state.date;
 
-          if (date < minDate || date.getDay() === 0) {
-            el.classList.add('disabled');
-          } else {
-            el.addEventListener('click', () => this.selectDate(iso, el));
-          }
+          const cls = ['cal-day'];
+          if (isToday) cls.push('today');
+          if (isSelected) cls.push('selected');
+          if (avail) cls.push('available');
+          else cls.push('unavailable');
 
-          if (date.getTime() === today.getTime()) {
-            el.classList.add('today');
-          }
-          if (this.state.date === iso) {
-            el.classList.add('selected');
-          }
+          html += `<div class="${cls.join(' ')}" data-date="${iso}">${d}</div>`;
+        }
 
-          grid.appendChild(el);
+        grid.innerHTML = html;
+        grid.onclick = e => {
+          const el = e.target.closest('.cal-day');
+          if (el?.classList.contains('available')) this.selectDate(el.dataset.date);
+        };
+
+        // Init swipe once
+        if (!this._swipeReady) {
+          this._swipeReady = true;
+          this.initCalendarSwipe();
         }
       }
 
-      async selectDate(iso, el) {
-        document.querySelectorAll('.cal-day').forEach(d => d.classList.remove('selected'));
-        el.classList.add('selected');
+      initCalendarSwipe() {
+        const el = document.getElementById('page-date');
+        let startX = 0, startY = 0;
+
+        el.addEventListener('touchstart', e => {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }, { passive: true });
+
+        el.addEventListener('touchend', e => {
+          const dx = e.changedTouches[0].clientX - startX;
+          const dy = e.changedTouches[0].clientY - startY;
+          if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2) {
+            this.navigateMonth(dx < 0 ? 1 : -1);
+          }
+        }, { passive: true });
+      }
+
+      selectDate(iso) {
         this.state.date = iso;
         this.state.time = null;
+        this.renderCalendar();
 
-        // Auto-advance to time
         setTimeout(() => {
           this.goTo('time');
           this.loadTimeSlots();
@@ -1174,15 +1256,22 @@
         section.appendChild(loading);
         loading.style.display = 'flex';
 
-        // Show chosen date in subtitle
         const dateObj = new Date(this.state.date + 'T00:00:00');
         const formatted = dateObj.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
         document.getElementById('timeSubtitle').textContent =
           `${this.state.service.name} · ${formatted}`;
 
         try {
-          const slots = await BookingAPI.getAvailableSlots(this.state.service.id, this.state.date);
+          const slots = await BookingAPI.getAvailableSlots(this.state.service.packageId, this.state.date);
           loading.style.display = 'none';
+
+          // Collect all specialists from slots for later use
+          this._slotSpecialists = new Map();
+          slots.forEach(s => {
+            if (s.specialists && s.specialists.length > 0) {
+              this._slotSpecialists.set(s.time, s.specialists);
+            }
+          });
 
           // Group by period
           const periods = {
@@ -1210,7 +1299,7 @@
               el.className = `time-slot ${slot.available ? '' : 'disabled'}`;
               el.textContent = slot.time;
               if (slot.available) {
-                el.addEventListener('click', () => this.selectTime(slot.time, el));
+                el.addEventListener('click', () => this.selectTime(slot, el));
               }
               grid.appendChild(el);
             });
@@ -1229,22 +1318,21 @@
         }
       }
 
-      async selectTime(time, el) {
+      selectTime(slot, el) {
         document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
         el.classList.add('selected');
-        this.state.time = time;
+        this.state.time = slot.time;
 
-        // Load specialists to decide if step is needed
-        this.specialists = await BookingAPI.getSpecialists(this.state.service.id);
-        this.updateActiveSteps();
+        // Get specialists from slot data
+        const specialists = slot.specialists || [];
+        this.updateActiveSteps(specialists);
 
         setTimeout(() => {
-          if (this.specialists.length > 1) {
-            this.renderSpecialists();
+          if (specialists.length > 1) {
+            this.renderSpecialists(specialists);
             this.goTo('specialist');
           } else {
-            // Auto-assign sole specialist
-            this.state.specialist = this.specialists[0] || null;
+            this.state.specialist = specialists[0] || null;
             this.renderSummary();
             this.goTo('confirm');
           }
@@ -1252,7 +1340,7 @@
       }
 
       /* ── Specialists ── */
-      renderSpecialists() {
+      renderSpecialists(specialists) {
         const grid = document.getElementById('specialistGrid');
         grid.innerHTML = '';
 
@@ -1265,7 +1353,7 @@
         const anyCard = this.createSpecialistCard({ id: null, name: 'Любой специалист', description: 'Первый свободный' }, '🎲');
         grid.appendChild(anyCard);
 
-        this.specialists.forEach(sp => {
+        specialists.forEach(sp => {
           const initials = sp.name ? sp.name.split(' ').map(w => w[0]).join('') : '?';
           grid.appendChild(this.createSpecialistCard(sp, initials));
         });
@@ -1326,7 +1414,7 @@
         rows += `
           <div class="summary-row total">
             <span class="summary-label">Стоимость</span>
-            <span class="summary-value">${this.state.service.price.toLocaleString('ru-RU')} ₽</span>
+            <span class="summary-value">${fmtPrice(this.state.service.price)} ₽</span>
           </div>
         `;
 
@@ -1335,14 +1423,13 @@
         // Reserve the slot (5 min hold)
         try {
           const reservation = await BookingAPI.reserveSlot(
-            this.state.service.id,
+            this.state.service.packageId,
             this.state.date,
             this.state.time,
             this.state.specialist?.id
           );
           this.state.reserveUuid = reservation.uuid;
         } catch (e) {
-          // Slot may have been taken
           document.getElementById('summaryCard').innerHTML += `
             <div class="summary-row" style="color:var(--danger); margin-top:0.5rem;">
               Время уже занято. Вернитесь и выберите другой слот.
@@ -1380,7 +1467,6 @@
       async submit() {
         const name = document.getElementById('clientName').value.trim();
         const phone = document.getElementById('clientPhone').value.trim();
-        const email = document.getElementById('clientEmail').value.trim();
 
         if (!name) { document.getElementById('clientName').focus(); return; }
         if (phone.replace(/\D/g, '').length < 11) { document.getElementById('clientPhone').focus(); return; }

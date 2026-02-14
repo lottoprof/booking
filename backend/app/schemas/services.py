@@ -57,6 +57,7 @@ class ServiceVariant(BaseModel):
     price: float
     old_price: Optional[float] = None
     per_session: Optional[float] = None
+    package_id: int
 
 
 class PricingCard(BaseModel):
