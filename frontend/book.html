@@ -217,20 +217,26 @@
     [data-theme="dark"] .service-card .icon { background: rgba(43,181,184,0.12); }
 
     .service-info { flex: 1; min-width: 0; }
+    .service-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.15rem;
+    }
     .service-name {
       font-weight: 600; font-size: 0.95rem;
       color: var(--text-primary);
-      margin-bottom: 0.15rem;
     }
     .service-duration {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 0.1rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      white-space: nowrap;
     }
     .service-meta {
       font-size: 0.8rem;
-      color: var(--text-secondary);
+      color: var(--text-muted);
     }
     .service-card .check-mark {
       position: absolute; top: 10px; right: 10px;
@@ -964,10 +970,13 @@
     }
 
     function priceRange(variants) {
-      const perSession = variants.map(v => v.per_session ?? v.price);
-      const min = Math.min(...perSession);
-      const max = Math.max(...perSession);
-      return min === max ? `${fmtPrice(min)} ₽` : `${fmtPrice(min)} – ${fmtPrice(max)} ₽`;
+      // min = per_session of largest package (10→5→1), max = single session price
+      const sorted = [...variants].sort((a, b) => b.qty - a.qty);
+      const min = sorted[0].per_session ?? sorted[0].price;
+      const single = variants.find(v => v.qty === 1);
+      const max = single ? single.price : min;
+      if (min === max) return `${fmtPrice(min)} ₽`;
+      return `от ${fmtPrice(min)} до ${fmtPrice(max)} ₽`;
     }
 
     /* ═══════════════════════════════════════
@@ -1076,16 +1085,18 @@
             const el = document.createElement('div');
             el.className = 'service-card';
             el.dataset.slug = card.slug;
+            const range = priceRange(card.variants);
             el.innerHTML = `
               <div class="icon">${card.icon}</div>
               <div class="service-info">
-                <div class="service-name">${card.name}</div>
-                <div class="service-duration">${card.duration_min} мин</div>
-                <div class="service-meta">от ${priceRange(card.variants)} за сеанс</div>
+                <div class="service-top">
+                  <div class="service-name">${card.name}</div>
+                  <div class="service-duration">${card.duration_min} мин</div>
+                </div>
+                <div class="service-meta">${range} за сеанс</div>
               </div>
-              <div class="check-mark">✓</div>
             `;
-            el.addEventListener('click', () => this.selectService(card, presetVariant, el));
+            el.addEventListener('click', () => this.selectService(card, presetVariant));
             grid.appendChild(el);
           });
         } catch (e) {
@@ -1093,9 +1104,7 @@
         }
       }
 
-      selectService(card, presetVariant, el) {
-        document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
-        el.classList.add('selected');
+      selectService(card, presetVariant) {
         this.state.service = {
           slug: card.slug,
           name: card.name,
@@ -1123,8 +1132,7 @@
           if (card) {
             const presetVariant = card.variants.find(v => v.qty === 1) || card.variants[0];
             if (presetVariant) {
-              const el = document.querySelector(`.service-card[data-slug="${slug}"]`);
-              if (el) this.selectService(card, presetVariant, el);
+              this.selectService(card, presetVariant);
             }
           }
         }

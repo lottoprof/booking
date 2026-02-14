@@ -291,7 +291,7 @@ async def get_locations():
 @router.get("/slots/calendar", response_model=WebCalendarResponse)
 async def get_slots_calendar(
     location_id: int,
-    service_id: int,
+    service_id: Optional[int] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
 ):
