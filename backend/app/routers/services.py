@@ -61,11 +61,12 @@ def list_services_web(
 
     visibility_attr = "show_on_pricing" if view == "pricing" else "show_on_booking"
 
-    # Group packages by name → list of (pkg, items, price)
-    cards: dict[str, list[tuple]] = {}
+    # Group ALL packages by name → list of (pkg, items, price)
+    # Then keep only groups where at least one package is visible.
+    # This ensures booking view gets all qty variants for price range display.
+    all_cards: dict[str, list[tuple]] = {}
+    visible_names: set[str] = set()
     for pkg in packages:
-        if not getattr(pkg, visibility_attr, True):
-            continue
         try:
             items = json.loads(pkg.package_items) if pkg.package_items else []
         except (json.JSONDecodeError, TypeError):
@@ -77,7 +78,11 @@ def list_services_web(
         if pkg_price is None:
             continue
 
-        cards.setdefault(pkg.name, []).append((pkg, items, pkg_price))
+        all_cards.setdefault(pkg.name, []).append((pkg, items, pkg_price))
+        if getattr(pkg, visibility_attr, True):
+            visible_names.add(pkg.name)
+
+    cards = {name: group for name, group in all_cards.items() if name in visible_names}
 
     result = []
     for card_name, pkg_group in cards.items():
