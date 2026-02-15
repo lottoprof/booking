@@ -8,6 +8,7 @@ They are called directly by trusted services (e.g., web_booking_consumer).
 Access: localhost only (validated by Gateway not proxying /internal/*)
 """
 
+import json
 import logging
 import re
 from datetime import datetime, timedelta
@@ -23,6 +24,7 @@ from ..models.generated import (
     Users as DBUsers,
     Bookings as DBBookings,
     Services as DBServices,
+    ServicePackages as DBServicePackages,
     Locations as DBLocations,
     Specialists as DBSpecialists,
     UserRoles as DBUserRoles,
@@ -46,7 +48,8 @@ CLIENT_ROLE_ID = 4
 class WebBookingCreate(BaseModel):
     """Request body for creating booking from web."""
     location_id: int
-    service_id: int
+    service_id: Optional[int] = None
+    service_package_id: Optional[int] = None
     specialist_id: Optional[int] = None
     date: str = Field(description="Date in YYYY-MM-DD format")
     time: str = Field(description="Time in HH:MM format")
@@ -136,8 +139,35 @@ def create_booking_from_web(
             detail="Location not found or inactive"
         )
 
-    # Step 2: Validate service
-    service = db.get(DBServices, data.service_id)
+    # Step 2: Resolve service_id from service_package if needed
+    service_package_id = data.service_package_id
+    service_id = data.service_id
+
+    if not service_id and service_package_id:
+        package = db.get(DBServicePackages, service_package_id)
+        if not package or not package.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Service package not found or inactive"
+            )
+        try:
+            items = json.loads(package.package_items) if package.package_items else []
+        except (json.JSONDecodeError, TypeError):
+            items = []
+        if not items:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Service package has no items"
+            )
+        service_id = items[0].get("service_id")
+
+    if not service_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either service_id or service_package_id is required"
+        )
+
+    service = db.get(DBServices, service_id)
     if not service or not service.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -152,7 +182,7 @@ def create_booking_from_web(
     if not specialist_id:
         # Find first available specialist
         specialist_id = _find_available_specialist(
-            db, data.location_id, data.service_id, data.date, data.time
+            db, data.location_id, service_id, data.date, data.time
         )
         if not specialist_id:
             raise HTTPException(
@@ -162,7 +192,7 @@ def create_booking_from_web(
     else:
         # Validate specified specialist is available
         if not _is_specialist_available(
-            db, specialist_id, data.service_id, data.date, data.time
+            db, specialist_id, service_id, data.date, data.time
         ):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -189,7 +219,8 @@ def create_booking_from_web(
     booking = DBBookings(
         company_id=location.company_id,
         location_id=data.location_id,
-        service_id=data.service_id,
+        service_id=service_id,
+        service_package_id=service_package_id,
         client_id=client.id,
         specialist_id=specialist_id,
         date_start=date_start.strftime("%Y-%m-%d %H:%M:%S"),

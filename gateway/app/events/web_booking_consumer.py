@@ -113,17 +113,22 @@ async def _process_single_booking(
 
     try:
         # Call Backend internal API
+        body = {
+            "location_id": data["location_id"],
+            "date": data["date"],
+            "time": data["time"],
+            "phone": data["phone"],
+            "name": data.get("name"),
+            "specialist_id": data.get("specialist_id"),
+        }
+        if data.get("service_id"):
+            body["service_id"] = data["service_id"]
+        if data.get("service_package_id"):
+            body["service_package_id"] = data["service_package_id"]
+
         response = await client.post(
             f"{backend_url}/internal/bookings/from-web",
-            json={
-                "location_id": data["location_id"],
-                "service_id": data["service_id"],
-                "specialist_id": data.get("specialist_id"),
-                "date": data["date"],
-                "time": data["time"],
-                "phone": data["phone"],
-                "name": data.get("name"),
-            }
+            json=body,
         )
 
         if response.status_code == 201 or response.status_code == 200:
@@ -147,7 +152,8 @@ async def _process_single_booking(
             error_detail = "Unknown error"
             try:
                 error_body = response.json()
-                error_detail = error_body.get("detail", str(error_body))
+                detail = error_body.get("detail", str(error_body))
+                error_detail = detail if isinstance(detail, str) else str(detail)
             except Exception:
                 error_detail = response.text[:200] if response.text else "No response"
 
