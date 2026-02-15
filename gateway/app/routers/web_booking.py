@@ -212,17 +212,14 @@ async def get_services(view: Optional[str] = None):
     """
     Get list of available services with package variants.
 
-    Proxies to backend GET /services/web, caches in Redis.
+    Read from Redis only (write-through cache, rebuilt by backend on CRUD).
     """
     cache_key = f"{CACHE_SERVICES_KEY}:{view or 'default'}"
     cached = _get_cached_or_empty(cache_key)
     if cached is not None:
         return cached
 
-    url = "/services/web"
-    if view:
-        url += f"?view={view}"
-    return await _fetch_and_cache_from_backend(url, cache_key)
+    raise HTTPException(status_code=503, detail="Services cache not ready")
 
 
 # ──────────────────────────────────────────────────────────────────────────────

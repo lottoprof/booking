@@ -36,15 +36,30 @@ from .routers import (
     integrations,
     internal,
 )
+from .database import get_db
 from .services.completion_checker import completion_checker_loop
 from .services.reminder_checker import reminder_checker_loop
+from .services.web_cache import rebuild_services_cache
 
 logger = logging.getLogger(__name__)
+
+
+def _warmup_web_caches():
+    """Pre-fill Redis cache so gateway never hits backend on read."""
+    db = next(get_db())
+    try:
+        rebuild_services_cache(db)
+        logger.info("Web services cache warmed up")
+    except Exception:
+        logger.exception("Failed to warm up web services cache")
+    finally:
+        db.close()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan: start background tasks."""
+    _warmup_web_caches()
     checker_task = asyncio.create_task(
         completion_checker_loop(), name="completion_checker"
     )

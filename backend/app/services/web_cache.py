@@ -1,13 +1,31 @@
-"""Invalidate gateway web cache keys after admin CRUD."""
-from ..redis_client import redis_client
+"""Write-through cache rebuild for gateway web endpoints."""
 
-_SERVICES_KEYS = ("cache:web:services", "cache:web:services:pricing", "cache:web:services:default")
+import logging
+
+from sqlalchemy.orm import Session
+
+from ..redis_client import redis_client
+from .services_cache_builder import build_pricing_cards_json
+
+logger = logging.getLogger(__name__)
+
+CACHE_TTL = 300  # 5 minutes safety-net TTL
+
+_SERVICES_KEY_PREFIX = "cache:web:services"
 _SPECIALISTS_KEY = "cache:web:specialists"
 _LOCATIONS_KEY = "cache:web:locations"
 
 
-def invalidate_services_cache():
-    redis_client.delete(*_SERVICES_KEYS)
+def rebuild_services_cache(db: Session) -> None:
+    """Build PricingCard JSON for both views and store in Redis."""
+    for view in ("pricing", None):
+        key_suffix = view or "default"
+        key = f"{_SERVICES_KEY_PREFIX}:{key_suffix}"
+        try:
+            cards_json = build_pricing_cards_json(db, view)
+            redis_client.setex(key, CACHE_TTL, cards_json)
+        except Exception:
+            logger.exception("Failed to rebuild services cache for view=%s", view)
 
 
 def invalidate_specialists_cache():
