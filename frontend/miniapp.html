@@ -1083,7 +1083,7 @@
 
         for (let d = 1; d <= lastDay.getDate(); d++) {
           const date = new Date(year, month, d);
-          const iso = date.toISOString().split('T')[0];
+          const iso = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
           const isPast = date < today;
           const avail = !isPast && this.availableDays.get(iso);
           const isToday = date.getTime() === today.getTime();
