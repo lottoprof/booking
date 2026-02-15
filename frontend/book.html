@@ -233,6 +233,12 @@
       color: var(--text-primary);
       white-space: nowrap;
     }
+    .service-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+      line-height: 1.35;
+    }
     .service-meta {
       font-size: 0.8rem;
       color: var(--text-muted);
@@ -1092,6 +1098,7 @@
                   <div class="service-name">${card.name}</div>
                   <div class="service-duration">${card.duration_min} мин</div>
                 </div>
+                ${card.description ? `<div class="service-desc">${card.description}</div>` : ''}
                 <div class="service-meta">${range}</div>
               </div>
             `;

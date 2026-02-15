@@ -998,6 +998,7 @@
         container.innerHTML = this.services.map(s => {
           const key = Object.keys(iconMap).find(k => s.name.toLowerCase().includes(k));
           const icon = key ? iconMap[key] : '◈';
+          const range = this.priceRange(s.variants);
           return `
             <div class="service-card" data-id="${s.id}">
               <div class="service-card-icon">${icon}</div>
@@ -1005,11 +1006,10 @@
                 <div class="service-card-name">${this.esc(s.name)}</div>
                 ${s.description ? `<div class="service-card-desc">${this.esc(s.description)}</div>` : ''}
                 <div class="service-card-meta">
-                  <span>${s.duration_min} мин</span>
-                  ${s.category ? `<span class="dot"></span><span>${this.esc(s.category)}</span>` : ''}
+                  <span>${range}</span>
                 </div>
               </div>
-              <div class="service-card-price">${this.fmtPrice(s.price)}</div>
+              <div class="service-card-price">${s.duration_min} мин</div>
             </div>
           `;
         }).join('');
@@ -1500,6 +1500,17 @@
         return new Intl.NumberFormat('ru-RU', {
           style: 'currency', currency: 'RUB', minimumFractionDigits: 0,
         }).format(price);
+      }
+
+      priceRange(variants) {
+        if (!variants || variants.length === 0) return '';
+        const sorted = [...variants].sort((a, b) => b.qty - a.qty);
+        const min = sorted[0].per_session ?? sorted[0].price;
+        const single = variants.find(v => v.qty === 1);
+        const max = single ? single.price : min;
+        const fmt = n => Math.round(n).toLocaleString('ru-RU');
+        if (min === max) return `${fmt(min)} ₽`;
+        return `от ${fmt(min)} до ${fmt(max)} ₽`;
       }
     }
 
