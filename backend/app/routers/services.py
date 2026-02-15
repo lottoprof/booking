@@ -14,6 +14,7 @@ from ..schemas.services import (
     ServiceRead,
     PricingCard,
 )
+from ..services.package_pricing import sync_packages_for_service
 from ..services.services_cache_builder import build_pricing_cards
 from ..services.web_cache import rebuild_services_cache
 
@@ -77,8 +78,13 @@ def update_service(
     if not obj:
         raise HTTPException(status_code=404, detail="Not found")
 
-    for field, value in data.model_dump(exclude_unset=True).items():
+    updates = data.model_dump(exclude_unset=True)
+    for field, value in updates.items():
         setattr(obj, field, value)
+
+    # Sync package descriptions when service name/description changes
+    if "name" in updates or "description" in updates:
+        sync_packages_for_service(id, db)
 
     db.commit()
     db.refresh(obj)

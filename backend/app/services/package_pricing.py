@@ -167,3 +167,35 @@ def enrich_package_price(
     """Backwards-compatible wrapper: returns only package_price."""
     price, _ = enrich_package(package, db)
     return price
+
+
+def sync_packages_for_service(service_id: int, db: Session) -> int:
+    """
+    Rebuild description for all active packages that reference this service.
+
+    Called after service name/description update so package descriptions
+    stay in sync with their constituent services.
+
+    Returns number of updated packages.
+    """
+    packages = (
+        db.query(DBServicePackage)
+        .filter(DBServicePackage.is_active == 1)
+        .all()
+    )
+
+    updated = 0
+    for pkg in packages:
+        try:
+            items = json.loads(pkg.package_items) if pkg.package_items else []
+        except (json.JSONDecodeError, TypeError):
+            continue
+        sids = {item.get("service_id") for item in items if isinstance(item, dict)}
+        if service_id not in sids:
+            continue
+        new_desc = build_package_description(pkg.package_items, db)
+        if new_desc is not None and new_desc != pkg.description:
+            pkg.description = new_desc
+            updated += 1
+
+    return updated
