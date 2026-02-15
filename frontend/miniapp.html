@@ -688,6 +688,49 @@
     }
 
     /* ═══════════════════════════════════════
+       PHONE TOAST
+       ═══════════════════════════════════════ */
+    .phone-toast {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.35);
+      animation: toastFadeIn 0.25s ease;
+    }
+    .phone-toast.fade-out {
+      animation: toastFadeOut 0.25s ease forwards;
+    }
+    .phone-toast-content {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+    }
+    .phone-toast-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+    .phone-toast-text {
+      font-size: 0.92rem;
+      color: var(--text-strong);
+      font-weight: 500;
+      line-height: 1.45;
+    }
+    @keyframes toastFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes toastFadeOut {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    /* ═══════════════════════════════════════
        RESPONSIVE
        ═══════════════════════════════════════ */
     @media (prefers-reduced-motion: reduce) {
@@ -1379,9 +1422,29 @@
 
       /* ── Phone gate ── */
 
+      showToast(text, duration = 3000) {
+        return new Promise((resolve) => {
+          const el = document.createElement('div');
+          el.className = 'phone-toast';
+          el.innerHTML = `
+            <div class="phone-toast-content">
+              <div class="phone-toast-icon">📱</div>
+              <div class="phone-toast-text">${this.esc(text)}</div>
+            </div>
+          `;
+          document.body.appendChild(el);
+          setTimeout(() => {
+            el.classList.add('fade-out');
+            el.addEventListener('animationend', () => { el.remove(); resolve(); });
+          }, duration);
+        });
+      }
+
       async ensurePhone() {
         if (this.state.hasPhone) return true;
         if (!this.tg.isVersionAtLeast?.('6.9')) return true; // old client, skip
+
+        await this.showToast('Для подтверждения записи поделитесь номером телефона', 3000);
 
         return new Promise((resolve) => {
           this.tg.requestContact((ok, event) => {

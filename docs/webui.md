@@ -125,8 +125,32 @@ Value: {
 | DELETE /web/reserve/{uuid} | DELETE | Отмена резерва |
 | POST /web/booking | POST | Подтверждение → pending booking |
 | GET /web/booking/{uuid} | GET | Статус booking |
+| GET /web/me | GET | Текущий пользователь (miniapp, initData) |
+| POST /web/me/phone | POST | Сохранить телефон из requestContact |
+| POST /web/bookings | POST | Создать бронирование (miniapp, proxy → Backend) |
 
 **Важно:** Эти endpoints обрабатываются Gateway напрямую, БЕЗ проксирования в Backend.
+
+### User Profile (miniapp)
+
+Endpoints для аутентифицированных пользователей Mini App (TG initData):
+
+**GET /web/me**
+- Auth: заголовок `X-TG-Init-Data` (initData из Telegram WebApp)
+- Response: `{ id, first_name, has_phone }`
+- Проксирует к Backend `GET /users/by_tg/{tg_id}`
+
+**POST /web/me/phone**
+- Auth: заголовок `X-TG-Init-Data`
+- Body: `{ phone: "+79991234567" }`
+- Response: `{ ok: true }`
+- Проксирует к Backend: `GET /users/by_tg/{tg_id}` → `PATCH /users/{id}` с phone
+
+**Phone gate (soft, non-blocking)**
+- При первой записи через miniapp, если у пользователя нет телефона, вызывается `tg.requestContact()` (TG API v6.9+)
+- Перед нативным диалогом показывается toast: «Для подтверждения записи поделитесь номером телефона»
+- Если пользователь отклоняет — запись всё равно проходит (non-blocking)
+- Если TG клиент старше v6.9 — phone gate пропускается
 
 ### Consumer (trusted)
 
