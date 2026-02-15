@@ -176,7 +176,47 @@ async def web_me(request: Request):
         raise HTTPException(404, "User not found")
 
     user = resp.json()
-    return {"id": user["id"], "first_name": user.get("first_name")}
+    return {
+        "id": user["id"],
+        "first_name": user.get("first_name"),
+        "has_phone": bool(user.get("phone")),
+    }
+
+
+@router.post("/me/phone")
+async def web_me_phone(request: Request):
+    """Save phone from miniapp requestContact() result."""
+    import httpx
+
+    identity = getattr(request.state, "identity", None)
+    if not identity or not identity.get("tg_id"):
+        raise HTTPException(401, "Not authenticated")
+
+    body = await request.json()
+    phone = (body.get("phone") or "").strip()
+    if not phone:
+        raise HTTPException(400, "Phone required")
+
+    tg_id = identity["tg_id"]
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        resp = await client.get(
+            f"{DOMAIN_API_URL}/users/by_tg/{tg_id}",
+            timeout=10.0,
+        )
+        if resp.status_code != 200:
+            raise HTTPException(404, "User not found")
+
+        user_id = resp.json()["id"]
+
+        resp = await client.patch(
+            f"{DOMAIN_API_URL}/users/{user_id}",
+            json={"phone": phone},
+            timeout=10.0,
+        )
+        if resp.status_code != 200:
+            raise HTTPException(502, "Failed to save phone")
+
+    return {"ok": True}
 
 
 # ──────────────────────────────────────────────────────────────────────────────

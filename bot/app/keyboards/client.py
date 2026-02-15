@@ -17,9 +17,7 @@ def client_main(lang: str) -> ReplyKeyboardMarkup:
     """
     return ReplyKeyboardMarkup(
         keyboard=[
-            [
-                KeyboardButton(text=t("client:main:book", lang)),
-            ],
+            # [KeyboardButton(text=t("client:main:book", lang))],  # disabled — miniapp only
             [
                 KeyboardButton(text=t("client:main:bookings", lang)),
                 KeyboardButton(text=t("client:main:services", lang)),

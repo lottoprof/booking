@@ -133,8 +133,8 @@
 
     {
       "name": "web-booking-tg",
-      "path": ["/web/me"],
-      "methods": ["GET"],
+      "path": ["/web/me", "/web/me/phone"],
+      "methods": ["GET", "POST"],
       "allow": ["tg_client"]
     },
 
