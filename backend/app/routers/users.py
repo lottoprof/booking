@@ -38,6 +38,22 @@ ROLE_IDS = {
 ROLE_NAMES = {v: k for k, v in ROLE_IDS.items()}
 
 
+def _merge_web_user_into(db: Session, *, source: DBUsers, target: DBUsers):
+    """Merge a web-created user (no tg_id) into a TG user. Deactivate source."""
+    sid, tid = source.id, target.id
+    for stmt in [
+        "UPDATE bookings SET client_id = :tid WHERE client_id = :sid",
+        "UPDATE client_packages SET user_id = :tid WHERE user_id = :sid",
+        "UPDATE client_wallets SET user_id = :tid WHERE user_id = :sid",
+        "UPDATE client_discounts SET user_id = :tid WHERE user_id = :sid",
+        "UPDATE wallet_transactions SET created_by = :tid WHERE created_by = :sid",
+        "DELETE FROM user_roles WHERE user_id = :sid",
+        "UPDATE users SET is_active = 0 WHERE id = :sid",
+    ]:
+        db.execute(text(stmt), {"sid": sid, "tid": tid})
+    logger.info(f"[MERGE] web user {sid} → tg user {tid}")
+
+
 # ---------------------------------------------------------------------
 # Search endpoint (MUST be before /{id} to avoid route conflict)
 # ---------------------------------------------------------------------
@@ -338,7 +354,7 @@ def update_user(
                     """),
                     {
                         "user_id": id,
-                        "now": datetime.utcnow().isoformat(),
+                        "now": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
                         "id": imported_id
                     }
                 )
@@ -346,7 +362,24 @@ def update_user(
                 
         except Exception as e:
             logger.debug(f"[MATCHING] Skipped: {e}")
-    
+
+        # ==========================================================
+        # MERGE: web-user (phone, no tg_id) → tg-user (tg_id + phone)
+        # ==========================================================
+        if obj.tg_id:
+            web_user = (
+                db.query(DBUsers)
+                .filter(
+                    DBUsers.phone == phone,
+                    DBUsers.is_active == 1,
+                    DBUsers.tg_id.is_(None),
+                    DBUsers.id != obj.id,
+                )
+                .first()
+            )
+            if web_user:
+                _merge_web_user_into(db, source=web_user, target=obj)
+
     # ==========================================================
     # Apply changes
     # ==========================================================
