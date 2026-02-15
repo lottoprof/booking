@@ -85,15 +85,13 @@ def calc_package_duration(
     return total
 
 
-def enrich_package(
-    package: DBServicePackage,
+def _load_items_and_services(
+    package_items_json: str,
     db: Session,
-) -> tuple[Optional[float], Optional[int]]:
-    """
-    Compute (package_price, total_duration_min) for a service_package row.
-    """
+) -> tuple[Optional[list[dict]], Optional[dict[int, DBService]]]:
+    """Parse package_items JSON and load corresponding services from DB."""
     try:
-        items = json.loads(package.package_items) if package.package_items else []
+        items = json.loads(package_items_json) if package_items_json else []
     except (json.JSONDecodeError, TypeError):
         return None, None
 
@@ -110,6 +108,52 @@ def enrich_package(
         .all()
     )
     services_map = {s.id: s for s in services_list}
+    return items, services_map
+
+
+def build_package_description(
+    package_items_json: str,
+    db: Session,
+) -> Optional[str]:
+    """
+    Auto-build description from constituent services.
+
+    Formula: ", ".join(svc.name + " " + svc.description) for unique services.
+    """
+    result = _load_items_and_services(package_items_json, db)
+    if result[0] is None:
+        return None
+    items, services_map = result
+
+    seen = set()
+    parts = []
+    for item in items:
+        sid = item.get("service_id")
+        if sid in seen:
+            continue
+        seen.add(sid)
+        svc = services_map.get(sid)
+        if not svc:
+            continue
+        part = svc.name
+        if svc.description:
+            part += " " + svc.description
+        parts.append(part)
+
+    return ", ".join(parts) if parts else None
+
+
+def enrich_package(
+    package: DBServicePackage,
+    db: Session,
+) -> tuple[Optional[float], Optional[int]]:
+    """
+    Compute (package_price, total_duration_min) for a service_package row.
+    """
+    result = _load_items_and_services(package.package_items, db)
+    if result[0] is None:
+        return None, None
+    items, services_map = result
 
     price = calc_package_price(items, services_map)
     duration = calc_package_duration(items, services_map)

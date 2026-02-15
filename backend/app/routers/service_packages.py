@@ -12,7 +12,7 @@ from ..schemas.service_packages import (
     ServicePackageRead,
 )
 from ..services.web_cache import invalidate_services_cache
-from ..services.package_pricing import enrich_package
+from ..services.package_pricing import enrich_package, build_package_description
 
 router = APIRouter(prefix="/service_packages", tags=["service_packages"])
 
@@ -52,6 +52,8 @@ def create_service_package(
     db: Session = Depends(get_db),
 ):
     obj = DBServicePackages(**data.model_dump())
+    if obj.description is None and obj.package_items:
+        obj.description = build_package_description(obj.package_items, db)
     db.add(obj)
     db.commit()
     db.refresh(obj)
@@ -69,8 +71,13 @@ def update_service_package(
     if not obj:
         raise HTTPException(status_code=404, detail="Not found")
 
-    for field, value in data.model_dump(exclude_unset=True).items():
+    updates = data.model_dump(exclude_unset=True)
+    for field, value in updates.items():
         setattr(obj, field, value)
+
+    # Auto-build description when package_items changed and description not explicitly set
+    if "package_items" in updates and "description" not in updates:
+        obj.description = build_package_description(obj.package_items, db)
 
     db.commit()
     db.refresh(obj)

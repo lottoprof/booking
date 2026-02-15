@@ -108,7 +108,7 @@ def list_services_web(
         if len(svc_categories) == 1:
             category = svc_categories.pop()
 
-        description = first_pkg.description or (first_svc.description if first_svc else None)
+        description = first_pkg.description
 
         variants = []
         for pkg, items, price in pkg_group:
