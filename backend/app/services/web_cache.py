@@ -9,8 +9,6 @@ from .services_cache_builder import build_pricing_cards_json
 
 logger = logging.getLogger(__name__)
 
-CACHE_TTL = 300  # 5 minutes safety-net TTL
-
 _SERVICES_KEY_PREFIX = "cache:web:services"
 _SPECIALISTS_KEY = "cache:web:specialists"
 _LOCATIONS_KEY = "cache:web:locations"
@@ -23,7 +21,7 @@ def rebuild_services_cache(db: Session) -> None:
         key = f"{_SERVICES_KEY_PREFIX}:{key_suffix}"
         try:
             cards_json = build_pricing_cards_json(db, view)
-            redis_client.setex(key, CACHE_TTL, cards_json)
+            redis_client.set(key, cards_json)
         except Exception:
             logger.exception("Failed to rebuild services cache for view=%s", view)
 
