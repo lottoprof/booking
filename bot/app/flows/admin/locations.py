@@ -12,36 +12,40 @@ EDIT вынесен в locations_edit.py (делегирование).
 - делегирование EDIT
 """
 
-import logging
 import json
+import logging
 import math
-from aiogram import Router, F
-from aiogram.types import (
-    Message,
-    CallbackQuery,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-)
+
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 
-from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
-from bot.app.utils.state import user_lang
+from bot.app.i18n.loader import DEFAULT_LANG, t, t_all
+from bot.app.keyboards.admin import admin_locations
+from bot.app.keyboards.schedule import (
+    schedule_day_edit_inline,
+    schedule_days_inline,
+)
 from bot.app.utils.api import api
+from bot.app.utils.pagination import build_nav_row
 from bot.app.utils.schedule_helper import (
     default_schedule,
-    parse_time_input,
     format_day_value,
     format_schedule_compact,
+    parse_time_input,
 )
-from bot.app.keyboards.schedule import (
-    schedule_days_inline,
-    schedule_day_edit_inline,
-)
-from bot.app.keyboards.admin import admin_locations
+from bot.app.utils.state import user_lang
+
+from .locations_edit import setup as setup_edit
 
 # EDIT entry point
-from .locations_edit import start_location_edit, setup as setup_edit
+from .locations_edit import start_location_edit
 
 logger = logging.getLogger(__name__)
 
@@ -105,37 +109,9 @@ def locations_list_inline(
         ])
     
     # Пагинация
-    if total_pages > 1:
-        nav_row = []
-        
-        if page > 0:
-            nav_row.append(InlineKeyboardButton(
-                text="◀️",
-                callback_data=f"loc:page:{page - 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="loc:noop"
-            ))
-        
-        nav_row.append(InlineKeyboardButton(
-            text=f"{page + 1}/{total_pages}",
-            callback_data="loc:noop"
-        ))
-        
-        if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(
-                text="▶️",
-                callback_data=f"loc:page:{page + 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="loc:noop"
-            ))
-        
-        buttons.append(nav_row)
+    nav = build_nav_row(page, total_pages, "loc:page:{p}", "loc:noop", lang)
+    if nav:
+        buttons.append(nav)
     
     # Назад
     buttons.append([
@@ -539,7 +515,7 @@ def setup(mc, get_user_role):
         )
         
         kb = schedule_day_edit_inline(day, schedule, lang, prefix="loc_sched")
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     @router.message(LocationCreate.schedule_day)
@@ -585,7 +561,7 @@ def setup(mc, get_user_role):
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="loc_sched")
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     @router.callback_query(F.data == "loc_sched:back")
@@ -600,7 +576,7 @@ def setup(mc, get_user_role):
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="loc_sched")
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     # ---- schedule save → CREATE LOCATION

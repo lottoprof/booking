@@ -5,12 +5,14 @@ bot/app/flows/admin/schedule_bookings.py
 """
 
 import logging
-from datetime import datetime, date, timedelta
-from aiogram import Router, F
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.fsm.context import FSMContext
+from datetime import date, datetime, timedelta
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from aiogram import F, Router
+from aiogram.fsm.context import FSMContext  # noqa: F401
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+
+from bot.app.i18n.loader import DEFAULT_LANG, t
+from bot.app.utils.pagination import build_nav_row
 from bot.app.utils.state import user_lang
 
 logger = logging.getLogger(__name__)
@@ -82,22 +84,8 @@ def kb_bookings_list(
 
     # Пагинация
     total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
-    if total_pages > 1:
-        nav = []
-        if page > 0:
-            nav.append(InlineKeyboardButton(
-                text=t("common:prev", lang),
-                callback_data=f"schbook:page:{page - 1}"
-            ))
-        nav.append(InlineKeyboardButton(
-            text=f"{page + 1}/{total_pages}",
-            callback_data="schbook:noop"
-        ))
-        if page < total_pages - 1:
-            nav.append(InlineKeyboardButton(
-                text=t("common:next", lang),
-                callback_data=f"schbook:page:{page + 1}"
-            ))
+    nav = build_nav_row(page, total_pages, "schbook:page:{p}", "schbook:noop", lang)
+    if nav:
         rows.append(nav)
 
     # Кнопка очистки

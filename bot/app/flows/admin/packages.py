@@ -13,28 +13,31 @@ Service Packages (admin):
 - Создание/редактирование пакета НЕ валидирует специалистов (по решению)
 """
 
+import json
 import logging
 import math
 from typing import Any
-import json
 
-from aiogram import Router, F
-from aiogram.types import (
-    Message,
-    CallbackQuery,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-)
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 
-from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
-from bot.app.utils.state import user_lang
-from bot.app.utils.api import api
+from bot.app.i18n.loader import DEFAULT_LANG, t, t_all
 from bot.app.keyboards.admin import admin_packages
+from bot.app.utils.api import api
+from bot.app.utils.pagination import build_nav_row
+from bot.app.utils.state import user_lang
+
+from .packages_edit import setup as setup_edit
 
 # EDIT entry point
-from .packages_edit import start_package_edit, setup as setup_edit
+from .packages_edit import start_package_edit
 
 logger = logging.getLogger(__name__)
 
@@ -122,12 +125,7 @@ def packages_list_inline(packages: list[dict], page: int, lang: str) -> InlineKe
             )
         ])
 
-    nav: list[InlineKeyboardButton] = []
-    if pages > 1:
-        if page > 0:
-            nav.append(InlineKeyboardButton(text=t("common:prev", lang), callback_data=f"pkg:page:{page-1}"))
-        if page < pages - 1:
-            nav.append(InlineKeyboardButton(text=t("common:next", lang), callback_data=f"pkg:page:{page+1}"))
+    nav = build_nav_row(page, pages, "pkg:page:{p}", "pkg:noop", lang)
     if nav:
         rows.append(nav)
 
@@ -174,12 +172,7 @@ def pkg_create_services_inline(
             )
         ])
 
-    nav: list[InlineKeyboardButton] = []
-    if pages > 1:
-        if page > 0:
-            nav.append(InlineKeyboardButton(text=t("common:prev", lang), callback_data=f"pkg_create:page:{page-1}"))
-        if page < pages - 1:
-            nav.append(InlineKeyboardButton(text=t("common:next", lang), callback_data=f"pkg_create:page:{page+1}"))
+    nav = build_nav_row(page, pages, "pkg_create:page:{p}", "pkg_create:noop", lang)
     if nav:
         rows.append(nav)
 
@@ -649,13 +642,25 @@ def setup(mc, get_user_role):
         await mc.show_inline_readonly(message, text + "\n\n" + view_text, kb)
     
     # ==========================================================
+    # Noop (disabled pagination buttons)
+    # ==========================================================
+
+    @router.callback_query(F.data == "pkg:noop")
+    async def pkg_noop(callback: CallbackQuery):
+        await callback.answer()
+
+    @router.callback_query(F.data == "pkg_create:noop")
+    async def pkg_create_noop(callback: CallbackQuery):
+        await callback.answer()
+
+    # ==========================================================
     # EDIT (delegate)
     # ==========================================================
 
     @router.callback_query(F.data.startswith("pkg:edit:"))
     async def edit_from_view(callback: CallbackQuery, state: FSMContext):
         pkg_id = int(callback.data.split(":")[2])
-        await start_package_edit(callback, state, pkg_id)
+        await start_package_edit(mc, callback, state, pkg_id)
         await callback.answer()
 
     # подключаем EDIT router

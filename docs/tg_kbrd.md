@@ -3,7 +3,7 @@
 > **Источник истины** для всей логики меню и навигации.
 > Любые изменения в коде **обязаны** соответствовать этому документу.
 > 
-> **Версия:** 2.1 (Type B разделён на B1/B2)
+> **Версия:** 3.0 (правила удаления, якорь, inline cleanup, единая пагинация)
 
 ---
 
@@ -52,12 +52,123 @@ ReplyKeyboardMarkup(
 
 ### 3.3 Хранилище состояния
 
-Redis:
+Redis хранит 3 ключа на каждый `chat_id`:
+
+| Ключ | Тип | Значение | TTL | Назначение |
+|------|-----|----------|-----|------------|
+| `tg:menu:{chat_id}` | string | `message_id` якоря | нет | Текущий Reply-якорь (ровно 0 или 1) |
+| `tg:inline:{chat_id}` | list | `[msg_id, msg_id, …]` | нет | Все отправленные Inline-сообщения, ожидающие удаления |
+| `tg:current_menu:{chat_id}` | string | имя меню (например `"services"`) | нет | Контекст текущего Reply-меню для роутинга |
+
+Методы доступа в `MenuController`:
+
+```python
+# Якорь
+_get_menu_id(chat_id)          # → int | None
+_set_menu_id(chat_id, msg_id)  # SET
+_del_menu_id(chat_id)          # DEL
+
+# Inline-список
+_add_inline_id(chat_id, msg_id)  # RPUSH
+_get_inline_ids(chat_id)         # LRANGE 0 -1 → list[int]
+_clear_inline_ids(chat_id)       # DEL
+
+# Контекст меню
+set_menu_context(chat_id, name)  # SET
+get_menu_context(chat_id)        # GET → str | None
+clear_menu_context(chat_id)      # DEL
 ```
-key:   tg:menu:{chat_id}
-value: message_id (string)
-ttl:   нет
+
+### 3.4 Правила удаления сообщений
+
+**Порядок (инвариант):** СНАЧАЛА отправить новое сообщение, ПОТОМ удалить старые.
+Нарушение порядка триггерит IME на Android.
+
+| Переход | User msg | Old anchor | Old inline | Метод |
+|---------|----------|------------|------------|-------|
+| **A** (Reply→Reply) | ✅ удаляется | ✅ удаляется | — | `show()` |
+| **B1** (Reply→Inline readonly) | ✅ удаляется | ❌ сохраняется | ✅ удаляются (если были) | `show_inline_readonly()` |
+| **B2** (Reply→Inline input) | ✅ удаляется | ✅ удаляется | ✅ удаляются (если были) | `show_inline_input()` |
+| **C** (Reply→Reply wizard) | ❌ сохраняется | ✅ удаляется | — | `show()` (без delete user msg) |
+| Inline→Inline | — | не меняется | — (edit in place) | `edit_inline()` |
+| Inline→Reply | — | ✅ удаляется (если был) | ✅ все удаляются | `back_to_reply()` |
+| Reset (/start) | — | DEL из Redis | DEL из Redis | `reset()` |
+
+**FSM error — ручной трекинг:**
+Когда в FSM-сценарии нужно отправить Inline вне основного потока (например, ошибка валидации при callback),
+сообщение отправляется через `callback.message.edit_text()` или `mc.edit_inline()`.
+Если создаётся **новое** сообщение (не edit), его нужно затрекать вручную:
+
+```python
+msg = await bot.send_message(chat_id, error_text, reply_markup=kb)
+await mc._add_inline_id(chat_id, msg.message_id)
 ```
+
+### 3.5 Управление якорем (Reply-anchor)
+
+**Инвариант:** в каждый момент времени для `chat_id` существует ровно **0 или 1** якорь.
+Несколько якорей — неопределённое поведение (старые не удалятся).
+
+| Состояние | `tg:menu:{chat_id}` | Клавиатура | IME |
+|-----------|---------------------|------------|-----|
+| **Active** | `message_id` | Видна (is_persistent) | Скрыта |
+| **Removed** | ∅ (ключ удалён) | Скрыта | Активна |
+
+Правила по типам переходов:
+
+| Переход | Якорь до | Якорь после | Действие |
+|---------|----------|-------------|----------|
+| **A** | Active | Active (новый) | `_set_menu_id` → send → delete old |
+| **B1** | Active | Active (**тот же**) | Не трогает |
+| **B2** | Active | Removed | `_del_menu_id` + delete msg |
+| **back_to_reply** | Removed/Active | Active (новый) | send → `_set_menu_id` → delete old |
+| **edit_inline_input** | Active | Removed | delete msg + `_del_menu_id` |
+| **show_for_chat** | Active/∅ | Active (новый) | send → `_set_menu_id` → delete old |
+| **reset** | любое | Removed | `_del_menu_id` |
+
+**`menu_context`** — опциональная строка, привязанная к якорю.
+Устанавливается в `show()`, `back_to_reply()`, `show_for_chat()` через параметр `menu_context`.
+Используется для роутинга Reply-кнопок, когда одна кнопка имеет разное поведение
+в зависимости от текущего меню. Очищается при `reset()`.
+
+### 3.6 Очистка Inline-сообщений
+
+Redis key: `tg:inline:{chat_id}` — **list** (RPUSH / LRANGE / DEL).
+
+Хранит `message_id` всех Inline-сообщений, отправленных через MC.
+Используется для пакетного удаления при возврате в Reply-меню.
+
+**Автоматическая очистка** (MC делает сам):
+
+| Метод | Действие с inline-списком |
+|-------|--------------------------|
+| `show_inline_readonly()` | `_delete_all_inline()` → RPUSH новый |
+| `show_inline_input()` | `_delete_all_inline()` → RPUSH новый |
+| `back_to_reply()` | `_delete_all_inline()` (полная очистка) |
+| `reset()` | `_clear_inline_ids()` (только Redis, без удаления сообщений) |
+
+**Без автоматической очистки:**
+
+| Метод | Поведение |
+|-------|-----------|
+| `edit_inline()` | Только `edit_text` in place — список не меняется |
+| `edit_inline_input()` | Только `edit_text` + удаляет якорь — список не меняется |
+| `send_inline_in_flow()` | RPUSH msg_id — **не удаляет** предыдущие inline |
+
+**`send_inline_in_flow()`** — специальный случай:
+Отправляет Inline по `chat_id` (без объекта `Message`) и трекает его.
+НЕ удаляет предыдущие inline — предназначен для отправки внутри FSM-цепочки,
+где несколько Inline могут сосуществовать до финального `back_to_reply()`.
+
+**Ручной трекинг** — когда Inline отправляется вне MC:
+
+```python
+# Пример: ошибка валидации, создаём новое сообщение
+msg = await bot.send_message(chat_id, text, reply_markup=kb)
+await mc._add_inline_id(chat_id, msg.message_id)  # ← обязательно!
+```
+
+Без трекинга сообщение останется в чате после `back_to_reply()`.
 
 ---
 
@@ -327,16 +438,19 @@ async def edit_location(callback: CallbackQuery, state: FSMContext):
 
 ## 12. Строгие запреты
 
-| Запрещено                              | Почему                        |
-| -------------------------------------- | ----------------------------- |
-| `ReplyKeyboardRemove` между меню       | Триггерит IME                 |
-| Удаление ДО отправки нового меню       | Триггерит IME                 |
-| ZWS как текст сообщения                | API отклоняет                 |
-| `is_persistent=False`                  | Клавиатура схлопывается       |
-| Несколько якорей в Redis               | Неопределённое поведение      |
-| B1 для форм ввода                      | IME не появится               |
-| B2 для списков выбора                  | IME появится без надобности   |
-| `edit_inline` для редактирования       | IME не появится               |
+| Запрещено                              | Почему                        | Использовать                  |
+| -------------------------------------- | ----------------------------- | ----------------------------- |
+| `ReplyKeyboardRemove` между меню       | Триггерит IME                 | `mc.show()` |
+| Удаление ДО отправки нового меню       | Триггерит IME                 | Порядок: send → delete |
+| ZWS как текст сообщения                | API отклоняет                 | Заголовок/emoji |
+| `is_persistent=False`                  | Клавиатура схлопывается       | `is_persistent=True` |
+| Несколько якорей в Redis               | Неопределённое поведение      | Инвариант §3.5 |
+| B1 для форм ввода                      | IME не появится               | `show_inline_input()` |
+| B2 для списков выбора                  | IME появится без надобности   | `show_inline_readonly()` |
+| `edit_inline` для редактирования       | IME не появится               | `edit_inline_input()` |
+| `callback.message.edit_text()` напрямую | Обходит MC, ломает трекинг    | `mc.edit_inline()` |
+| `callback.message.edit_reply_markup()` напрямую | Обходит MC                    | `mc.edit_inline()` |
+| Хардкод emoji `◀️`/`▶️` для пагинации | Нарушает i18n                 | `t("common:prev/next", lang)` |
 
 ---
 
@@ -368,10 +482,124 @@ bot/app/
 - [ ] Форма/ввод из Reply → `show_inline_input()`?
 - [ ] Редактирование из Inline → `edit_inline_input()`?
 - [ ] Возврат → `back_to_reply()`?
+- [ ] Пагинация: текст кнопок через i18n (`common:prev`, `common:next`)?
+- [ ] Пагинация: ровно 3 кнопки `[prev | counter | next]`?
+- [ ] Пагинация: смена страницы через `mc.edit_inline()`, не `callback.message.edit_text()`?
+- [ ] Новое Inline-сообщение вне MC → `mc._add_inline_id()` для трекинга?
+- [ ] Выход из Inline-сценария → `mc.back_to_reply()` (не `mc.show()`)?
 
 ---
 
-## 15. История изменений
+## 15. Стандарт пагинации
+
+> Эталонная реализация: `bot/app/flows/admin/services.py`, функция `services_list_inline()`.
+
+### 15.1 Параметры
+
+| Параметр | Значение | Комментарий |
+|----------|----------|-------------|
+| `PAGE_SIZE` | 5 | Константа в каждом файле |
+| Навигация | ровно **3 кнопки** в ряд | `[prev \| counter \| next]` |
+| Текст prev | `t("common:prev", lang)` | i18n, не emoji |
+| Текст next | `t("common:next", lang)` | i18n, не emoji |
+| Текст counter | `f"{page + 1}/{total_pages}"` | Всегда отображается |
+| Disabled кнопка | `text=" "`, `callback_data="{prefix}:noop"` | Пробел + noop |
+| Навигация скрыта | при `total_pages == 1` | Ряд не добавляется |
+| Callback format | `{prefix}:page:{page}` | 0-based page |
+
+### 15.2 Шаблон кнопок
+
+```python
+if total_pages > 1:
+    nav_row = []
+
+    if page > 0:
+        nav_row.append(InlineKeyboardButton(
+            text=t("common:prev", lang),
+            callback_data=f"{prefix}:page:{page - 1}"
+        ))
+    else:
+        nav_row.append(InlineKeyboardButton(
+            text=" ", callback_data=f"{prefix}:noop"
+        ))
+
+    nav_row.append(InlineKeyboardButton(
+        text=f"{page + 1}/{total_pages}",
+        callback_data=f"{prefix}:noop"
+    ))
+
+    if page < total_pages - 1:
+        nav_row.append(InlineKeyboardButton(
+            text=t("common:next", lang),
+            callback_data=f"{prefix}:page:{page + 1}"
+        ))
+    else:
+        nav_row.append(InlineKeyboardButton(
+            text=" ", callback_data=f"{prefix}:noop"
+        ))
+
+    buttons.append(nav_row)
+```
+
+### 15.3 MC-метод по операции
+
+| Операция | MC-метод | Пример |
+|----------|----------|--------|
+| Первый показ списка | `mc.show_inline_readonly()` | Reply → список |
+| Смена страницы | `mc.edit_inline()` | callback → edit in place |
+| Просмотр / удаление / подтверждение | `mc.edit_inline()` | callback → edit in place |
+| Возврат в Reply-меню | `mc.back_to_reply()` | кнопка «Назад» |
+
+### 15.4 Запрещённые паттерны
+
+| Паттерн | Проблема | Файлы (текущее состояние) |
+|---------|----------|--------------------------|
+| Emoji `◀️`/`▶️` вместо i18n | Нарушает единый стиль, не переводится | locations, specialists, specialists_edit, rooms, rooms_edit, clients_booking, clients_bookings_list, clients_find, clients_sell_package, clients_wallets, schedule_overrides, client/booking, client/my_bookings |
+| Переменное кол-во кнопок (1-2) | Кнопки прыгают, нет счётчика страниц | packages, packages_edit |
+| Отсутствие счётчика `page/total` | Пользователь не знает кол-во страниц | packages, packages_edit |
+| `callback.message.edit_text()` напрямую | Обходит MC, теряет трекинг | booking_edit (~9), client/booking (~6), locations_edit (~3), specialists (~12), locations (~3), booking_notify (~2), packages_edit (~3), specialists_edit (~5), rooms_edit (~2), rooms (~4), services (~2) |
+
+### 15.5 Чеклист миграции
+
+**Emoji → i18n** (заменить `◀️`/`▶️` на `t("common:prev/next", lang)`):
+
+- [ ] `flows/admin/locations.py`
+- [ ] `flows/admin/specialists.py`
+- [ ] `flows/admin/specialists_edit.py`
+- [ ] `flows/admin/rooms.py`
+- [ ] `flows/admin/rooms_edit.py`
+- [ ] `flows/admin/clients_booking.py`
+- [ ] `flows/admin/clients_bookings_list.py`
+- [ ] `flows/admin/clients_find.py`
+- [ ] `flows/admin/clients_sell_package.py`
+- [ ] `flows/admin/clients_wallets.py`
+- [ ] `flows/admin/schedule_overrides.py`
+- [ ] `flows/client/booking.py`
+- [ ] `flows/client/my_bookings.py`
+
+**Variable buttons → 3 фиксированных** (добавить disabled + counter):
+
+- [ ] `flows/admin/packages.py` (list + create)
+- [ ] `flows/admin/packages_edit.py`
+
+**`callback.message.edit_text()` → `mc.edit_inline()`** (~54 места):
+
+- [ ] `flows/common/booking_edit.py` (~9)
+- [ ] `flows/client/booking.py` (~6)
+- [ ] `flows/admin/locations.py` (~3)
+- [ ] `flows/admin/locations_edit.py` (~3)
+- [ ] `flows/admin/specialists.py` (~12)
+- [ ] `flows/admin/specialists_edit.py` (~5)
+- [ ] `flows/admin/rooms.py` (~4)
+- [ ] `flows/admin/rooms_edit.py` (~2)
+- [ ] `flows/admin/packages_edit.py` (~3)
+- [ ] `flows/admin/booking_notify.py` (~2)
+- [ ] `flows/admin/services.py` (~2)
+- [ ] `flows/admin/schedule_bookings.py` (проверить)
+
+---
+
+## 16. История изменений
 
 | Версия | Дата       | Изменения                                    |
 | ------ | ---------- | -------------------------------------------- |
@@ -379,4 +607,5 @@ bot/app/
 | 2.0    | 2024-12-26 | ZWS не работает, is_persistent обязателен    |
 | 2.1    | 2024-12-28 | Type B разделён на B1 (readonly) и B2 (input)|
 | 2.2    | 2024-12-28 | Добавлен edit_inline_input для редактирования|
+| 3.0    | 2026-02-15 | Правила удаления, якорь, inline cleanup, единая пагинация, чеклист миграции |
 

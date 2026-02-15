@@ -17,15 +17,17 @@ EDIT-FSM for Rooms (admin).
 
 import logging
 import math
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
-from bot.app.utils.state import user_lang
-from bot.app.utils.api import api
+from bot.app.i18n.loader import DEFAULT_LANG, t, t_all
 from bot.app.keyboards.admin import admin_rooms
+from bot.app.utils.api import api
+from bot.app.utils.pagination import build_nav_row
+from bot.app.utils.state import user_lang
 
 logger = logging.getLogger(__name__)
 PAGE_SIZE = 5
@@ -125,37 +127,9 @@ def services_edit_multiselect_inline(
         ])
 
     # Пагинация
-    if total_pages > 1:
-        nav_row = []
-
-        if page > 0:
-            nav_row.append(InlineKeyboardButton(
-                text="◀️",
-                callback_data=f"room:svc_page:{room_id}:{page - 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="room:noop"
-            ))
-
-        nav_row.append(InlineKeyboardButton(
-            text=f"{page + 1}/{total_pages}",
-            callback_data="room:noop"
-        ))
-
-        if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(
-                text="▶️",
-                callback_data=f"room:svc_page:{room_id}:{page + 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="room:noop"
-            ))
-
-        buttons.append(nav_row)
+    nav = build_nav_row(page, total_pages, f"room:svc_page:{room_id}:{{p}}", "room:noop", lang)
+    if nav:
+        buttons.append(nav)
 
     # Сохранить (с количеством)
     count = len(active_service_ids)
@@ -495,7 +469,7 @@ def setup(mc, get_user_role):
         text = t("admin:room:services_title", lang)
         kb = services_edit_multiselect_inline(services, active_ids, room_id, lang)
 
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
 
     @router.callback_query(F.data.startswith("room:svc_page:"), RoomEdit.services)
@@ -512,7 +486,7 @@ def setup(mc, get_user_role):
         text = t("admin:room:services_title", lang)
         kb = services_edit_multiselect_inline(services, active_ids, room_id, lang, page=page)
 
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
 
     @router.callback_query(F.data.startswith("room:svc_save:"), RoomEdit.services)

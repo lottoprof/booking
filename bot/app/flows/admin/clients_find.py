@@ -6,12 +6,14 @@ bot/app/flows/admin/clients_find.py
 
 import logging
 from datetime import datetime
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.i18n.loader import DEFAULT_LANG, t
+from bot.app.utils.pagination import build_nav_row
 from bot.app.utils.state import user_lang
 
 logger = logging.getLogger(__name__)
@@ -79,13 +81,8 @@ def kb_search_results(users: list, page: int, total: int, lang: str) -> InlineKe
         )])
     
     total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
-    if total_pages > 1:
-        nav = []
-        if page > 0:
-            nav.append(InlineKeyboardButton(text="◀️", callback_data=f"client:page:{page-1}"))
-        nav.append(InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="client:noop"))
-        if page < total_pages - 1:
-            nav.append(InlineKeyboardButton(text="▶️", callback_data=f"client:page:{page+1}"))
+    nav = build_nav_row(page, total_pages, "client:page:{p}", "client:noop", lang)
+    if nav:
         rows.append(nav)
     
     rows.append([

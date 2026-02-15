@@ -19,15 +19,16 @@ import logging
 import math
 from typing import Any
 
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
-from bot.app.utils.state import user_lang
-from bot.app.utils.api import api
+from bot.app.i18n.loader import DEFAULT_LANG, t, t_all
 from bot.app.keyboards.admin import admin_packages
+from bot.app.utils.api import api
+from bot.app.utils.pagination import build_nav_row
+from bot.app.utils.state import user_lang
 
 logger = logging.getLogger(__name__)
 
@@ -126,12 +127,7 @@ def pkg_items_multiselect_inline(
             InlineKeyboardButton(text=f"{mark}{name}", callback_data=f"pkg_edit:svc:{pkg_id}:{sid}")
         ])
 
-    nav: list[InlineKeyboardButton] = []
-    if pages > 1:
-        if page > 0:
-            nav.append(InlineKeyboardButton(text=t("common:prev", lang), callback_data=f"pkg_edit:page:{pkg_id}:{page-1}"))
-        if page < pages - 1:
-            nav.append(InlineKeyboardButton(text=t("common:next", lang), callback_data=f"pkg_edit:page:{pkg_id}:{page+1}"))
+    nav = build_nav_row(page, pages, f"pkg_edit:page:{pkg_id}:{{p}}", "pkg_edit:noop", lang)
     if nav:
         rows.append(nav)
 
@@ -147,7 +143,7 @@ def pkg_items_multiselect_inline(
 # Public entry
 # ==============================================================
 
-async def start_package_edit(callback: CallbackQuery, state: FSMContext, pkg_id: int):
+async def start_package_edit(mc, callback: CallbackQuery, state: FSMContext, pkg_id: int):
     lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
     await state.clear()
@@ -155,7 +151,7 @@ async def start_package_edit(callback: CallbackQuery, state: FSMContext, pkg_id:
 
     # show edit menu
     await state.set_state(None)  # menu state-free (как в specialists_edit)
-    await callback.message.edit_text(t("admin:package:edit_title", lang), reply_markup=pkg_edit_inline(pkg_id, lang))
+    await mc.edit_inline(callback.message, t("admin:package:edit_title", lang), pkg_edit_inline(pkg_id, lang))
 
 
 # ==============================================================
@@ -199,7 +195,7 @@ def setup(mc, get_user_role):
         if data.get("pkg_id") != pkg_id:
             await state.update_data(pkg_id=pkg_id, changes={})
 
-        await callback.message.edit_text(t("admin:package:edit_title", lang), reply_markup=pkg_edit_inline(pkg_id, lang))
+        await mc.edit_inline(callback.message, t("admin:package:edit_title", lang), pkg_edit_inline(pkg_id, lang))
         await callback.answer()
 
     # ==========================================================
@@ -474,7 +470,11 @@ def setup(mc, get_user_role):
         await state.update_data(changes={})
 
         # back to view
-        await callback.message.edit_text(t("admin:package:saved", lang), reply_markup=pkg_edit_inline(pkg_id, lang))
+        await mc.edit_inline(callback.message, t("admin:package:saved", lang), pkg_edit_inline(pkg_id, lang))
+        await callback.answer()
+
+    @router.callback_query(F.data == "pkg_edit:noop")
+    async def pkg_edit_noop(callback: CallbackQuery):
         await callback.answer()
 
     logger.info("=== packages_edit router configured ===")

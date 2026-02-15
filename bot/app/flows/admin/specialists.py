@@ -12,36 +12,40 @@ EDIT вынесен в specialists_edit.py (делегирование).
 - делегирование EDIT
 """
 
-import logging
 import json
+import logging
 import math
-from aiogram import Router, F
-from aiogram.types import (
-    Message,
-    CallbackQuery,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-)
+
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 
-from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
-from bot.app.utils.state import user_lang
+from bot.app.i18n.loader import DEFAULT_LANG, t, t_all
+from bot.app.keyboards.admin import admin_specialists
+from bot.app.keyboards.schedule import (
+    schedule_day_edit_inline,
+    schedule_days_inline,
+)
 from bot.app.utils.api import api
+from bot.app.utils.pagination import build_nav_row
 from bot.app.utils.schedule_helper import (
-    default_schedule,
-    parse_time_input,
+    default_schedule,  # noqa: F401
     format_day_value,
     format_schedule_compact,
+    parse_time_input,
 )
-from bot.app.keyboards.schedule import (
-    schedule_days_inline,
-    schedule_day_edit_inline,
-)
-from bot.app.keyboards.admin import admin_specialists
+from bot.app.utils.state import user_lang
+
+from .specialists_edit import setup as setup_edit
 
 # EDIT entry point
-from .specialists_edit import start_specialist_edit, setup as setup_edit
+from .specialists_edit import start_specialist_edit
 
 logger = logging.getLogger(__name__)
 
@@ -154,37 +158,9 @@ def users_select_inline(
         ])
     
     # Пагинация
-    if total_pages > 1:
-        nav_row = []
-        
-        if page > 0:
-            nav_row.append(InlineKeyboardButton(
-                text="◀️",
-                callback_data=f"spec_create:user_page:{page - 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="spec_create:noop"
-            ))
-        
-        nav_row.append(InlineKeyboardButton(
-            text=f"{page + 1}/{total_pages}",
-            callback_data="spec_create:noop"
-        ))
-        
-        if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(
-                text="▶️",
-                callback_data=f"spec_create:user_page:{page + 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="spec_create:noop"
-            ))
-        
-        buttons.append(nav_row)
+    nav = build_nav_row(page, total_pages, "spec_create:user_page:{p}", "spec_create:noop", lang)
+    if nav:
+        buttons.append(nav)
     
     # Отмена
     buttons.append([
@@ -247,37 +223,9 @@ def services_multiselect_inline(
         ])
     
     # Пагинация
-    if total_pages > 1:
-        nav_row = []
-        
-        if page > 0:
-            nav_row.append(InlineKeyboardButton(
-                text="◀️",
-                callback_data=f"{prefix}:svc_page:{page - 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data=f"{prefix}:noop"
-            ))
-        
-        nav_row.append(InlineKeyboardButton(
-            text=f"{page + 1}/{total_pages}",
-            callback_data=f"{prefix}:noop"
-        ))
-        
-        if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(
-                text="▶️",
-                callback_data=f"{prefix}:svc_page:{page + 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data=f"{prefix}:noop"
-            ))
-        
-        buttons.append(nav_row)
+    nav = build_nav_row(page, total_pages, f"{prefix}:svc_page:{{p}}", f"{prefix}:noop", lang)
+    if nav:
+        buttons.append(nav)
     
     # Готово (с количеством)
     count = len(selected_ids)
@@ -333,37 +281,9 @@ def specialists_list_inline(
         ])
     
     # Пагинация
-    if total_pages > 1:
-        nav_row = []
-        
-        if page > 0:
-            nav_row.append(InlineKeyboardButton(
-                text="◀️",
-                callback_data=f"spec:page:{page - 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="spec:noop"
-            ))
-        
-        nav_row.append(InlineKeyboardButton(
-            text=f"{page + 1}/{total_pages}",
-            callback_data="spec:noop"
-        ))
-        
-        if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(
-                text="▶️",
-                callback_data=f"spec:page:{page + 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="spec:noop"
-            ))
-        
-        buttons.append(nav_row)
+    nav = build_nav_row(page, total_pages, "spec:page:{p}", "spec:noop", lang)
+    if nav:
+        buttons.append(nav)
     
     # Назад
     buttons.append([
@@ -765,7 +685,7 @@ def setup(mc, get_user_role):
         text = f"{t('admin:specialist:create_title', lang)}\n\n{t('admin:specialist:select_user', lang)}"
         kb = users_select_inline(users, existing_user_ids, lang, page=page)
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     # ---- search phone button
@@ -778,7 +698,7 @@ def setup(mc, get_user_role):
         text = t("admin:specialist:enter_phone", lang)
         kb = search_back_inline(lang)
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     # ---- search phone input
@@ -843,7 +763,7 @@ def setup(mc, get_user_role):
         text = f"{t('admin:specialist:create_title', lang)}\n\n{t('admin:specialist:select_user', lang)}"
         kb = users_select_inline(users, existing_user_ids, lang)
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     # ---- user selected
@@ -877,7 +797,7 @@ def setup(mc, get_user_role):
         text = build_progress_text(data, lang, "admin:specialist:enter_display_name")
         kb = specialist_skip_inline(lang)
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     # ---- display_name skip
@@ -893,7 +813,7 @@ def setup(mc, get_user_role):
         text = build_progress_text(data, lang, "admin:specialist:enter_description")
         kb = specialist_skip_inline(lang)
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     # ---- display_name input
@@ -926,7 +846,7 @@ def setup(mc, get_user_role):
         text = build_progress_text(data, lang, "admin:specialist:select_services")
         kb = services_multiselect_inline(services, selected, lang)
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     # ---- description input
@@ -967,7 +887,7 @@ def setup(mc, get_user_role):
         text = build_progress_text(data, lang, "admin:specialist:select_services")
         kb = services_multiselect_inline(services, selected, lang)
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     # ---- services page
@@ -983,7 +903,7 @@ def setup(mc, get_user_role):
         text = build_progress_text(data, lang, "admin:specialist:select_services")
         kb = services_multiselect_inline(services, selected, lang, page=page)
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     @router.callback_query(F.data == "spec_create:noop")
@@ -1008,7 +928,7 @@ def setup(mc, get_user_role):
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="spec_sched")
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     # ==========================================================
@@ -1035,7 +955,7 @@ def setup(mc, get_user_role):
         )
         
         kb = schedule_day_edit_inline(day, schedule, lang, prefix="spec_sched")
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     @router.message(SpecialistCreate.schedule_day)
@@ -1081,7 +1001,7 @@ def setup(mc, get_user_role):
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="spec_sched")
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     @router.callback_query(F.data == "spec_sched:back")
@@ -1096,7 +1016,7 @@ def setup(mc, get_user_role):
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="spec_sched")
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     # ---- schedule save → CREATE SPECIALIST

@@ -5,10 +5,12 @@ bot/app/flows/admin/clients_bookings_list.py
 """
 
 import math
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from aiogram import F, Router
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+
+from bot.app.i18n.loader import DEFAULT_LANG, t
+from bot.app.utils.pagination import build_nav_row
 from bot.app.utils.state import user_lang
 
 PAGE_SIZE = 5
@@ -38,17 +40,8 @@ def kb_bookings_list(bookings: list, page: int, lang: str) -> InlineKeyboardMark
         )])
 
     # Навигация
-    if total_pages > 1:
-        nav = []
-        if page > 0:
-            nav.append(InlineKeyboardButton(text="◀️", callback_data=f"clbook:page:{page-1}"))
-        else:
-            nav.append(InlineKeyboardButton(text=" ", callback_data="clbook:noop"))
-        nav.append(InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="clbook:noop"))
-        if page < total_pages - 1:
-            nav.append(InlineKeyboardButton(text="▶️", callback_data=f"clbook:page:{page+1}"))
-        else:
-            nav.append(InlineKeyboardButton(text=" ", callback_data="clbook:noop"))
+    nav = build_nav_row(page, total_pages, "clbook:page:{p}", "clbook:noop", lang)
+    if nav:
         rows.append(nav)
 
     rows.append([InlineKeyboardButton(text=t("common:back", lang), callback_data="clbook:back")])

@@ -7,15 +7,15 @@ Syncs all bookings across all locations to admin's Google Calendar.
 """
 
 import logging
-from aiogram import Router
-from aiogram.types import Message, CallbackQuery
-from aiogram.fsm.context import FSMContext
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from aiogram import Router
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+
+from bot.app.i18n.loader import DEFAULT_LANG, t
+from bot.app.keyboards.admin import admin_settings  # noqa: F401
 from bot.app.utils.api import api
 from bot.app.utils.state import user_lang
-from bot.app.keyboards.admin import admin_settings
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 logger = logging.getLogger(__name__)
 

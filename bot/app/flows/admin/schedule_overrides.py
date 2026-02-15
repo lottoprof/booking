@@ -4,16 +4,18 @@ bot/app/flows/admin/schedule_overrides.py
 Изменение расписания локации/специалиста через calendar_override.
 """
 
-import re
-import math
 import logging
-from datetime import datetime, date, timedelta
-from aiogram import Router, F
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
+import math
+import re
+from datetime import date, datetime, timedelta
+
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.i18n.loader import DEFAULT_LANG, t
+from bot.app.utils.pagination import build_nav_row
 from bot.app.utils.state import user_lang
 
 logger = logging.getLogger(__name__)
@@ -148,26 +150,8 @@ def kb_locations_list(locations: list[dict], lang: str, page: int = 0) -> Inline
         )])
 
     # Навигация если >5 локаций
-    if total_pages > 1:
-        nav = []
-        if page > 0:
-            nav.append(InlineKeyboardButton(
-                text="◀️",
-                callback_data=f"schovr:locpage:{page-1}"
-            ))
-        else:
-            nav.append(InlineKeyboardButton(text=" ", callback_data="schovr:noop"))
-        nav.append(InlineKeyboardButton(
-            text=f"{page+1}/{total_pages}",
-            callback_data="schovr:noop"
-        ))
-        if page < total_pages - 1:
-            nav.append(InlineKeyboardButton(
-                text="▶️",
-                callback_data=f"schovr:locpage:{page+1}"
-            ))
-        else:
-            nav.append(InlineKeyboardButton(text=" ", callback_data="schovr:noop"))
+    nav = build_nav_row(page, total_pages, "schovr:locpage:{p}", "schovr:noop", lang)
+    if nav:
         rows.append(nav)
 
     rows.append([InlineKeyboardButton(
@@ -193,26 +177,8 @@ def kb_specialists_list(specialists: list[dict], lang: str, page: int = 0) -> In
         )])
 
     # Навигация если >5 специалистов
-    if total_pages > 1:
-        nav = []
-        if page > 0:
-            nav.append(InlineKeyboardButton(
-                text="◀️",
-                callback_data=f"schovr:specpage:{page-1}"
-            ))
-        else:
-            nav.append(InlineKeyboardButton(text=" ", callback_data="schovr:noop"))
-        nav.append(InlineKeyboardButton(
-            text=f"{page+1}/{total_pages}",
-            callback_data="schovr:noop"
-        ))
-        if page < total_pages - 1:
-            nav.append(InlineKeyboardButton(
-                text="▶️",
-                callback_data=f"schovr:specpage:{page+1}"
-            ))
-        else:
-            nav.append(InlineKeyboardButton(text=" ", callback_data="schovr:noop"))
+    nav = build_nav_row(page, total_pages, "schovr:specpage:{p}", "schovr:noop", lang)
+    if nav:
         rows.append(nav)
 
     rows.append([InlineKeyboardButton(
@@ -281,27 +247,9 @@ def kb_week_calendar(
     for i in range(0, len(buttons), 2):
         rows.append(buttons[i:i+2])
 
-    # Навигация ◀️ page/total ▶️
-    if total_pages > 1:
-        nav = []
-        if page > 0:
-            nav.append(InlineKeyboardButton(
-                text="◀️",
-                callback_data=f"schovr:page:{target_type}:{target_id}:{page-1}"
-            ))
-        else:
-            nav.append(InlineKeyboardButton(text=" ", callback_data="schovr:noop"))
-        nav.append(InlineKeyboardButton(
-            text=f"{page+1}/{total_pages}",
-            callback_data="schovr:noop"
-        ))
-        if page < total_pages - 1:
-            nav.append(InlineKeyboardButton(
-                text="▶️",
-                callback_data=f"schovr:page:{target_type}:{target_id}:{page+1}"
-            ))
-        else:
-            nav.append(InlineKeyboardButton(text=" ", callback_data="schovr:noop"))
+    # Навигация
+    nav = build_nav_row(page, total_pages, f"schovr:page:{target_type}:{target_id}:{{p}}", "schovr:noop", lang)
+    if nav:
         rows.append(nav)
 
     # Кнопка "Назад"

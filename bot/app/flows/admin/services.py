@@ -13,19 +13,22 @@ EDIT вынесен в services_edit.py (делегирование).
 """
 
 import logging
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-
-from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
-from bot.app.utils.state import user_lang
-from bot.app.utils.api import api
-from bot.app.keyboards.admin import admin_services
 import math
 
+from aiogram import F, Router
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
+
+from bot.app.i18n.loader import DEFAULT_LANG, t, t_all
+from bot.app.keyboards.admin import admin_services
+from bot.app.utils.api import api
+from bot.app.utils.state import user_lang
+
+from .services_edit import setup as setup_edit
+
 # EDIT entry point
-from .services_edit import start_service_edit, setup as setup_edit
+from .services_edit import start_service_edit
 
 logger = logging.getLogger(__name__)
 PAGE_SIZE = 5
@@ -532,10 +535,7 @@ def setup(mc, get_user_role):
         await state.set_state(ServiceCreate.duration)
 
         data = await state.get_data()
-        await callback.message.edit_text(
-            build_progress_text(data, lang, "admin:service:enter_duration"),
-            reply_markup=service_cancel_inline(lang),
-        )
+        await mc.edit_inline(callback.message, build_progress_text(data, lang, "admin:service:enter_duration"), service_cancel_inline(lang))
         await callback.answer()
 
     @router.message(ServiceCreate.description)
@@ -583,10 +583,7 @@ def setup(mc, get_user_role):
         await state.set_state(ServiceCreate.price)
 
         data = await state.get_data()
-        await callback.message.edit_text(
-            build_progress_text(data, lang, "admin:service:enter_price"),
-            reply_markup=service_cancel_inline(lang),
-        )
+        await mc.edit_inline(callback.message, build_progress_text(data, lang, "admin:service:enter_price"), service_cancel_inline(lang))
         await callback.answer()
 
     @router.message(ServiceCreate.break_min)

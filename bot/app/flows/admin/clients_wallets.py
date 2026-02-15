@@ -6,12 +6,14 @@ bot/app/flows/admin/clients_wallets.py
 
 import logging
 from datetime import datetime
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.i18n.loader import DEFAULT_LANG, t
+from bot.app.utils.pagination import build_nav_row
 from bot.app.utils.state import user_lang
 
 logger = logging.getLogger(__name__)
@@ -116,13 +118,8 @@ def kb_history(txs: list, user_id: int, page: int, total: int, lang: str) -> Inl
     rows = []
     
     total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
-    if total_pages > 1:
-        nav = []
-        if page > 0:
-            nav.append(InlineKeyboardButton(text="◀️", callback_data=f"wallet:hist:{user_id}:{page-1}"))
-        nav.append(InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="wallet:noop"))
-        if page < total_pages - 1:
-            nav.append(InlineKeyboardButton(text="▶️", callback_data=f"wallet:hist:{user_id}:{page+1}"))
+    nav = build_nav_row(page, total_pages, f"wallet:hist:{user_id}:{{p}}", "wallet:noop", lang)
+    if nav:
         rows.append(nav)
     
     rows.append([InlineKeyboardButton(text=t("admin:wallet:to_card", lang), callback_data=f"client:view:{user_id}")])

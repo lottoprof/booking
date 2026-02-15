@@ -8,11 +8,13 @@ Callback-based flow (без FSM states).
 import logging
 import math
 from datetime import datetime, timedelta
-from aiogram import Router, F
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.fsm.context import FSMContext
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from aiogram import F, Router
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
+
+from bot.app.i18n.loader import DEFAULT_LANG, t
+from bot.app.utils.pagination import build_nav_row
 from bot.app.utils.state import user_lang
 
 logger = logging.getLogger(__name__)
@@ -54,13 +56,8 @@ def kb_services_list(services: list, page: int, total: int, user_id: int, lang: 
         )])
 
     total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
-    if total_pages > 1:
-        nav = []
-        if page > 0:
-            nav.append(InlineKeyboardButton(text="◀️", callback_data=f"adminbook:svc_page:{user_id}:{page-1}"))
-        nav.append(InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="adminbook:noop"))
-        if page < total_pages - 1:
-            nav.append(InlineKeyboardButton(text="▶️", callback_data=f"adminbook:svc_page:{user_id}:{page+1}"))
+    nav = build_nav_row(page, total_pages, f"adminbook:svc_page:{user_id}:{{p}}", "adminbook:noop", lang)
+    if nav:
         rows.append(nav)
 
     rows.append([InlineKeyboardButton(text=t("common:cancel", lang), callback_data=f"client:view:{user_id}")])
@@ -100,18 +97,9 @@ def kb_days_calendar(days: list, page: int, user_id: int, lang: str) -> InlineKe
     if row:
         buttons.append(row)
 
-    if total_pages > 1:
-        nav_row = []
-        if page > 0:
-            nav_row.append(InlineKeyboardButton(text="◀️", callback_data=f"adminbook:day_page:{user_id}:{page-1}"))
-        else:
-            nav_row.append(InlineKeyboardButton(text=" ", callback_data="adminbook:noop"))
-        nav_row.append(InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="adminbook:noop"))
-        if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(text="▶️", callback_data=f"adminbook:day_page:{user_id}:{page+1}"))
-        else:
-            nav_row.append(InlineKeyboardButton(text=" ", callback_data="adminbook:noop"))
-        buttons.append(nav_row)
+    nav = build_nav_row(page, total_pages, f"adminbook:day_page:{user_id}:{{p}}", "adminbook:noop", lang)
+    if nav:
+        buttons.append(nav)
 
     buttons.append([InlineKeyboardButton(text=t("common:back", lang), callback_data=f"adminbook:start:{user_id}")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -144,18 +132,9 @@ def kb_time_slots(slots: list, page: int, user_id: int, lang: str) -> InlineKeyb
     if row:
         buttons.append(row)
 
-    if total_pages > 1:
-        nav_row = []
-        if page > 0:
-            nav_row.append(InlineKeyboardButton(text="◀️", callback_data=f"adminbook:time_page:{user_id}:{page-1}"))
-        else:
-            nav_row.append(InlineKeyboardButton(text=" ", callback_data="adminbook:noop"))
-        nav_row.append(InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="adminbook:noop"))
-        if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(text="▶️", callback_data=f"adminbook:time_page:{user_id}:{page+1}"))
-        else:
-            nav_row.append(InlineKeyboardButton(text=" ", callback_data="adminbook:noop"))
-        buttons.append(nav_row)
+    nav = build_nav_row(page, total_pages, f"adminbook:time_page:{user_id}:{{p}}", "adminbook:noop", lang)
+    if nav:
+        buttons.append(nav)
 
     buttons.append([InlineKeyboardButton(text=t("common:back", lang), callback_data=f"adminbook:back_day:{user_id}")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -581,7 +560,14 @@ def setup(menu_controller, api):
         )
 
         # Возврат к карточке клиента
-        from bot.app.flows.admin.clients_find import kb_client_card, _format_name, _format_phone, _format_date, _format_balance, _role_name
+        from bot.app.flows.admin.clients_find import (
+            _format_balance,
+            _format_date,
+            _format_name,
+            _format_phone,
+            _role_name,
+            kb_client_card,
+        )
 
         user = await api.get_user(user_id)
         if not user:

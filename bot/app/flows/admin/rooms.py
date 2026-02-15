@@ -13,18 +13,28 @@ EDIT вынесен в rooms_edit.py (делегирование).
 
 import logging
 import math
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    Message,
+    ReplyKeyboardMarkup,
+)
 
-from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
-from bot.app.utils.state import user_lang
+from bot.app.i18n.loader import DEFAULT_LANG, t, t_all
 from bot.app.utils.api import api
-from bot.app.keyboards.admin import admin_rooms
+from bot.app.utils.pagination import build_nav_row
+from bot.app.utils.state import user_lang
+
+from .rooms_edit import setup as setup_edit
 
 # EDIT entry point
-from .rooms_edit import start_room_edit, setup as setup_edit
+from .rooms_edit import start_room_edit
 
 logger = logging.getLogger(__name__)
 PAGE_SIZE = 5
@@ -130,37 +140,9 @@ def services_multiselect_inline(
         ])
 
     # Пагинация
-    if total_pages > 1:
-        nav_row = []
-
-        if page > 0:
-            nav_row.append(InlineKeyboardButton(
-                text="◀️",
-                callback_data=f"{prefix}:svc_page:{page - 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data=f"{prefix}:noop"
-            ))
-
-        nav_row.append(InlineKeyboardButton(
-            text=f"{page + 1}/{total_pages}",
-            callback_data=f"{prefix}:noop"
-        ))
-
-        if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(
-                text="▶️",
-                callback_data=f"{prefix}:svc_page:{page + 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data=f"{prefix}:noop"
-            ))
-
-        buttons.append(nav_row)
+    nav = build_nav_row(page, total_pages, f"{prefix}:svc_page:{{p}}", f"{prefix}:noop", lang)
+    if nav:
+        buttons.append(nav)
 
     # Готово (с количеством)
     count = len(selected_ids)
@@ -212,37 +194,9 @@ def rooms_list_inline(
         ])
 
     # Пагинация
-    if total_pages > 1:
-        nav_row = []
-
-        if page > 0:
-            nav_row.append(InlineKeyboardButton(
-                text="◀️",
-                callback_data=f"room:page:{page - 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="room:noop"
-            ))
-
-        nav_row.append(InlineKeyboardButton(
-            text=f"{page + 1}/{total_pages}",
-            callback_data="room:noop"
-        ))
-
-        if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(
-                text="▶️",
-                callback_data=f"room:page:{page + 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="room:noop"
-            ))
-
-        buttons.append(nav_row)
+    nav = build_nav_row(page, total_pages, "room:page:{p}", "room:noop", lang)
+    if nav:
+        buttons.append(nav)
 
     # Назад
     buttons.append([
@@ -297,9 +251,6 @@ def room_delete_confirm_inline(room_id: int, lang: str) -> InlineKeyboardMarkup:
 # ==============================================================
 # Reply keyboard
 # ==============================================================
-
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-
 
 def admin_rooms(lang: str) -> ReplyKeyboardMarkup:
     """Меню комнат."""
@@ -617,7 +568,7 @@ def setup(mc, get_user_role):
         data = await state.get_data()
         text = build_progress_text(data, lang, "admin:room:enter_name")
 
-        await callback.message.edit_text(text, reply_markup=room_cancel_inline(lang))
+        await mc.edit_inline(callback.message, text, room_cancel_inline(lang))
         await callback.answer()
 
     # ---- name
@@ -656,7 +607,7 @@ def setup(mc, get_user_role):
         text = build_progress_text(data, lang, "admin:room:select_services")
         kb = services_multiselect_inline(services, selected, lang)
 
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
 
     @router.message(RoomCreate.notes)
@@ -695,7 +646,7 @@ def setup(mc, get_user_role):
         text = build_progress_text(data, lang, "admin:room:select_services")
         kb = services_multiselect_inline(services, selected, lang)
 
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
 
     # ---- services page
@@ -711,7 +662,7 @@ def setup(mc, get_user_role):
         text = build_progress_text(data, lang, "admin:room:select_services")
         kb = services_multiselect_inline(services, selected, lang, page=page)
 
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
 
     @router.callback_query(F.data == "room_create:noop")

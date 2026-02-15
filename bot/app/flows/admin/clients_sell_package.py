@@ -6,11 +6,13 @@ bot/app/flows/admin/clients_sell_package.py
 
 import logging
 from datetime import datetime, timedelta
-from aiogram import Router, F
-from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.fsm.context import FSMContext
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from aiogram import F, Router
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
+
+from bot.app.i18n.loader import DEFAULT_LANG, t
+from bot.app.utils.pagination import build_nav_row
 from bot.app.utils.state import user_lang
 
 logger = logging.getLogger(__name__)
@@ -48,13 +50,8 @@ def kb_packages_list(packages: list, page: int, total: int, user_id: int, lang: 
         )])
 
     total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
-    if total_pages > 1:
-        nav = []
-        if page > 0:
-            nav.append(InlineKeyboardButton(text="◀️", callback_data=f"sellpkg:page:{user_id}:{page-1}"))
-        nav.append(InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="sellpkg:noop"))
-        if page < total_pages - 1:
-            nav.append(InlineKeyboardButton(text="▶️", callback_data=f"sellpkg:page:{user_id}:{page+1}"))
+    nav = build_nav_row(page, total_pages, f"sellpkg:page:{user_id}:{{p}}", "sellpkg:noop", lang)
+    if nav:
         rows.append(nav)
 
     rows.append([InlineKeyboardButton(text=t("common:back", lang), callback_data=f"client:view:{user_id}")])
@@ -241,7 +238,14 @@ def setup(menu_controller, api):
             await callback.answer()
             return
 
-        from bot.app.flows.admin.clients_find import kb_client_card, _format_name, _format_phone, _format_date, _format_balance, _role_name
+        from bot.app.flows.admin.clients_find import (
+            _format_balance,
+            _format_date,
+            _format_name,
+            _format_phone,
+            _role_name,
+            kb_client_card,
+        )
 
         name = _format_name(user)
         stats = await api.get_user_stats(user_id) or {}

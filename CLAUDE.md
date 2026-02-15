@@ -102,6 +102,14 @@ SQLite stored at `data/sqlite/booking.db`. Key tables:
 - `bookings` - Reservations with fixed duration/break at creation time
 - `calendar_overrides` - Schedule exceptions
 
+## Quality Gate
+
+After any code changes: `ruff check .`
+Before marking task as done: `pyright`
+Before commit/push: `pytest`
+
+Tools: **Ruff** (linting), **Black** (formatting), **Pyright** (type checking). Venv: `source venv/bin/activate`.
+
 ## Code Patterns
 
 - SQL queries are manual via aiosqlite (not full ORM)
@@ -134,6 +142,8 @@ button = InlineKeyboardButton(text=t("common:yes", lang), callback_data="...")
 
 ### MenuController — Bot Keyboard Navigation
 
+> **Полный контракт:** `docs/tg_kbrd.md` (v3.0). Перед любой работой с клавиатурами бота — **прочитай контракт целиком**. Ниже — краткая выжимка.
+
 **Always use `MenuController`** (`bot/app/utils/menucontroller.py`) for sending and managing Telegram keyboards. Never call `bot.send_message()` with `reply_markup` directly in handlers — use the controller methods instead.
 
 Key methods:
@@ -147,6 +157,11 @@ Key methods:
 - `mc.reset(chat_id)` — full navigation reset (for /start)
 
 MenuController tracks message IDs in Redis (`tg:menu:{chat_id}`, `tg:inline:{chat_id}`) to properly clean up old messages.
+
+**Strict prohibitions** (see `docs/tg_kbrd.md` §12 for full list):
+- Never call `callback.message.edit_text()` or `callback.message.edit_reply_markup()` directly — use `mc.edit_inline()`
+- Never use hardcoded emoji (`◀️`/`▶️`) for pagination — use `t("common:prev", lang)` / `t("common:next", lang)`
+- Pagination must always have exactly 3 buttons: `[prev | page/total | next]` with disabled = `" "` + noop (see `docs/tg_kbrd.md` §15)
 
 ### Architecture Boundaries
 

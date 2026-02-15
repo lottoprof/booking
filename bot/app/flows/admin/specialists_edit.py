@@ -16,27 +16,29 @@ EDIT-FSM for Specialists (admin).
 - Фото — заглушка (v2)
 """
 
-import logging
 import json
+import logging
 import math
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
-from bot.app.utils.state import user_lang
+from bot.app.i18n.loader import DEFAULT_LANG, t, t_all
+from bot.app.keyboards.schedule import (
+    schedule_day_edit_inline,
+    schedule_days_inline,
+)
 from bot.app.utils.api import api
+from bot.app.utils.pagination import build_nav_row
 from bot.app.utils.schedule_helper import (
-    parse_time_input,
+    default_schedule,
     format_day_value,
     format_schedule_compact,
-    default_schedule,
+    parse_time_input,
 )
-from bot.app.keyboards.schedule import (
-    schedule_days_inline,
-    schedule_day_edit_inline,
-)
+from bot.app.utils.state import user_lang
 
 logger = logging.getLogger(__name__)
 PAGE_SIZE = 5
@@ -144,37 +146,9 @@ def services_edit_multiselect_inline(
         ])
     
     # Пагинация
-    if total_pages > 1:
-        nav_row = []
-        
-        if page > 0:
-            nav_row.append(InlineKeyboardButton(
-                text="◀️",
-                callback_data=f"spec:svc_page:{spec_id}:{page - 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="spec:noop"
-            ))
-        
-        nav_row.append(InlineKeyboardButton(
-            text=f"{page + 1}/{total_pages}",
-            callback_data="spec:noop"
-        ))
-        
-        if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(
-                text="▶️",
-                callback_data=f"spec:svc_page:{spec_id}:{page + 1}"
-            ))
-        else:
-            nav_row.append(InlineKeyboardButton(
-                text=" ",
-                callback_data="spec:noop"
-            ))
-        
-        buttons.append(nav_row)
+    nav = build_nav_row(page, total_pages, f"spec:svc_page:{spec_id}:{{p}}", "spec:noop", lang)
+    if nav:
+        buttons.append(nav)
     
     # Сохранить (с количеством)
     count = len(active_service_ids)
@@ -477,7 +451,7 @@ def setup(mc, get_user_role):
     
     @router.callback_query(F.data.startswith("spec:edit_sched:"))
     async def edit_sched_start(callback: CallbackQuery, state: FSMContext):
-        spec_id = int(callback.data.split(":")[2])
+        spec_id = int(callback.data.split(":")[2])  # noqa: F841
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
         
         data = await state.get_data()
@@ -523,7 +497,7 @@ def setup(mc, get_user_role):
         )
         
         kb = schedule_day_edit_inline(day, schedule, lang, prefix="spec_edit_sched")
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     @router.message(SpecialistEdit.schedule_day)
@@ -567,7 +541,7 @@ def setup(mc, get_user_role):
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="spec_edit_sched")
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     @router.callback_query(F.data == "spec_edit_sched:back")
@@ -582,7 +556,7 @@ def setup(mc, get_user_role):
         text = t("schedule:title", lang)
         kb = schedule_days_inline(schedule, lang, prefix="spec_edit_sched")
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     @router.callback_query(F.data == "spec_edit_sched:save")
@@ -669,7 +643,7 @@ def setup(mc, get_user_role):
         text = t("admin:specialist:services_title", lang)
         kb = services_edit_multiselect_inline(services, active_ids, spec_id, lang)
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     @router.callback_query(F.data.startswith("spec:svc_page:"), SpecialistEdit.services)
@@ -686,7 +660,7 @@ def setup(mc, get_user_role):
         text = t("admin:specialist:services_title", lang)
         kb = services_edit_multiselect_inline(services, active_ids, spec_id, lang, page=page)
         
-        await callback.message.edit_text(text, reply_markup=kb)
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
     
     @router.callback_query(F.data.startswith("spec:svc_save:"), SpecialistEdit.services)

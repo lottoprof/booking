@@ -8,10 +8,9 @@ DEBUG VERSION - добавлено логирование для диагнос�
 import logging
 import os
 
-from aiogram.types import Message, ReplyKeyboardMarkup, InlineKeyboardMarkup
-from aiogram.exceptions import TelegramBadRequest
-
 import redis.asyncio as redis
+from aiogram.exceptions import TelegramBadRequest
+from aiogram.types import InlineKeyboardMarkup, Message, ReplyKeyboardMarkup
 
 logger = logging.getLogger(__name__)
 
@@ -345,9 +344,12 @@ class MenuController:
         callback_message: Message,
         text: str,
         kb: InlineKeyboardMarkup,
+        parse_mode: str | None = None,
     ) -> None:
         try:
-            await callback_message.edit_text(text=text, reply_markup=kb)
+            await callback_message.edit_text(
+                text=text, reply_markup=kb, parse_mode=parse_mode,
+            )
         except TelegramBadRequest:
             pass
 

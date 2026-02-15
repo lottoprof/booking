@@ -1,0 +1,25 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = [
+    "F541",   # f-string without placeholders — used for logging readability
+    "E402",   # module-level import not at top — load_dotenv() pattern
+    "E501",   # line too long — not auto-fixable, low priority
+]
+
+[tool.ruff.lint.per-file-ignores]
+"bot/app/flows/admin/*" = ["F811"]
+"bot/app/flows/client/*" = ["F401", "F811"]
+"bot/app/flows/specialist/*" = ["F401"]
+"bot/app/handlers/*" = ["F841"]
+"bot/app/utils/api.py" = ["F811"]
+"bot/app/events/*" = ["F401"]
+"backend/app/routers/*" = ["F401", "F811"]
+"backend/app/schemas/*" = ["F401"]
+"backend/app/services/*" = ["F401"]
+"gateway/app/*" = ["F401"]
+"scripts/*" = ["E401"]
+"tests/*" = ["F401"]
