@@ -131,6 +131,15 @@ def package_view_inline(pkg_id: int, lang: str) -> InlineKeyboardMarkup:
     ])
 
 
+def _svc_label(s: dict) -> str:
+    """Short service label: name[:6]… + description."""
+    name = s.get("name") or "?"
+    if len(name) > 6:
+        name = name[:6] + "…"
+    desc = s.get("description") or ""
+    return f"{name} {desc}".strip() if desc else name
+
+
 def pkg_create_services_inline(
     services: list[dict],
     selected_ids: set[int],
@@ -148,11 +157,11 @@ def pkg_create_services_inline(
 
     for s in chunk:
         sid = int(s["id"])
-        name = s.get("name") or "?"
+        label = _svc_label(s)
         mark = "✅ " if sid in selected_ids else ""
         rows.append([
             InlineKeyboardButton(
-                text=f"{mark}{name}",
+                text=f"{mark}{label}",
                 callback_data=f"pkg_create:svc:{sid}"
             )
         ])

@@ -161,6 +161,15 @@ def pkg_edit_clear_cancel_inline(pkg_id: int, lang: str) -> InlineKeyboardMarkup
     ])
 
 
+def _svc_label(s: dict) -> str:
+    """Short service label: name[:6]… + description."""
+    name = s.get("name") or "?"
+    if len(name) > 6:
+        name = name[:6] + "…"
+    desc = s.get("description") or ""
+    return f"{name} {desc}".strip() if desc else name
+
+
 def pkg_items_multiselect_inline(
     services: list[dict],
     selected_ids: set[int],
@@ -178,10 +187,10 @@ def pkg_items_multiselect_inline(
     rows: list[list[InlineKeyboardButton]] = []
     for s in chunk:
         sid = int(s["id"])
-        name = s.get("name") or "?"
+        label = _svc_label(s)
         mark = "✅ " if sid in selected_ids else ""
         rows.append([
-            InlineKeyboardButton(text=f"{mark}{name}", callback_data=f"pkg_edit:svc:{pkg_id}:{sid}")
+            InlineKeyboardButton(text=f"{mark}{label}", callback_data=f"pkg_edit:svc:{pkg_id}:{sid}")
         ])
 
     nav = build_nav_row(page, pages, f"pkg_edit:page:{pkg_id}:{{p}}", "pkg_edit:noop", lang)
