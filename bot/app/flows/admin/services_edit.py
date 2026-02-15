@@ -13,14 +13,15 @@ EDIT-FSM for Services (admin).
 """
 
 import logging
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from bot.app.i18n.loader import t, t_all, DEFAULT_LANG
-from bot.app.utils.state import user_lang
+from bot.app.i18n.loader import DEFAULT_LANG, t, t_all
 from bot.app.utils.api import api
+from bot.app.utils.state import user_lang
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,8 @@ class ServiceEdit(StatesGroup):
     duration = State()
     break_min = State()
     price = State()
+    price_5 = State()
+    price_10 = State()
     color = State()
 
 
@@ -78,6 +81,16 @@ def service_edit_inline(svc_id: int, lang: str) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(
+                text=t("admin:service:edit_price_5", lang),
+                callback_data=f"svc:edit_price_5:{svc_id}"
+            ),
+            InlineKeyboardButton(
+                text=t("admin:service:edit_price_10", lang),
+                callback_data=f"svc:edit_price_10:{svc_id}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
                 text=t("common:save", lang),
                 callback_data=f"svc:save:{svc_id}"
             ),
@@ -97,6 +110,20 @@ def service_edit_cancel_inline(svc_id: int, lang: str) -> InlineKeyboardMarkup:
             callback_data=f"svc:edit:{svc_id}"  # попадёт в делегат services.py → start_service_edit()
         )
     ]])
+
+
+def service_edit_clear_cancel_inline(svc_id: int, field: str, lang: str) -> InlineKeyboardMarkup:
+    """Кнопки Очистить + Отмена для nullable полей (description, price_5, price_10)."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text=t("common:clear", lang),
+            callback_data=f"svc:clear_{field}:{svc_id}"
+        )],
+        [InlineKeyboardButton(
+            text=t("common:cancel", lang),
+            callback_data=f"svc:edit:{svc_id}"
+        )],
+    ])
 
 
 # Коды цветов берутся из i18n
@@ -180,6 +207,8 @@ def build_service_edit_text(svc: dict, changes: dict, lang: str) -> str:
     duration = changes.get("duration_min", svc.get("duration_min", 0))
     break_min = changes.get("break_min", svc.get("break_min", 0))
     price = changes.get("price", svc.get("price", 0))
+    price_5 = changes.get("price_5", svc.get("price_5")) if "price_5" in changes else svc.get("price_5")
+    price_10 = changes.get("price_10", svc.get("price_10")) if "price_10" in changes else svc.get("price_10")
     color_code = changes.get("color_code", svc.get("color_code"))
 
     lines = [t("admin:service:edit_title", lang), ""]
@@ -197,6 +226,13 @@ def build_service_edit_text(svc: dict, changes: dict, lang: str) -> str:
         lines.append(f"💰 {int(price)}₽")
     else:
         lines.append(f"💰 {price}₽")
+
+    if price_5 is not None:
+        p5 = int(price_5) if isinstance(price_5, (int, float)) and price_5 == int(price_5) else price_5
+        lines.append(f"💰×5 {p5}₽")
+    if price_10 is not None:
+        p10 = int(price_10) if isinstance(price_10, (int, float)) and price_10 == int(price_10) else price_10
+        lines.append(f"💰×10 {p10}₽")
 
     if color_code:
         lines.append(f"🎨 {color_code}")
@@ -218,6 +254,8 @@ def _get_changed_field_names(changes: dict, lang: str) -> list[str]:
         "duration_min": "admin:service:edit_duration",
         "break_min": "admin:service:edit_break",
         "price": "admin:service:edit_price",
+        "price_5": "admin:service:edit_price_5",
+        "price_10": "admin:service:edit_price_10",
         "color_code": "admin:service:edit_color",
     }
 
@@ -296,6 +334,8 @@ def setup(mc, get_user_role):
     @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.duration)
     @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.break_min)
     @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.price)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.price_5)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.price_10)
     @router.message(F.text.in_(t_all("admin:services:back")), ServiceEdit.color)
     async def escape_edit_fsm(message: Message, state: FSMContext):
         """Escape hatch: Reply Back во время Edit FSM → отмена и возврат."""
@@ -362,9 +402,28 @@ def setup(mc, get_user_role):
         await state.set_state(ServiceEdit.description)
 
         text = t("admin:service:enter_description", lang)
-        kb = service_edit_cancel_inline(svc_id, lang)
+        kb = service_edit_clear_cancel_inline(svc_id, "desc", lang)
 
         await mc.edit_inline_input(callback.message, text, kb)
+        await callback.answer()
+
+    @router.callback_query(F.data.startswith("svc:clear_desc:"))
+    async def clear_desc(callback: CallbackQuery, state: FSMContext):
+        svc_id = int(callback.data.split(":")[2])
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+
+        data = await state.get_data()
+        changes = data.get("changes", {})
+        changes["description"] = None
+
+        await state.update_data(changes=changes)
+        await state.set_state(None)
+
+        service = data.get("original", {})
+        text = build_service_edit_text(service, changes, lang)
+        kb = service_edit_inline(svc_id, lang)
+
+        await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
 
     @router.message(ServiceEdit.description)
@@ -512,6 +571,134 @@ def setup(mc, get_user_role):
         svc_id = data.get("edit_svc_id")
         changes = data.get("changes", {})
         changes["price"] = price
+
+        await state.update_data(changes=changes)
+        await state.set_state(None)
+
+        service = data.get("original", {})
+        text = build_service_edit_text(service, changes, lang)
+        kb = service_edit_inline(svc_id, lang)
+
+        await mc.show_inline_readonly(message, text, kb)
+
+    # ==========================================================
+    # EDIT: price_5
+    # ==========================================================
+
+    @router.callback_query(F.data.startswith("svc:edit_price_5:"))
+    async def edit_price_5_start(callback: CallbackQuery, state: FSMContext):
+        svc_id = int(callback.data.split(":")[2])
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+
+        await state.set_state(ServiceEdit.price_5)
+
+        text = t("admin:service:enter_price_5", lang)
+        kb = service_edit_clear_cancel_inline(svc_id, "price_5", lang)
+
+        await mc.edit_inline_input(callback.message, text, kb)
+        await callback.answer()
+
+    @router.callback_query(F.data.startswith("svc:clear_price_5:"))
+    async def clear_price_5(callback: CallbackQuery, state: FSMContext):
+        svc_id = int(callback.data.split(":")[2])
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+
+        data = await state.get_data()
+        changes = data.get("changes", {})
+        changes["price_5"] = None
+
+        await state.update_data(changes=changes)
+        await state.set_state(None)
+
+        service = data.get("original", {})
+        text = build_service_edit_text(service, changes, lang)
+        kb = service_edit_inline(svc_id, lang)
+
+        await mc.edit_inline(callback.message, text, kb)
+        await callback.answer()
+
+    @router.message(ServiceEdit.price_5)
+    async def edit_price_5_process(message: Message, state: FSMContext):
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+
+        try:
+            val = float(message.text.strip().replace(",", "."))
+            if val < 0:
+                raise ValueError()
+        except ValueError:
+            data = await state.get_data()
+            svc_id = data.get("edit_svc_id")
+            await mc.show_inline_input(message, t("admin:service:error_price", lang), service_edit_clear_cancel_inline(svc_id, "price_5", lang))
+            return
+
+        data = await state.get_data()
+        svc_id = data.get("edit_svc_id")
+        changes = data.get("changes", {})
+        changes["price_5"] = val
+
+        await state.update_data(changes=changes)
+        await state.set_state(None)
+
+        service = data.get("original", {})
+        text = build_service_edit_text(service, changes, lang)
+        kb = service_edit_inline(svc_id, lang)
+
+        await mc.show_inline_readonly(message, text, kb)
+
+    # ==========================================================
+    # EDIT: price_10
+    # ==========================================================
+
+    @router.callback_query(F.data.startswith("svc:edit_price_10:"))
+    async def edit_price_10_start(callback: CallbackQuery, state: FSMContext):
+        svc_id = int(callback.data.split(":")[2])
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+
+        await state.set_state(ServiceEdit.price_10)
+
+        text = t("admin:service:enter_price_10", lang)
+        kb = service_edit_clear_cancel_inline(svc_id, "price_10", lang)
+
+        await mc.edit_inline_input(callback.message, text, kb)
+        await callback.answer()
+
+    @router.callback_query(F.data.startswith("svc:clear_price_10:"))
+    async def clear_price_10(callback: CallbackQuery, state: FSMContext):
+        svc_id = int(callback.data.split(":")[2])
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+
+        data = await state.get_data()
+        changes = data.get("changes", {})
+        changes["price_10"] = None
+
+        await state.update_data(changes=changes)
+        await state.set_state(None)
+
+        service = data.get("original", {})
+        text = build_service_edit_text(service, changes, lang)
+        kb = service_edit_inline(svc_id, lang)
+
+        await mc.edit_inline(callback.message, text, kb)
+        await callback.answer()
+
+    @router.message(ServiceEdit.price_10)
+    async def edit_price_10_process(message: Message, state: FSMContext):
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+
+        try:
+            val = float(message.text.strip().replace(",", "."))
+            if val < 0:
+                raise ValueError()
+        except ValueError:
+            data = await state.get_data()
+            svc_id = data.get("edit_svc_id")
+            await mc.show_inline_input(message, t("admin:service:error_price", lang), service_edit_clear_cancel_inline(svc_id, "price_10", lang))
+            return
+
+        data = await state.get_data()
+        svc_id = data.get("edit_svc_id")
+        changes = data.get("changes", {})
+        changes["price_10"] = val
 
         await state.update_data(changes=changes)
         await state.set_state(None)

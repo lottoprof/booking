@@ -40,27 +40,27 @@ PAGE_SIZE = 5
 
 def _format_service_item(svc: dict, lang: str) -> str:
     """
-    Форматирует услугу для отображения в списке.
-    
-    Формат: 🛎  Название | 60+10 мин | 2500₽
-    или:    🛎  Название | 60 мин | 2500₽ (без перерыва)
+    Компактный формат для кнопки списка.
+
+    Примеры:
+    - 🛎 LPG по костюму | 60+30 | 1800
+    - 🛎 Прессо… живот+ноги | 60+30 | 1800
+    - 🛎 LPG | 60+30 | 1800
     """
     name = svc.get("name", "?")
+    if len(name) > 6:
+        name = name[:6] + "…"
+    desc = svc.get("description") or ""
+    label = f"{name} {desc}".strip() if desc else name
+
     duration = svc.get("duration_min", 0)
     break_min = svc.get("break_min", 0)
     price = svc.get("price", 0)
 
-    if break_min > 0:
-        time_str = f"{duration}+{break_min}"
-    else:
-        time_str = str(duration)
+    time_str = f"{duration}+{break_min}" if break_min > 0 else str(duration)
+    price_str = str(int(price)) if price == int(price) else f"{price:.0f}"
 
-    if price == int(price):
-        price_str = f"{int(price)}{t('common:currency', lang)}"
-    else:
-        price_str = f"{price:.0f}{t('common:currency', lang)}"
-
-    return f"{t('admin:services:item_icon', lang)} {name} | {time_str}{t('common:min', lang)} | {price_str}"
+    return f"{t('admin:services:item_icon', lang)} {label} | {time_str} | {price_str}"
 
 
 def services_list_inline(
@@ -261,6 +261,8 @@ class ServiceCreate(StatesGroup):
     duration = State()
     break_min = State()
     price = State()
+    price_5 = State()
+    price_10 = State()
     color = State()
 
 
@@ -282,6 +284,10 @@ def build_progress_text(data: dict, lang: str, prompt_key: str) -> str:
         lines.append(f"☕ +{data['break_min']} мин перерыв")
     if data.get("price") is not None:
         lines.append(f"💰 {data['price']}")
+    if data.get("price_5") is not None:
+        lines.append(f"💰×5 {data['price_5']}")
+    if data.get("price_10") is not None:
+        lines.append(f"💰×10 {data['price_10']}")
 
     lines.append("")
     lines.append(t(prompt_key, lang))
@@ -333,6 +339,8 @@ def setup(mc, get_user_role):
     @router.message(F.text.in_(t_all("admin:services:back")), ServiceCreate.duration)
     @router.message(F.text.in_(t_all("admin:services:back")), ServiceCreate.break_min)
     @router.message(F.text.in_(t_all("admin:services:back")), ServiceCreate.price)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceCreate.price_5)
+    @router.message(F.text.in_(t_all("admin:services:back")), ServiceCreate.price_10)
     @router.message(F.text.in_(t_all("admin:services:back")), ServiceCreate.color)
     async def escape_create_fsm(message: Message, state: FSMContext):
         """
@@ -622,6 +630,74 @@ def setup(mc, get_user_role):
             return
 
         await state.update_data(price=price)
+        await state.set_state(ServiceCreate.price_5)
+
+        data = await state.get_data()
+        await mc.show_inline_input(
+            message,
+            build_progress_text(data, lang, "admin:service:enter_price_5"),
+            service_skip_inline(lang),
+        )
+
+    # ---- price_5
+    @router.callback_query(F.data == "svc_create:skip", ServiceCreate.price_5)
+    async def skip_price_5(callback: CallbackQuery, state: FSMContext):
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+
+        await state.update_data(price_5=None)
+        await state.set_state(ServiceCreate.price_10)
+
+        data = await state.get_data()
+        await mc.edit_inline(callback.message, build_progress_text(data, lang, "admin:service:enter_price_10"), service_skip_inline(lang))
+        await callback.answer()
+
+    @router.message(ServiceCreate.price_5)
+    async def create_price_5(message: Message, state: FSMContext):
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+
+        try:
+            val = float(message.text.strip().replace(",", "."))
+            if val < 0:
+                raise ValueError()
+        except ValueError:
+            await mc.show_inline_input(message, t("admin:service:error_price", lang), service_skip_inline(lang))
+            return
+
+        await state.update_data(price_5=val)
+        await state.set_state(ServiceCreate.price_10)
+
+        data = await state.get_data()
+        await mc.show_inline_input(
+            message,
+            build_progress_text(data, lang, "admin:service:enter_price_10"),
+            service_skip_inline(lang),
+        )
+
+    # ---- price_10
+    @router.callback_query(F.data == "svc_create:skip", ServiceCreate.price_10)
+    async def skip_price_10(callback: CallbackQuery, state: FSMContext):
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+
+        await state.update_data(price_10=None)
+        await state.set_state(ServiceCreate.color)
+
+        data = await state.get_data()
+        await mc.edit_inline(callback.message, build_progress_text(data, lang, "admin:service:choose_color"), color_picker_inline(lang))
+        await callback.answer()
+
+    @router.message(ServiceCreate.price_10)
+    async def create_price_10(message: Message, state: FSMContext):
+        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
+
+        try:
+            val = float(message.text.strip().replace(",", "."))
+            if val < 0:
+                raise ValueError()
+        except ValueError:
+            await mc.show_inline_input(message, t("admin:service:error_price", lang), service_skip_inline(lang))
+            return
+
+        await state.update_data(price_10=val)
         await state.set_state(ServiceCreate.color)
 
         data = await state.get_data()
@@ -652,6 +728,8 @@ def setup(mc, get_user_role):
             description=data.get("description"),
             break_min=data.get("break_min", 0),
             color_code=color_code,
+            price_5=data.get("price_5"),
+            price_10=data.get("price_10"),
         )
 
         if not service:
