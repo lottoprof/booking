@@ -108,6 +108,15 @@ def locations_select_inline(
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
+def _svc_label(s: dict) -> str:
+    """Short service label: name[:6]… + description."""
+    name = s.get("name") or "?"
+    if len(name) > 6:
+        name = name[:6] + "…"
+    desc = s.get("description") or ""
+    return f"{name} {desc}".strip() if desc else name
+
+
 def services_multiselect_inline(
     services: list[dict],
     selected_ids: set[int],
@@ -134,7 +143,7 @@ def services_multiselect_inline(
         icon = "✅" if is_selected else "⬜"
         buttons.append([
             InlineKeyboardButton(
-                text=f"{icon} {svc['name']}",
+                text=f"{icon} {_svc_label(svc)}",
                 callback_data=f"{prefix}:svc_toggle:{svc['id']}"
             )
         ])
@@ -293,13 +302,28 @@ def build_progress_text(data: dict, lang: str, prompt_key: str) -> str:
     return "\n".join(lines)
 
 
+async def _resolve_loc_name(room: dict) -> str:
+    """Resolve location name from room's location_id."""
+    loc_id = room.get("location_id")
+    if not loc_id:
+        return "?"
+    location = await api.get_location(int(loc_id))
+    if location and location.get("name"):
+        return location["name"]
+    # fallback: search in locations list
+    locations = await api.get_locations()
+    for loc in locations:
+        if int(loc["id"]) == int(loc_id):
+            return loc.get("name") or "?"
+    return "?"
+
+
 async def build_room_view_text(room: dict, lang: str) -> str:
     """Текст карточки комнаты."""
     lines = [t("admin:room:view_title", lang) % room["name"], ""]
 
     # Локация
-    location = await api.get_location(room["location_id"])
-    loc_name = location["name"] if location else "?"
+    loc_name = await _resolve_loc_name(room)
     lines.append(t("admin:room:location", lang) % loc_name)
 
     # Порядок
@@ -318,10 +342,11 @@ async def build_room_view_text(room: dict, lang: str) -> str:
     if active_services:
         lines.append(t("admin:room:services_count", lang) % len(active_services))
         services = await api.get_services()
-        services_map = {s["id"]: s["name"] for s in services}
+        services_map = {s["id"]: s for s in services}
         for sr in active_services:
-            svc_name = services_map.get(sr["service_id"], "?")
-            lines.append(f"  • {svc_name}")
+            svc = services_map.get(sr["service_id"])
+            label = _svc_label(svc) if svc else "?"
+            lines.append(f"  • {label}")
     else:
         lines.append(t("admin:room:no_services", lang))
 

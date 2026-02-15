@@ -4,14 +4,15 @@ bot/app/flows/admin/clients_edit.py
 Редактирование клиента: имя, фамилия, телефон, роль.
 """
 
-import re
 import logging
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+import re
+
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
+from bot.app.i18n.loader import DEFAULT_LANG, t
 from bot.app.utils.state import user_lang
 
 logger = logging.getLogger(__name__)

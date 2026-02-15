@@ -17,15 +17,15 @@ Client callbacks (bkr:*):
 import logging
 from datetime import datetime
 
-from aiogram import Router, F
+from aiogram import F, Router
 from aiogram.types import (
     CallbackQuery,
-    InlineKeyboardMarkup,
     InlineKeyboardButton,
+    InlineKeyboardMarkup,
 )
 
+from bot.app.i18n.loader import DEFAULT_LANG, t
 from bot.app.utils.api import api
-from bot.app.i18n.loader import t, DEFAULT_LANG
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ async def handle_edit(callback: CallbackQuery):
         await callback.answer(t("common:not_found", DEFAULT_LANG), show_alert=True)
         return
 
-    from bot.app.flows.common.booking_edit import build_edit_menu_keyboard, _format_edit_view
+    from bot.app.flows.common.booking_edit import _format_edit_view, build_edit_menu_keyboard
 
     text = _format_edit_view(booking)
     keyboard = build_edit_menu_keyboard(booking_id, return_to)

@@ -10,8 +10,7 @@ bot/app/flows/admin/schedule.py
 
 from aiogram import Router
 
-from bot.app.flows.admin import schedule_bookings
-from bot.app.flows.admin import schedule_overrides
+from bot.app.flows.admin import schedule_bookings, schedule_overrides
 from bot.app.utils.api import api  # Singleton API client
 
 

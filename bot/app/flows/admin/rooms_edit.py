@@ -49,8 +49,10 @@ class RoomEdit(StatesGroup):
 # Inline keyboards for EDIT
 # ==============================================================
 
-def room_edit_inline(room_id: int, lang: str) -> InlineKeyboardMarkup:
+def room_edit_inline(room_id: int, original: dict, changes: dict, lang: str) -> InlineKeyboardMarkup:
     """Экран редактирования комнаты."""
+    is_active = changes.get("is_active", original.get("is_active", 1))
+    active_icon = "✅" if is_active else "❌"
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
@@ -74,6 +76,12 @@ def room_edit_inline(room_id: int, lang: str) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(
+                text=f"{t('admin:room:edit_active', lang)}: {active_icon}",
+                callback_data=f"room:toggle_active:{room_id}"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
                 text=t("common:save", lang),
                 callback_data=f"room:save:{room_id}"
             ),
@@ -93,6 +101,15 @@ def room_edit_cancel_inline(room_id: int, lang: str) -> InlineKeyboardMarkup:
             callback_data=f"room:edit:{room_id}"
         )
     ]])
+
+
+def _svc_label(s: dict) -> str:
+    """Short service label: name[:6]… + description."""
+    name = s.get("name") or "?"
+    if len(name) > 6:
+        name = name[:6] + "…"
+    desc = s.get("description") or ""
+    return f"{name} {desc}".strip() if desc else name
 
 
 def services_edit_multiselect_inline(
@@ -121,7 +138,7 @@ def services_edit_multiselect_inline(
         icon = "✅" if is_active else "⬜"
         buttons.append([
             InlineKeyboardButton(
-                text=f"{icon} {svc['name']}",
+                text=f"{icon} {_svc_label(svc)}",
                 callback_data=f"room:svc_toggle:{room_id}:{svc['id']}"
             )
         ])
@@ -158,10 +175,11 @@ def services_edit_multiselect_inline(
 
 async def build_room_view_text(room: dict, lang: str) -> str:
     """Текст карточки комнаты (дублируем минимально)."""
+    from .rooms import _resolve_loc_name
+
     lines = [t("admin:room:view_title", lang) % room["name"], ""]
 
-    location = await api.get_location(room["location_id"])
-    loc_name = location["name"] if location else "?"
+    loc_name = await _resolve_loc_name(room)
     lines.append(t("admin:room:location", lang) % loc_name)
 
     if room.get("display_order") is not None:
@@ -177,17 +195,18 @@ async def build_room_view_text(room: dict, lang: str) -> str:
     if active_services:
         lines.append(t("admin:room:services_count", lang) % len(active_services))
         services = await api.get_services()
-        services_map = {s["id"]: s["name"] for s in services}
+        services_map = {s["id"]: s for s in services}
         for sr in active_services:
-            svc_name = services_map.get(sr["service_id"], "?")
-            lines.append(f"  • {svc_name}")
+            svc = services_map.get(sr["service_id"])
+            label = _svc_label(svc) if svc else "?"
+            lines.append(f"  • {label}")
     else:
         lines.append(t("admin:room:no_services", lang))
 
     return "\n".join(lines)
 
 
-def build_room_edit_text(room: dict, changes: dict, lang: str) -> str:
+def build_room_edit_text(room: dict, changes: dict, lang: str, loc_name: str = "?") -> str:
     """
     Текст экрана редактирования.
     Показывает текущие значения + изменения из changes.
@@ -195,15 +214,20 @@ def build_room_edit_text(room: dict, changes: dict, lang: str) -> str:
     name = changes.get("name", room.get("name", ""))
     notes = changes.get("notes", room.get("notes"))
     display_order = changes.get("display_order", room.get("display_order"))
+    is_active = changes.get("is_active", room.get("is_active", 1))
 
     lines = [t("admin:room:edit_title", lang), ""]
     lines.append(f"🚪 {name}")
+    lines.append(t("admin:room:location", lang) % loc_name)
 
     if display_order is not None:
-        lines.append(f"↕️ {display_order}")
+        lines.append(t("admin:room:order", lang) % display_order)
 
     if notes:
         lines.append(f"📝 {notes}")
+
+    active_icon = "✅" if is_active else "❌"
+    lines.append(f"{t('admin:room:edit_active', lang)}: {active_icon}")
 
     if changes:
         lines.append("")
@@ -220,13 +244,14 @@ def _get_changed_field_names(changes: dict, lang: str) -> list[str]:
         "name": "admin:room:edit_name",
         "notes": "admin:room:edit_notes",
         "display_order": "admin:room:edit_order",
+        "is_active": "admin:room:edit_active",
     }
 
     names = []
     for field, key in field_map.items():
         if field in changes:
             name = t(key, lang)
-            for emoji in ["✏️ ", "📝 ", "↕️ "]:
+            for emoji in ["✏️ ", "📝 ", "↕️ ", "🔘 "]:
                 name = name.replace(emoji, "")
             names.append(name)
 
@@ -245,6 +270,8 @@ async def start_room_edit(*, mc, callback: CallbackQuery, state: FSMContext, roo
     - обработчик room:edit:{id} находится в rooms.py и просто делегирует сюда.
     - здесь только инициализация + показ edit-экрана.
     """
+    from .rooms import _resolve_loc_name
+
     lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
     room = await api.get_room(room_id)
@@ -256,16 +283,19 @@ async def start_room_edit(*, mc, callback: CallbackQuery, state: FSMContext, roo
 
     # Если новый вход или другой room_id — инициализируем заново
     if data.get("edit_room_id") != room_id:
+        loc_name = await _resolve_loc_name(room)
         await state.update_data(
             edit_room_id=room_id,
             original=room,
-            changes={}
+            changes={},
+            loc_name=loc_name,
         )
         data = await state.get_data()
 
     changes = data.get("changes", {})
-    text = build_room_edit_text(room, changes, lang)
-    kb = room_edit_inline(room_id, lang)
+    loc_name = data.get("loc_name", "?")
+    text = build_room_edit_text(room, changes, lang, loc_name=loc_name)
+    kb = room_edit_inline(room_id, room, changes, lang)
 
     await mc.edit_inline_input(callback.message, text, kb)
     await callback.answer()
@@ -340,8 +370,9 @@ def setup(mc, get_user_role):
         await state.set_state(None)
 
         room = data.get("original", {})
-        text = build_room_edit_text(room, changes, lang)
-        kb = room_edit_inline(room_id, lang)
+        loc_name = data.get("loc_name", "?")
+        text = build_room_edit_text(room, changes, lang, loc_name=loc_name)
+        kb = room_edit_inline(room_id, room, changes, lang)
 
         await mc.show_inline_readonly(message, text, kb)
 
@@ -376,8 +407,9 @@ def setup(mc, get_user_role):
         await state.set_state(None)
 
         room = data.get("original", {})
-        text = build_room_edit_text(room, changes, lang)
-        kb = room_edit_inline(room_id, lang)
+        loc_name = data.get("loc_name", "?")
+        text = build_room_edit_text(room, changes, lang, loc_name=loc_name)
+        kb = room_edit_inline(room_id, room, changes, lang)
 
         await mc.show_inline_readonly(message, text, kb)
 
@@ -419,10 +451,33 @@ def setup(mc, get_user_role):
         await state.set_state(None)
 
         room = data.get("original", {})
-        text = build_room_edit_text(room, changes, lang)
-        kb = room_edit_inline(room_id, lang)
+        loc_name = data.get("loc_name", "?")
+        text = build_room_edit_text(room, changes, lang, loc_name=loc_name)
+        kb = room_edit_inline(room_id, room, changes, lang)
 
         await mc.show_inline_readonly(message, text, kb)
+
+    # ==========================================================
+    # TOGGLE: is_active
+    # ==========================================================
+
+    @router.callback_query(F.data.startswith("room:toggle_active:"))
+    async def toggle_active(callback: CallbackQuery, state: FSMContext):
+        room_id = int(callback.data.split(":")[2])
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+
+        data = await state.get_data()
+        room = data.get("original", {})
+        changes = data.get("changes", {})
+        current = changes.get("is_active", room.get("is_active", 1))
+        changes["is_active"] = 0 if current else 1
+        await state.update_data(changes=changes)
+
+        loc_name = data.get("loc_name", "?")
+        text = build_room_edit_text(room, changes, lang, loc_name=loc_name)
+        kb = room_edit_inline(room_id, room, changes, lang)
+        await mc.edit_inline(callback.message, text, kb)
+        await callback.answer()
 
     # ==========================================================
     # EDIT: services (multi-select)
@@ -530,8 +585,9 @@ def setup(mc, get_user_role):
         # Возвращаемся на экран редактирования
         room = data.get("original", {})
         changes = data.get("changes", {})
-        text = build_room_edit_text(room, changes, lang)
-        kb = room_edit_inline(room_id, lang)
+        loc_name = data.get("loc_name", "?")
+        text = build_room_edit_text(room, changes, lang, loc_name=loc_name)
+        kb = room_edit_inline(room_id, room, changes, lang)
 
         await mc.edit_inline(callback.message, text, kb)
         await callback.answer(t("admin:room:saved", lang))
@@ -560,14 +616,26 @@ def setup(mc, get_user_role):
         await state.clear()
         await callback.answer(t("admin:room:saved", lang))
 
-        # Показать обновлённую карточку
+        # Показать обновлённую карточку (или список если комната деактивирована)
         room = await api.get_room(room_id)
         if room:
-            # Импортируем здесь, чтобы избежать circular import
             from .rooms import room_view_inline
             text = await build_room_view_text(room, lang)
             kb = room_view_inline(room, lang)
             await mc.edit_inline(callback.message, text, kb)
+        else:
+            # Room was deactivated — back to list
+            from .rooms import rooms_list_inline
+            rooms = await api.get_rooms()
+            locations = await api.get_locations()
+            locations_map = {loc["id"]: loc["name"] for loc in locations}
+            total = len(rooms)
+            if total == 0:
+                text = f"🚪 {t('admin:rooms:empty', lang)}"
+            else:
+                text = t("admin:rooms:list_title", lang) % total
+            kb = rooms_list_inline(rooms, locations_map, 0, lang)
+            await mc.edit_inline(callback.message, t("admin:room:saved", lang) + "\n\n" + text, kb)
 
     logger.info("=== rooms_edit router configured ===")
     return router

@@ -6,18 +6,18 @@ bot/app/flows/admin/menu.py
 
 from aiogram.types import Message
 
+from bot.app.i18n.loader import t
 from bot.app.keyboards.admin import (
-    admin_main,
-    admin_settings,
-    admin_schedule,
     admin_clients,
     admin_locations,
-    admin_services,
+    admin_main,
+    admin_packages,
     admin_rooms,
+    admin_schedule,
+    admin_services,
+    admin_settings,
     admin_specialists,
-     admin_packages,
 )
-from bot.app.i18n.loader import t
 
 
 class AdminMenuFlow:

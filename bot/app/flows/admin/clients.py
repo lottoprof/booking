@@ -13,12 +13,14 @@ bot/app/flows/admin/clients.py
 
 from aiogram import Router
 
-from bot.app.flows.admin import clients_find
-from bot.app.flows.admin import clients_edit
-from bot.app.flows.admin import clients_wallets
-from bot.app.flows.admin import clients_sell_package
-from bot.app.flows.admin import clients_booking
-from bot.app.flows.admin import clients_bookings_list
+from bot.app.flows.admin import (
+    clients_booking,
+    clients_bookings_list,
+    clients_edit,
+    clients_find,
+    clients_sell_package,
+    clients_wallets,
+)
 from bot.app.utils.api import api  # Singleton API client
 
 
