@@ -5,18 +5,19 @@ Service Packages (admin):
 - LIST (inline, pagination)
 - VIEW
 - DELETE (soft-delete via API DELETE)
-- CREATE (FSM, Redis) — name/description -> select services -> quantities -> price
+- CREATE (FSM, Redis) — name/description -> select services -> quantities multi-select [1][5][10]
 - EDIT делегирован в packages_edit.py
 
 Важно:
 - Бот не содержит бизнес-логики, работает строго через API.md
 - Создание/редактирование пакета НЕ валидирует специалистов (по решению)
+- quantity — per-package-variant, все сервисы получают одинаковый qty
+- price вычисляется динамически (не вводится)
 """
 
 import json
 import logging
 import math
-from typing import Any
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
@@ -52,48 +53,13 @@ SERVICES_PAGE_SIZE = 8
 class PackageCreate(StatesGroup):
     name = State()
     description = State()
-    services = State()   # multi-select
-    quantity = State()   # sequential input per service
-    price = State()
+    services = State()       # multi-select сервисов
+    quantities = State()     # multi-select qty [1][5][10]
 
 
 # ==============================================================
 # Helpers
 # ==============================================================
-
-def _safe_decimal(text: str) -> float | None:
-    """
-    Accepts: "12000", "12000.50", "12000,50"
-    Returns float or None.
-    """
-    if text is None:
-        return None
-    s = text.strip().replace(" ", "").replace(",", ".")
-    if not s:
-        return None
-    try:
-        val = float(s)
-        if val < 0:
-            return None
-        return val
-    except Exception:
-        return None
-
-
-def _safe_int(text: str) -> int | None:
-    if text is None:
-        return None
-    s = text.strip()
-    if not s:
-        return None
-    try:
-        v = int(s)
-        if v <= 0:
-            return None
-        return v
-    except Exception:
-        return None
-
 
 def pkg_cancel_inline(lang: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[
@@ -108,6 +74,25 @@ def pkg_skip_inline(lang: str) -> InlineKeyboardMarkup:
     ])
 
 
+def _format_pkg_item(pkg: dict) -> str:
+    """Compact list item: 📦 name | ×5 | 9000."""
+    name = pkg.get("name") or "?"
+    items = pkg.get("package_items") or "[]"
+    if isinstance(items, str):
+        try:
+            items = json.loads(items)
+        except Exception:
+            items = []
+    qty = items[0].get("quantity", 1) if isinstance(items, list) and items else 1
+    price = pkg.get("package_price")
+    if price is not None:
+        price_val = float(price)
+        price_str = str(int(price_val)) if price_val == int(price_val) else str(price_val)
+    else:
+        price_str = "0"
+    return f"📦 {name} | ×{qty} | {price_str}"
+
+
 def packages_list_inline(packages: list[dict], page: int, lang: str) -> InlineKeyboardMarkup:
     total = len(packages)
     pages = max(1, math.ceil(total / PAGE_SIZE))
@@ -120,7 +105,7 @@ def packages_list_inline(packages: list[dict], page: int, lang: str) -> InlineKe
     for p in chunk:
         rows.append([
             InlineKeyboardButton(
-                text=t("admin:packages:item", lang) % (p.get("name") or "?"),
+                text=_format_pkg_item(p),
                 callback_data=f"pkg:view:{p['id']}"
             )
         ])
@@ -187,6 +172,27 @@ def pkg_create_services_inline(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def pkg_qty_multiselect_inline(selected_qtys: set[int], lang: str) -> InlineKeyboardMarkup:
+    """Multi-select: [✅1] [5] [✅10] + [Готово N] [Отмена]."""
+    qty_row = []
+    for q in (1, 5, 10):
+        mark = "✅ " if q in selected_qtys else ""
+        qty_row.append(InlineKeyboardButton(
+            text=f"{mark}{q}",
+            callback_data=f"pkg_create:qty:{q}"
+        ))
+    return InlineKeyboardMarkup(inline_keyboard=[
+        qty_row,
+        [
+            InlineKeyboardButton(
+                text=t("admin:package:qty_done", lang) % len(selected_qtys),
+                callback_data="pkg_create:qty_done"
+            ),
+            InlineKeyboardButton(text=t("common:cancel", lang), callback_data="pkg_create:cancel"),
+        ],
+    ])
+
+
 # ==============================================================
 # Text render
 # ==============================================================
@@ -206,14 +212,14 @@ async def render_package_view(pkg: dict, lang: str) -> str:
     services_map = {int(s["id"]): (s.get("name") or "?") for s in services}
 
     items = pkg.get("package_items") or []
-    
+
     # Если items — строка (JSON), парсим её
     if isinstance(items, str):
         try:
             items = json.loads(items)
         except Exception:
             items = []
-    
+
     # backend может вернуть dict вместо list
     if isinstance(items, dict):
         items = [items]
@@ -229,6 +235,11 @@ async def render_package_view(pkg: dict, lang: str) -> str:
     price = pkg.get("package_price")
     price_str = str(price) if price is not None else "0"
     lines.append(t("admin:package:price", lang) % price_str)
+
+    # show_on flags
+    p = "✅" if pkg.get("show_on_pricing") else "❌"
+    b = "✅" if pkg.get("show_on_booking") else "❌"
+    lines.append(f"📊 pricing: {p} | booking: {b}")
 
     return "\n".join(lines)
 
@@ -393,8 +404,7 @@ def setup(mc, get_user_role):
     @router.message(F.text.in_(t_all("admin:packages:back")), PackageCreate.name)
     @router.message(F.text.in_(t_all("admin:packages:back")), PackageCreate.description)
     @router.message(F.text.in_(t_all("admin:packages:back")), PackageCreate.services)
-    @router.message(F.text.in_(t_all("admin:packages:back")), PackageCreate.quantity)
-    @router.message(F.text.in_(t_all("admin:packages:back")), PackageCreate.price)
+    @router.message(F.text.in_(t_all("admin:packages:back")), PackageCreate.quantities)
     async def fsm_back_escape(message: Message, state: FSMContext):
         """Escape hatch: Reply Back во время FSM → отмена и возврат в меню."""
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
@@ -511,136 +521,102 @@ def setup(mc, get_user_role):
             await callback.answer(t("admin:package:error_no_services", lang), show_alert=True)
             return
 
-        # prepare quantity sequence
-        await state.set_state(PackageCreate.quantity)
-        await state.update_data(q_service_ids=selected_ids, q_index=0, quantities={})
+        # transition to quantities multi-select
+        await state.set_state(PackageCreate.quantities)
+        await state.update_data(selected_qtys=[])
 
-        services = await api.get_services()
-        services_map = {int(s["id"]): (s.get("name") or "?") for s in services}
-        first_id = int(selected_ids[0])
-        svc_name = services_map.get(first_id, "?")
-
-        await mc.edit_inline_input(
+        kb = pkg_qty_multiselect_inline(set(), lang)
+        await mc.edit_inline(
             callback.message,
-            t("admin:package:enter_quantity", lang) % svc_name,
-            pkg_cancel_inline(lang)
+            t("admin:package:select_quantities", lang),
+            kb,
         )
         await callback.answer()
 
-    @router.message(PackageCreate.quantity)
-    async def create_quantity(message: Message, state: FSMContext):
-        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
-        qty = _safe_int(message.text or "")
-        if qty is None:
-            await mc.show_inline_input(message, t("admin:package:error_quantity", lang), pkg_cancel_inline(lang))
-            return
+    @router.callback_query(F.data.startswith("pkg_create:qty:"), PackageCreate.quantities)
+    async def create_qty_toggle(callback: CallbackQuery, state: FSMContext):
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+        qty = int(callback.data.split(":")[2])
 
         data = await state.get_data()
-        ids = list(data.get("q_service_ids") or [])
-        idx = int(data.get("q_index") or 0)
-        quantities: dict[str, Any] = dict(data.get("quantities") or {})
+        selected = set(data.get("selected_qtys") or [])
+        if qty in selected:
+            selected.discard(qty)
+        else:
+            selected.add(qty)
+        await state.update_data(selected_qtys=list(selected))
 
-        if idx < 0 or idx >= len(ids):
-            # safety — вернуться в меню
-            await state.clear()
-            await mc.show(
-                message,
-                admin_packages(lang),
-                title=t("admin:packages:title", lang),
-                menu_context="packages",
-            )
-            return
-
-        sid = int(ids[idx])
-        quantities[str(sid)] = qty
-
-        idx += 1
-        await state.update_data(quantities=quantities, q_index=idx)
-
-        if idx >= len(ids):
-            # go to price
-            await state.set_state(PackageCreate.price)
-            await mc.show_inline_input(
-                message,
-                t("admin:package:enter_price", lang),
-                pkg_cancel_inline(lang)
-            )
-            return
-
-        services = await api.get_services()
-        services_map = {int(s["id"]): (s.get("name") or "?") for s in services}
-        next_id = int(ids[idx])
-        next_name = services_map.get(next_id, "?")
-
-        await mc.show_inline_input(
-            message,
-            t("admin:package:enter_quantity", lang) % next_name,
-            pkg_cancel_inline(lang)
+        kb = pkg_qty_multiselect_inline(selected, lang)
+        await mc.edit_inline(
+            callback.message,
+            t("admin:package:select_quantities", lang),
+            kb,
         )
+        await callback.answer()
 
-    @router.message(PackageCreate.price)
-    async def create_price(message: Message, state: FSMContext):
-        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
-        price = _safe_decimal(message.text or "")
-        if price is None:
-            await mc.show_inline_input(message, t("admin:package:error_price", lang), pkg_cancel_inline(lang))
+    @router.callback_query(F.data == "pkg_create:qty_done", PackageCreate.quantities)
+    async def create_qty_done(callback: CallbackQuery, state: FSMContext):
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+        data = await state.get_data()
+        selected_qtys = sorted(data.get("selected_qtys") or [])
+        if not selected_qtys:
+            await callback.answer(t("admin:package:error_no_qty", lang), show_alert=True)
             return
 
-        data = await state.get_data()
         name = data.get("name")
         description = data.get("description")
-        ids = list(data.get("q_service_ids") or [])
-        quantities = dict(data.get("quantities") or {})
+        selected_ids = list(data.get("selected_ids") or [])
 
-
-
-        package_items = []
-        for sid in ids:
-            q = int(quantities.get(str(sid), 1))
-            package_items.append({"service_id": int(sid), "quantity": q})
-        
         # Получаем company_id
         company = await api.get_company()
         if not company:
             await state.clear()
-            await mc.show(
-                message,
+            await mc.back_to_reply(
+                callback.message,
                 admin_packages(lang),
                 title=t("common:error", lang),
                 menu_context="packages",
             )
+            await callback.answer()
             return
-        
-        payload = {
-            "company_id": company["id"],
-            "name": name,
-            "description": description,
-            "package_items": json.dumps(package_items),  # ← СЕРИАЛИЗУЕМ В JSON STRING
-        }
 
-        created = await api.create_package(payload)
-        
-        if not created:
-            await state.clear()
-            await mc.show(
-                message,
-                admin_packages(lang),
-                title=t("common:error", lang),
-                menu_context="packages",
-            )
-            return
+        # Create N rows — one per selected qty
+        last_created = None
+        for qty in selected_qtys:
+            package_items = [{"service_id": int(sid), "quantity": qty} for sid in selected_ids]
+            payload = {
+                "company_id": company["id"],
+                "name": name,
+                "description": description,
+                "package_items": json.dumps(package_items),
+            }
+            last_created = await api.create_package(payload)
 
         await state.clear()
 
-        # show created view
-        pkg_id = int(created["id"])
-        pkg = await api.get_package(pkg_id)
-        text = t("admin:package:created", lang) % (pkg.get("name") or "?")
-        view_text = await render_package_view(pkg, lang)
-        kb = package_view_inline(pkg_id, lang)
-    
-        await mc.show_inline_readonly(message, text + "\n\n" + view_text, kb)
-    
+        if not last_created:
+            await mc.back_to_reply(
+                callback.message,
+                admin_packages(lang),
+                title=t("common:error", lang),
+                menu_context="packages",
+            )
+            await callback.answer()
+            return
+
+        # show list after creation
+        packages = await api.get_packages()
+        total = len(packages)
+        header = t("admin:package:created", lang) % (name or "?")
+        if total == 0:
+            text = f"📦 {t('admin:packages:empty', lang)}"
+        else:
+            text = t("admin:packages:list_title", lang) % total
+
+        kb = packages_list_inline(packages, 0, lang)
+        await mc.edit_inline(callback.message, header + "\n\n" + text, kb)
+        await callback.answer()
+
     # ==========================================================
     # Noop (disabled pagination buttons)
     # ==========================================================
@@ -668,4 +644,3 @@ def setup(mc, get_user_role):
 
     logger.info("=== packages router configured ===")
     return router
-

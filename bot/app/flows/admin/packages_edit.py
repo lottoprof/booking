@@ -10,8 +10,10 @@ EDIT-FSM for Service Packages (admin).
 - Не управляет Reply/menu_context (это делает packages.py)
 
 Особенности:
-- Редактирование состава: multi-select услуг + ввод quantity для каждой выбранной услуги
-- Можно сохранить без description (None)
+- Редактирование состава: multi-select услуг + inline qty single-select [1][5][10]
+- show_on_pricing / show_on_booking toggles
+- Описание: кнопка "Очистить"
+- Edit menu показывает текущие значения + pending changes
 """
 
 import json
@@ -43,45 +45,90 @@ class PackageEdit(StatesGroup):
     name = State()
     description = State()
     items = State()       # multi-select
-    quantity = State()    # sequential input per service
-    price = State()
+    quantity = State()    # inline qty select for items
 
 
 # ==============================================================
 # Helpers
 # ==============================================================
 
-def _safe_decimal(text: str) -> float | None:
-    if text is None:
-        return None
-    s = text.strip().replace(" ", "").replace(",", ".")
-    if not s:
-        return None
-    try:
-        val = float(s)
-        if val < 0:
-            return None
-        return val
-    except Exception:
-        return None
+def build_package_edit_text(original: dict, changes: dict, lang: str) -> str:
+    """Build edit screen text showing current values + pending changes."""
+    name = changes.get("name", original.get("name") or "?")
+    lines = [t("admin:package:edit_title", lang), ""]
+    lines.append(f"📦 {name}")
+
+    # description
+    desc = changes.get("description", original.get("description"))
+    if desc is not None:
+        # changes may set description to None explicitly
+        if "description" in changes and changes["description"] is None:
+            pass  # cleared
+        else:
+            lines.append(f"📝 {desc}")
+
+    # items
+    items_raw = original.get("package_items") or []
+    if isinstance(items_raw, str):
+        try:
+            items_raw = json.loads(items_raw)
+        except Exception:
+            items_raw = []
+    if isinstance(items_raw, dict):
+        items_raw = [items_raw]
+
+    if "package_items" in changes:
+        try:
+            items_display = json.loads(changes["package_items"])
+        except Exception:
+            items_display = items_raw
+    else:
+        items_display = items_raw
+
+    if isinstance(items_display, list) and items_display:
+        qty = items_display[0].get("quantity", 1)
+        lines.append(f"🛎 ×{qty}")
+
+    # price
+    price = original.get("package_price")
+    if price is not None:
+        lines.append(f"💰 {price}")
+
+    # show_on flags
+    sop = changes.get("show_on_pricing", original.get("show_on_pricing", True))
+    sob = changes.get("show_on_booking", original.get("show_on_booking", True))
+    p_icon = "✅" if sop else "❌"
+    b_icon = "✅" if sob else "❌"
+    lines.append(f"📊 pricing: {p_icon} | booking: {b_icon}")
+
+    # pending changes indicator
+    change_lines = []
+    if "name" in changes:
+        change_lines.append(f"✏️ name → \"{changes['name']}\"")
+    if "description" in changes:
+        if changes["description"] is None:
+            change_lines.append("✏️ description → (cleared)")
+        else:
+            change_lines.append(f"✏️ description → \"{changes['description']}\"")
+    if "package_items" in changes:
+        change_lines.append("✏️ items → (changed)")
+    if "show_on_pricing" in changes:
+        change_lines.append(f"✏️ pricing → {'✅' if changes['show_on_pricing'] else '❌'}")
+    if "show_on_booking" in changes:
+        change_lines.append(f"✏️ booking → {'✅' if changes['show_on_booking'] else '❌'}")
+
+    if change_lines:
+        lines.append("")
+        lines.extend(change_lines)
+
+    return "\n".join(lines)
 
 
-def _safe_int(text: str) -> int | None:
-    if text is None:
-        return None
-    s = text.strip()
-    if not s:
-        return None
-    try:
-        v = int(s)
-        if v <= 0:
-            return None
-        return v
-    except Exception:
-        return None
-
-
-def pkg_edit_inline(pkg_id: int, lang: str) -> InlineKeyboardMarkup:
+def pkg_edit_inline(pkg_id: int, original: dict, changes: dict, lang: str) -> InlineKeyboardMarkup:
+    sop = changes.get("show_on_pricing", original.get("show_on_pricing", True))
+    sob = changes.get("show_on_booking", original.get("show_on_booking", True))
+    sop_icon = "✅" if sop else "❌"
+    sob_icon = "✅" if sob else "❌"
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text=t("admin:package:edit_name", lang), callback_data=f"pkg:edit_name:{pkg_id}"),
@@ -89,7 +136,10 @@ def pkg_edit_inline(pkg_id: int, lang: str) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text=t("admin:package:edit_services", lang), callback_data=f"pkg:edit_items:{pkg_id}"),
-            InlineKeyboardButton(text=t("admin:package:edit_price", lang), callback_data=f"pkg:edit_price:{pkg_id}"),
+        ],
+        [
+            InlineKeyboardButton(text=f"📊 Pricing: {sop_icon}", callback_data=f"pkg:toggle_pricing:{pkg_id}"),
+            InlineKeyboardButton(text=f"📋 Booking: {sob_icon}", callback_data=f"pkg:toggle_booking:{pkg_id}"),
         ],
         [
             InlineKeyboardButton(text=t("common:save", lang), callback_data=f"pkg:save:{pkg_id}"),
@@ -102,6 +152,13 @@ def pkg_edit_cancel_inline(pkg_id: int, lang: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[
         InlineKeyboardButton(text=t("common:cancel", lang), callback_data=f"pkg:edit:{pkg_id}")
     ]])
+
+
+def pkg_edit_clear_cancel_inline(pkg_id: int, lang: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=t("common:clear", lang), callback_data=f"pkg:clear_desc:{pkg_id}")],
+        [InlineKeyboardButton(text=t("common:cancel", lang), callback_data=f"pkg:edit:{pkg_id}")],
+    ])
 
 
 def pkg_items_multiselect_inline(
@@ -139,6 +196,18 @@ def pkg_items_multiselect_inline(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def pkg_edit_qty_inline(pkg_id: int, lang: str) -> InlineKeyboardMarkup:
+    """Single-select qty [1][5][10] for EDIT items."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="1", callback_data=f"pkg_edit:qty:{pkg_id}:1"),
+            InlineKeyboardButton(text="5", callback_data=f"pkg_edit:qty:{pkg_id}:5"),
+            InlineKeyboardButton(text="10", callback_data=f"pkg_edit:qty:{pkg_id}:10"),
+        ],
+        [InlineKeyboardButton(text=t("common:cancel", lang), callback_data=f"pkg:edit:{pkg_id}")],
+    ])
+
+
 # ==============================================================
 # Public entry
 # ==============================================================
@@ -146,12 +215,13 @@ def pkg_items_multiselect_inline(
 async def start_package_edit(mc, callback: CallbackQuery, state: FSMContext, pkg_id: int):
     lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
+    pkg = await api.get_package(pkg_id)
     await state.clear()
-    await state.update_data(pkg_id=pkg_id, changes={})
+    await state.update_data(pkg_id=pkg_id, original=pkg, changes={})
+    await state.set_state(None)
 
-    # show edit menu
-    await state.set_state(None)  # menu state-free (как в specialists_edit)
-    await mc.edit_inline(callback.message, t("admin:package:edit_title", lang), pkg_edit_inline(pkg_id, lang))
+    text = build_package_edit_text(pkg, {}, lang)
+    await mc.edit_inline(callback.message, text, pkg_edit_inline(pkg_id, pkg, {}, lang))
 
 
 # ==============================================================
@@ -170,7 +240,6 @@ def setup(mc, get_user_role):
     @router.message(F.text.in_(t_all("admin:packages:back")), PackageEdit.description)
     @router.message(F.text.in_(t_all("admin:packages:back")), PackageEdit.items)
     @router.message(F.text.in_(t_all("admin:packages:back")), PackageEdit.quantity)
-    @router.message(F.text.in_(t_all("admin:packages:back")), PackageEdit.price)
     async def edit_fsm_back_escape(message: Message, state: FSMContext):
         """Escape hatch: Reply Back во время Edit FSM."""
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
@@ -193,9 +262,16 @@ def setup(mc, get_user_role):
 
         data = await state.get_data()
         if data.get("pkg_id") != pkg_id:
-            await state.update_data(pkg_id=pkg_id, changes={})
+            pkg = await api.get_package(pkg_id)
+            await state.update_data(pkg_id=pkg_id, original=pkg, changes={})
+        else:
+            pkg = data.get("original") or await api.get_package(pkg_id)
 
-        await mc.edit_inline(callback.message, t("admin:package:edit_title", lang), pkg_edit_inline(pkg_id, lang))
+        changes = dict(data.get("changes") or {})
+        await state.set_state(None)
+
+        text = build_package_edit_text(pkg, changes, lang)
+        await mc.edit_inline(callback.message, text, pkg_edit_inline(pkg_id, pkg, changes, lang))
         await callback.answer()
 
     # ==========================================================
@@ -222,12 +298,14 @@ def setup(mc, get_user_role):
 
         data = await state.get_data()
         pkg_id = int(data.get("pkg_id") or 0)
+        original = data.get("original") or {}
         changes: dict[str, Any] = dict(data.get("changes") or {})
         changes["name"] = name
         await state.update_data(changes=changes)
         await state.set_state(None)
 
-        await mc.show_inline_readonly(message, t("admin:package:edit_title", lang), pkg_edit_inline(pkg_id, lang))
+        text = build_package_edit_text(original, changes, lang)
+        await mc.show_inline_readonly(message, text, pkg_edit_inline(pkg_id, original, changes, lang))
 
     # ==========================================================
     # EDIT DESCRIPTION
@@ -239,7 +317,23 @@ def setup(mc, get_user_role):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
         await state.set_state(PackageEdit.description)
-        await mc.edit_inline_input(callback.message, t("admin:package:enter_description", lang), pkg_edit_cancel_inline(pkg_id, lang))
+        await mc.edit_inline_input(callback.message, t("admin:package:enter_description", lang), pkg_edit_clear_cancel_inline(pkg_id, lang))
+        await callback.answer()
+
+    @router.callback_query(F.data.startswith("pkg:clear_desc:"))
+    async def edit_desc_clear(callback: CallbackQuery, state: FSMContext):
+        pkg_id = int(callback.data.split(":")[2])
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
+
+        data = await state.get_data()
+        original = data.get("original") or {}
+        changes: dict[str, Any] = dict(data.get("changes") or {})
+        changes["description"] = None
+        await state.update_data(changes=changes)
+        await state.set_state(None)
+
+        text = build_package_edit_text(original, changes, lang)
+        await mc.edit_inline(callback.message, text, pkg_edit_inline(pkg_id, original, changes, lang))
         await callback.answer()
 
     @router.message(PackageEdit.description)
@@ -251,48 +345,53 @@ def setup(mc, get_user_role):
 
         data = await state.get_data()
         pkg_id = int(data.get("pkg_id") or 0)
+        original = data.get("original") or {}
         changes: dict[str, Any] = dict(data.get("changes") or {})
         changes["description"] = desc
         await state.update_data(changes=changes)
         await state.set_state(None)
 
-        await mc.show_inline_readonly(message, t("admin:package:edit_title", lang), pkg_edit_inline(pkg_id, lang))
+        text = build_package_edit_text(original, changes, lang)
+        await mc.show_inline_readonly(message, text, pkg_edit_inline(pkg_id, original, changes, lang))
 
     # ==========================================================
-    # EDIT PRICE
+    # TOGGLE show_on_pricing / show_on_booking
     # ==========================================================
 
-    @router.callback_query(F.data.startswith("pkg:edit_price:"))
-    async def edit_price_start(callback: CallbackQuery, state: FSMContext):
+    @router.callback_query(F.data.startswith("pkg:toggle_pricing:"))
+    async def toggle_pricing(callback: CallbackQuery, state: FSMContext):
         pkg_id = int(callback.data.split(":")[2])
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
-        await state.set_state(PackageEdit.price)
-        await mc.edit_inline_input(callback.message, t("admin:package:enter_price", lang), pkg_edit_cancel_inline(pkg_id, lang))
+        data = await state.get_data()
+        original = data.get("original") or {}
+        changes: dict[str, Any] = dict(data.get("changes") or {})
+        current = changes.get("show_on_pricing", original.get("show_on_pricing", True))
+        changes["show_on_pricing"] = not current
+        await state.update_data(changes=changes)
+
+        text = build_package_edit_text(original, changes, lang)
+        await mc.edit_inline(callback.message, text, pkg_edit_inline(pkg_id, original, changes, lang))
         await callback.answer()
 
-    @router.message(PackageEdit.price)
-    async def edit_price_apply(message: Message, state: FSMContext):
-        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
-        price = _safe_decimal(message.text or "")
-        if price is None:
-            pkg_id = int((await state.get_data()).get("pkg_id") or 0)
-            await mc.show_inline_input(message, t("admin:package:error_price", lang), pkg_edit_cancel_inline(pkg_id, lang))
-            return
+    @router.callback_query(F.data.startswith("pkg:toggle_booking:"))
+    async def toggle_booking(callback: CallbackQuery, state: FSMContext):
+        pkg_id = int(callback.data.split(":")[2])
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
         data = await state.get_data()
-        pkg_id = int(data.get("pkg_id") or 0)
+        original = data.get("original") or {}
         changes: dict[str, Any] = dict(data.get("changes") or {})
-        # package_price is now computed from service price tiers;
-        # stored for reference but not persisted on service_packages
-        pass
+        current = changes.get("show_on_booking", original.get("show_on_booking", True))
+        changes["show_on_booking"] = not current
         await state.update_data(changes=changes)
-        await state.set_state(None)
 
-        await mc.show_inline_readonly(message, t("admin:package:edit_title", lang), pkg_edit_inline(pkg_id, lang))
+        text = build_package_edit_text(original, changes, lang)
+        await mc.edit_inline(callback.message, text, pkg_edit_inline(pkg_id, original, changes, lang))
+        await callback.answer()
 
     # ==========================================================
-    # EDIT ITEMS (multi-select + quantities)
+    # EDIT ITEMS (multi-select + qty single-select)
     # ==========================================================
 
     @router.callback_query(F.data.startswith("pkg:edit_items:"))
@@ -302,23 +401,24 @@ def setup(mc, get_user_role):
 
         pkg = await api.get_package(pkg_id)
         items = pkg.get("package_items") or []
+        if isinstance(items, str):
+            try:
+                items = json.loads(items)
+            except Exception:
+                items = []
         if isinstance(items, dict):
             items = [items]
         current_ids = set()
-        current_qty: dict[int, int] = {}
         if isinstance(items, list):
             for it in items:
                 sid = int(it.get("service_id", 0) or 0)
-                qty = int(it.get("quantity", 0) or 0)
-                if sid > 0 and qty > 0:
+                if sid > 0:
                     current_ids.add(sid)
-                    current_qty[sid] = qty
 
         await state.set_state(PackageEdit.items)
         await state.update_data(
             items_selected_ids=list(current_ids),
             items_page=0,
-            items_current_qty={str(k): v for k, v in current_qty.items()},
         )
 
         services = await api.get_services()
@@ -376,79 +476,34 @@ def setup(mc, get_user_role):
             await callback.answer(t("admin:package:error_no_services", lang), show_alert=True)
             return
 
-        # sequential quantities
+        # transition to qty single-select
         await state.set_state(PackageEdit.quantity)
-        current_qty = dict(data.get("items_current_qty") or {})
-
-        await state.update_data(
-            q_service_ids=selected_ids,
-            q_index=0,
-            q_quantities=current_qty,  # str->int
-        )
-
-        services = await api.get_services()
-        services_map = {int(s["id"]): (s.get("name") or "?") for s in services}
-        first_id = int(selected_ids[0])
-        svc_name = services_map.get(first_id, "?")
-
-        await mc.edit_inline_input(
+        kb = pkg_edit_qty_inline(pkg_id, lang)
+        await mc.edit_inline(
             callback.message,
-            t("admin:package:enter_quantity", lang) % svc_name,
-            pkg_edit_cancel_inline(pkg_id, lang)
+            t("admin:package:select_qty", lang),
+            kb,
         )
         await callback.answer()
 
-    @router.message(PackageEdit.quantity)
-    async def edit_items_quantity(message: Message, state: FSMContext):
-        lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
-        qty = _safe_int(message.text or "")
-        if qty is None:
-            pkg_id = int((await state.get_data()).get("pkg_id") or 0)
-            await mc.show_inline_input(message, t("admin:package:error_quantity", lang), pkg_edit_cancel_inline(pkg_id, lang))
-            return
+    @router.callback_query(F.data.startswith("pkg_edit:qty:"), PackageEdit.quantity)
+    async def edit_qty_select(callback: CallbackQuery, state: FSMContext):
+        parts = callback.data.split(":")
+        pkg_id, qty = int(parts[2]), int(parts[3])
+        lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
 
         data = await state.get_data()
-        pkg_id = int(data.get("pkg_id") or 0)
-        ids = list(data.get("q_service_ids") or [])
-        idx = int(data.get("q_index") or 0)
-        q_quantities: dict[str, Any] = dict(data.get("q_quantities") or {})
+        selected_ids = data.get("items_selected_ids") or []
+        original = data.get("original") or {}
+        package_items = [{"service_id": int(s), "quantity": qty} for s in selected_ids]
+        changes: dict[str, Any] = dict(data.get("changes") or {})
+        changes["package_items"] = json.dumps(package_items)
+        await state.update_data(changes=changes)
+        await state.set_state(None)
 
-        if idx < 0 or idx >= len(ids):
-            await state.set_state(None)
-            await mc.show_inline_readonly(message, t("admin:package:edit_title", lang), pkg_edit_inline(pkg_id, lang))
-            return
-
-        sid = int(ids[idx])
-        q_quantities[str(sid)] = qty
-
-        idx += 1
-        await state.update_data(q_quantities=q_quantities, q_index=idx)
-
-        if idx >= len(ids):
-            # finalize package_items change
-            package_items = []
-            for s in ids:
-                q = int(q_quantities.get(str(int(s)), 1))
-                package_items.append({"service_id": int(s), "quantity": q})
-
-            changes: dict[str, Any] = dict(data.get("changes") or {})
-            changes["package_items"] = json.dumps(package_items)
-            await state.update_data(changes=changes)
-            await state.set_state(None)
-
-            await mc.show_inline_readonly(message, t("admin:package:edit_title", lang), pkg_edit_inline(pkg_id, lang))
-            return
-
-        services = await api.get_services()
-        services_map = {int(s["id"]): (s.get("name") or "?") for s in services}
-        next_id = int(ids[idx])
-        next_name = services_map.get(next_id, "?")
-
-        await mc.show_inline_input(
-            message,
-            t("admin:package:enter_quantity", lang) % next_name,
-            pkg_edit_cancel_inline(pkg_id, lang)
-        )
+        text = build_package_edit_text(original, changes, lang)
+        await mc.edit_inline(callback.message, text, pkg_edit_inline(pkg_id, original, changes, lang))
+        await callback.answer()
 
     # ==========================================================
     # SAVE (PATCH diff)
@@ -469,8 +524,12 @@ def setup(mc, get_user_role):
         await api.patch_package(pkg_id, changes)
         await state.update_data(changes={})
 
-        # back to view
-        await mc.edit_inline(callback.message, t("admin:package:saved", lang), pkg_edit_inline(pkg_id, lang))
+        # reload and show updated edit menu
+        pkg = await api.get_package(pkg_id)
+        await state.update_data(original=pkg)
+
+        text = t("admin:package:saved", lang) + "\n\n" + build_package_edit_text(pkg, {}, lang)
+        await mc.edit_inline(callback.message, text, pkg_edit_inline(pkg_id, pkg, {}, lang))
         await callback.answer()
 
     @router.callback_query(F.data == "pkg_edit:noop")
@@ -479,4 +538,3 @@ def setup(mc, get_user_role):
 
     logger.info("=== packages_edit router configured ===")
     return router
-
