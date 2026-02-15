@@ -118,6 +118,7 @@ def build_pricing_cards(db: Session, view: Optional[str] = None) -> list[dict]:
         result.append({
             "name": card_name,
             "slug": slugify(card_name),
+            "service_id": first_sid,
             "description": description,
             "category": category,
             "icon": "✦",

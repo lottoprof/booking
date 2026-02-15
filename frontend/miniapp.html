@@ -888,7 +888,16 @@
 
           this.state.clientId = userData.client_id;
           if (locations.length > 0) this.state.locationId = locations[0].id;
-          this.services = services;
+          this.services = services.map(card => ({
+            id: card.service_id || card.variants?.[0]?.package_id || 0,
+            service_package_id: card.variants?.[0]?.package_id || null,
+            name: card.name,
+            description: card.description,
+            category: card.category,
+            duration_min: card.duration_min,
+            price: card.variants?.[0]?.price || 0,
+            variants: card.variants || [],
+          }));
 
           this.hideLoading();
           this.renderProgressBar();
@@ -1166,8 +1175,11 @@
           d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
 
         try {
+          const svcParam = this.state.service.service_package_id
+            ? `service_package_id=${this.state.service.service_package_id}`
+            : `service_id=${this.state.service.id}`;
           const data = await this.fetchAPI(
-            `/web/slots/day?location_id=${this.state.locationId}&service_id=${this.state.service.id}&date=${this.state.date}`
+            `/web/slots/day?location_id=${this.state.locationId}&${svcParam}&date=${this.state.date}`
           );
           this.timeSlots = data.slots || [];
           document.getElementById('time-skeleton').classList.add('hidden');
