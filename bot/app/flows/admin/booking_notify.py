@@ -29,114 +29,114 @@ from bot.app.utils.api import api
 
 logger = logging.getLogger(__name__)
 
-router = Router(name="booking_notify")
 
+def setup(mc):
+    """Setup admin booking notification router with MenuController."""
+    router = Router(name="booking_notify")
 
-@router.callback_query(F.data.startswith("bkn:hide:"))
-async def handle_hide(callback: CallbackQuery):
-    """Delete the notification message."""
-    try:
-        await callback.message.delete()
-    except Exception:
-        pass
-    await callback.answer(t("common:hidden", DEFAULT_LANG))
-
-
-@router.callback_query(F.data.startswith("bkn:edit:"))
-async def handle_edit(callback: CallbackQuery):
-    """Open edit menu — render directly, Back returns to notification view."""
-    booking_id = int(callback.data.split(":")[2])
-    return_to = f"bkn:back:{booking_id}"
-
-    booking = await api.get_booking(booking_id)
-    if not booking:
-        await callback.answer(t("common:not_found", DEFAULT_LANG), show_alert=True)
-        return
-
-    from bot.app.flows.common.booking_edit import _format_edit_view, build_edit_menu_keyboard
-
-    text = _format_edit_view(booking)
-    keyboard = build_edit_menu_keyboard(booking_id, return_to)
-
-    await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
-    await callback.answer()
-
-
-@router.callback_query(F.data.startswith("bkn:done_yes:"))
-async def handle_done_yes(callback: CallbackQuery):
-    """Confirm service was delivered — set status to 'done'."""
-    booking_id = int(callback.data.split(":")[2])
-    lang = DEFAULT_LANG
-
-    booking = await api.get_booking(booking_id)
-    if not booking:
-        await callback.answer(t("common:error", lang), show_alert=True)
-        return
-
-    if booking.get("status") in ("done", "no_show", "cancelled"):
-        await callback.answer(
-            t(f"notify:status:{booking.get('status')}", lang), show_alert=True
-        )
-        return
-
-    result = await api.complete_booking(booking_id)
-    if result:
-        await callback.answer(t("notify:done:confirmed", lang), show_alert=True)
+    @router.callback_query(F.data.startswith("bkn:hide:"))
+    async def handle_hide(callback: CallbackQuery):
+        """Delete the notification message."""
         try:
             await callback.message.delete()
         except Exception:
             pass
-    else:
-        await callback.answer(t("common:error", lang), show_alert=True)
+        await callback.answer(t("common:hidden", DEFAULT_LANG))
 
+    @router.callback_query(F.data.startswith("bkn:edit:"))
+    async def handle_edit(callback: CallbackQuery):
+        """Open edit menu — render directly, Back returns to notification view."""
+        booking_id = int(callback.data.split(":")[2])
+        return_to = f"bkn:back:{booking_id}"
 
-@router.callback_query(F.data.startswith("bkn:done_no:"))
-async def handle_done_no(callback: CallbackQuery):
-    """Service was NOT provided — set status to 'no_show'."""
-    booking_id = int(callback.data.split(":")[2])
-    lang = DEFAULT_LANG
+        booking = await api.get_booking(booking_id)
+        if not booking:
+            await callback.answer(t("common:not_found", DEFAULT_LANG), show_alert=True)
+            return
 
-    booking = await api.get_booking(booking_id)
-    if not booking:
-        await callback.answer(t("common:error", lang), show_alert=True)
-        return
+        from bot.app.flows.common.booking_edit import _format_edit_view, build_edit_menu_keyboard
 
-    if booking.get("status") in ("done", "no_show", "cancelled"):
-        await callback.answer(
-            t(f"notify:status:{booking.get('status')}", lang), show_alert=True
-        )
-        return
+        text = _format_edit_view(booking)
+        keyboard = build_edit_menu_keyboard(booking_id, return_to)
 
-    result = await api.update_booking(booking_id, status="no_show")
-    if result:
-        await callback.answer(
-            t("notify:done:not_provided", lang), show_alert=True
-        )
+        await mc.edit_inline(callback.message, text, keyboard, parse_mode="HTML")
+        await callback.answer()
+
+    @router.callback_query(F.data.startswith("bkn:done_yes:"))
+    async def handle_done_yes(callback: CallbackQuery):
+        """Confirm service was delivered — set status to 'done'."""
+        booking_id = int(callback.data.split(":")[2])
+        lang = DEFAULT_LANG
+
+        booking = await api.get_booking(booking_id)
+        if not booking:
+            await callback.answer(t("common:error", lang), show_alert=True)
+            return
+
+        if booking.get("status") in ("done", "no_show", "cancelled"):
+            await callback.answer(
+                t(f"notify:status:{booking.get('status')}", lang), show_alert=True
+            )
+        else:
+            result = await api.complete_booking(booking_id)
+            if result:
+                await callback.answer(t("notify:done:confirmed", lang), show_alert=True)
+            else:
+                await callback.answer(t("common:error", lang), show_alert=True)
+
+        # Always delete — admin made a decision
         try:
             await callback.message.delete()
         except Exception:
             pass
-    else:
-        await callback.answer(t("common:error", lang), show_alert=True)
 
+    @router.callback_query(F.data.startswith("bkn:done_no:"))
+    async def handle_done_no(callback: CallbackQuery):
+        """Service was NOT provided — set status to 'no_show'."""
+        booking_id = int(callback.data.split(":")[2])
+        lang = DEFAULT_LANG
 
-@router.callback_query(F.data.startswith("bkn:back:"))
-async def handle_back(callback: CallbackQuery):
-    """Return to the original notification view."""
-    booking_id = int(callback.data.split(":")[2])
+        booking = await api.get_booking(booking_id)
+        if not booking:
+            await callback.answer(t("common:error", lang), show_alert=True)
+            return
 
-    booking = await api.get_booking(booking_id)
-    if not booking:
-        await callback.answer(t("common:not_found", DEFAULT_LANG), show_alert=True)
-        return
+        if booking.get("status") in ("done", "no_show", "cancelled"):
+            await callback.answer(
+                t(f"notify:status:{booking.get('status')}", lang), show_alert=True
+            )
+        else:
+            result = await api.update_booking(booking_id, status="no_show")
+            if result:
+                await callback.answer(
+                    t("notify:done:not_provided", lang), show_alert=True
+                )
+            else:
+                await callback.answer(t("common:error", lang), show_alert=True)
 
-    text = await _format_notification(booking)
-    keyboard = _build_notify_keyboard(booking_id)
+        # Always delete — admin made a decision
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
 
-    await callback.message.edit_text(
-        text, reply_markup=keyboard, parse_mode="HTML"
-    )
-    await callback.answer()
+    @router.callback_query(F.data.startswith("bkn:back:"))
+    async def handle_back(callback: CallbackQuery):
+        """Return to the original notification view."""
+        booking_id = int(callback.data.split(":")[2])
+
+        booking = await api.get_booking(booking_id)
+        if not booking:
+            await callback.answer(t("common:not_found", DEFAULT_LANG), show_alert=True)
+            return
+
+        text = await _format_notification(booking)
+        keyboard = _build_notify_keyboard(booking_id)
+
+        await mc.edit_inline(callback.message, text, keyboard, parse_mode="HTML")
+        await callback.answer()
+
+    return router
 
 
 async def _format_notification(booking: dict, lang: str = DEFAULT_LANG) -> str:

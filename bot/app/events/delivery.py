@@ -169,14 +169,18 @@ async def _send_telegram(
 ) -> None:
     """Send a Telegram message via bot instance."""
     from bot.app.main import bot
+    from bot.app.main import menu as mc
 
     try:
-        await bot.send_message(
+        msg = await bot.send_message(
             chat_id=tg_id,
             text=text,
             reply_markup=keyboard,
             parse_mode="HTML",
         )
+        # Track inline message in MC so it gets cleaned up on navigation
+        if keyboard:
+            await mc._add_inline_id(tg_id, msg.message_id)
         logger.info(f"Telegram notification sent to tg_id={tg_id}")
     except Exception as e:
         logger.warning(f"Failed to send Telegram to tg_id={tg_id}: {e}")
