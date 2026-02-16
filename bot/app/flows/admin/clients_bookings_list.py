@@ -5,6 +5,7 @@ bot/app/flows/admin/clients_bookings_list.py
 """
 
 import math
+from datetime import datetime
 
 from aiogram import F, Router
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
@@ -31,11 +32,12 @@ def kb_bookings_list(bookings: list, page: int, lang: str) -> InlineKeyboardMark
     page_bookings = bookings[start:start + PAGE_SIZE]
 
     for b in page_bookings:
-        service_name = b.get("_service_name", "?")
+        display_name = b.get("_display_name", "?")
         client_name = b.get("_client_name", "?")
+        dt_str = b.get("_datetime_str", "")
         client_id = b.get("client_id")
         rows.append([InlineKeyboardButton(
-            text=f"{service_name} — {client_name}",
+            text=f"{display_name} — {client_name} — {dt_str}",
             callback_data=f"client:view:{client_id}"
         )])
 
@@ -72,9 +74,27 @@ def setup(menu_controller, api):
         services = await api.get_services()
         service_map = {s["id"]: s["name"] for s in services}
 
-        users_cache = {}
+        users_cache: dict[int, str] = {}
+        packages_cache: dict[int, str] = {}
         for b in bookings:
-            b["_service_name"] = service_map.get(b["service_id"], "?")
+            # Display name: пакет (если есть) или услуга
+            pkg_id = b.get("service_package_id")
+            if pkg_id:
+                if pkg_id not in packages_cache:
+                    pkg = await api.get_package(pkg_id)
+                    packages_cache[pkg_id] = pkg["name"] if pkg else "?"
+                b["_display_name"] = packages_cache[pkg_id]
+            else:
+                b["_display_name"] = service_map.get(b["service_id"], "?")
+
+            # Дата-время
+            ds = b.get("date_start", "")
+            try:
+                dt = datetime.strptime(ds[:16], "%Y-%m-%dT%H:%M") if "T" in ds else datetime.strptime(ds[:16], "%Y-%m-%d %H:%M")
+                b["_datetime_str"] = dt.strftime("%d.%m %H:%M")
+            except (ValueError, TypeError):
+                b["_datetime_str"] = ""
+
             client_id = b["client_id"]
             if client_id not in users_cache:
                 user = await api.get_user(client_id)
