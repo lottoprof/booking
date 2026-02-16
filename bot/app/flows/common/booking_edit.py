@@ -60,6 +60,10 @@ def setup(mc):
             await callback.answer(t("common:not_found", lang), show_alert=True)
             return
 
+        if _is_expired(booking):
+            await callback.answer(t("bke:expired", lang), show_alert=True)
+            return
+
         text = _format_edit_view(booking, lang=lang)
         keyboard = build_edit_menu_keyboard(booking_id, return_to, lang=lang)
 
@@ -77,6 +81,11 @@ def setup(mc):
         booking_id = int(parts[2])
         return_to = ":".join(parts[3:]) if len(parts) > 3 else "hide"
         lang = DEFAULT_LANG
+
+        booking = await api.get_booking(booking_id)
+        if _is_expired(booking or {}):
+            await callback.answer(t("bke:expired", lang), show_alert=True)
+            return
 
         text = t("bke:cancel_confirm", lang)
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -144,6 +153,10 @@ def setup(mc):
         booking = await api.get_booking(booking_id)
         if not booking:
             await callback.answer(t("common:not_found", lang), show_alert=True)
+            return
+
+        if _is_expired(booking):
+            await callback.answer(t("bke:expired", lang), show_alert=True)
             return
 
         # Save context for FSM
@@ -305,6 +318,18 @@ def setup(mc):
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
+
+def _is_expired(booking: dict) -> bool:
+    """Check if booking's end time has already passed."""
+    date_end = booking.get("date_end")
+    if not date_end:
+        return False
+    try:
+        dt_end = datetime.fromisoformat(date_end.replace("Z", ""))
+        return datetime.utcnow() > dt_end
+    except Exception:
+        return False
+
 
 def _format_dt(iso_str: str) -> str:
     """Format ISO datetime to '28.01.2026 14:00'."""

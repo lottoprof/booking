@@ -1053,6 +1053,8 @@ ru:bke:cancel_booking        | "❌ Отменить запись"
 en:bke:cancel_booking        | "❌ Cancel booking"
 ru:bke:change_time           | "🕐 Изменить время"
 en:bke:change_time           | "🕐 Change time"
+ru:bke:expired               | "Время записи истекло"
+en:bke:expired               | "Booking time has ended"
 
 # --- admin sell package ---
 ru:admin:client:sell_package | "📦 Продать пакет"

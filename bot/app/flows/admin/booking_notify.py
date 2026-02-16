@@ -54,6 +54,14 @@ def setup(mc):
             await callback.answer(t("common:not_found", DEFAULT_LANG), show_alert=True)
             return
 
+        from bot.app.flows.common.booking_edit import _is_expired
+
+        if _is_expired(booking):
+            text, keyboard = _build_done_view(booking_id)
+            await mc.edit_inline(callback.message, text, keyboard, parse_mode="HTML")
+            await callback.answer()
+            return
+
         from bot.app.flows.common.booking_edit import _format_edit_view, build_edit_menu_keyboard
 
         text = _format_edit_view(booking)
@@ -164,6 +172,32 @@ async def _format_notification(booking: dict, lang: str = DEFAULT_LANG) -> str:
     lines.append(f"{status_label} {booking.get('status', '—')}")
 
     return "\n".join(lines)
+
+
+def _build_done_view(
+    booking_id: int, lang: str = DEFAULT_LANG
+) -> tuple[str, InlineKeyboardMarkup]:
+    """Build done-confirmation view (title + question + Yes/No/Hide buttons)."""
+    text = f"{t('notify:done:title', lang)}\n\n{t('notify:done:question', lang)}"
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text=t("common:no", lang),
+                callback_data=f"bkn:done_no:{booking_id}",
+            ),
+            InlineKeyboardButton(
+                text=t("common:yes", lang),
+                callback_data=f"bkn:done_yes:{booking_id}",
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text=t("common:hide", lang),
+                callback_data=f"bkn:hide:{booking_id}",
+            ),
+        ],
+    ])
+    return text, keyboard
 
 
 def _build_notify_keyboard(booking_id: int, lang: str = DEFAULT_LANG) -> InlineKeyboardMarkup:
