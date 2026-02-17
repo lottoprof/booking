@@ -684,7 +684,7 @@
     .site-footer {
       background: var(--bg-secondary);
       border-top: 1px solid var(--border);
-      padding: 3.5rem 2rem 0;
+      padding: 2.5rem 2rem 0;
     }
     .site-footer .footer-inner {
       max-width: 1120px;
@@ -692,16 +692,17 @@
     }
     .footer-top {
       display: grid;
-      grid-template-columns: 1.5fr 1fr 0.8fr 0.8fr;
+      grid-template-columns: 1fr 1.5fr;
       gap: 2.5rem;
-      padding-bottom: 2.5rem;
+      padding-bottom: 2rem;
+      align-items: start;
     }
     .site-footer .footer-logo {
       display: flex;
       align-items: center;
       gap: 8px;
       text-decoration: none;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
     }
     .site-footer .footer-logo img:first-child { height: 32px; width: auto; }
     .site-footer .footer-logo img:last-child { height: 14px; width: auto; }
@@ -710,42 +711,44 @@
       color: var(--text-muted);
       font-weight: 300;
     }
-    .footer-col, address.footer-col {
+    .footer-content {
       display: flex;
       flex-direction: column;
+      gap: 0.75rem;
+    }
+    .footer-row {
       font-style: normal;
     }
-    .footer-col-label {
-      font-size: 0.7rem;
+    .footer-row a {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-row a:hover { color: var(--teal); }
+    .footer-nav-row a + a::before {
+      content: " · ";
+      color: var(--text-muted);
+    }
+    .footer-mini-label {
+      display: block;
+      font-size: 0.65rem;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.2rem;
+      margin-top: 0.25rem;
     }
-    .footer-col-value {
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      line-height: 1.5;
+    .footer-contacts-row a + a::before {
+      content: " · ";
+      color: var(--text-muted);
     }
-    .footer-col-link {
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      text-decoration: none;
-      line-height: 1.5;
-      padding: 0.15rem 0;
-      transition: color 0.2s;
-    }
-    .footer-nav-grid {
-      display: flex;
-      flex-direction: column;
-    }
-    .footer-col-link:hover { color: var(--teal); }
     .footer-bottom {
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 1.5rem 0;
+      padding: 1.25rem 0;
       border-top: 1px solid var(--border-light);
     }
     .footer-bottom .footer-copy {
@@ -754,78 +757,17 @@
     }
 
     @media (max-width: 768px) {
-      .site-footer { padding: 1.25rem 1.25rem 0; }
+      .site-footer { padding: 1.5rem 1.25rem 0; }
       .footer-top {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
         text-align: center;
-        gap: 0;
-        padding-bottom: 0.75rem;
-      }
-
-      /* Brand full width */
-      .footer-brand {
-        width: 100%;
-        padding-bottom: 0.5rem;
       }
       .site-footer .footer-logo { justify-content: center; }
-      .footer-tagline { text-align: center; font-size: 0.75rem; }
-
-      /* Row 1-2: address + phone as tagline style */
-      address.footer-col {
-        width: 100%;
-        flex-direction: column;
-        align-items: center;
-        gap: 0;
-        padding: 0 0 0.6rem;
-        margin-bottom: 0.6rem;
-        border-bottom: 1px solid var(--border-light);
-      }
-      address.footer-col .footer-col-label { display: none; }
-      address.footer-col .footer-col-link {
-        font-size: 0.82rem;
-        font-weight: 300;
-        color: var(--text-muted);
-        padding: 0.1rem 0;
-      }
-
-      /* Row 3: two columns 50/50 */
-      .footer-top > .footer-col:not(address) {
-        width: 50%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 0.4rem 0;
-      }
-
-      /* Swapped fonts: headers look like links, links look like labels */
-      .footer-top > .footer-col:not(address) .footer-col-label {
-        font-size: 0.82rem;
-        font-weight: 300;
-        letter-spacing: 0;
-        text-transform: none;
-        color: var(--text-secondary);
-        margin-bottom: 0.4rem;
-      }
-      .footer-top > .footer-col:not(address) .footer-col-link {
-        font-size: 0.65rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        padding: 0.15rem 0;
-      }
-
-      /* Nav 2x2 grid */
-      .footer-nav-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.15rem 1.5rem;
-        text-align: center;
-      }
-
-      .footer-bottom { padding: 0.6rem 0 1rem; }
+      .footer-tagline { text-align: center; }
+      .footer-content { align-items: center; }
+      .footer-mini-label { text-align: center; }
+      .footer-bottom { padding: 0.75rem 0 1rem; }
       .footer-bottom .footer-copy { font-size: 0.7rem; }
     }
     /* Copy protection */
@@ -1216,25 +1158,23 @@
           </a>
           <p class="footer-tagline">Студия аппаратной эстетики в&nbsp;Чехове</p>
         </div>
-        <address class="footer-col">
-          <span class="footer-col-label">Адрес</span>
-          <a href="https://yandex.ru/maps/?pt=37.445868,55.133406&z=17&l=map" target="_blank" rel="noopener" class="footer-col-link">г. Чехов, ул. Церковная Горка, 1</a>
-          <span class="footer-col-label" style="margin-top:0.75rem">Телефон</span>
-          <a href="tel:+79309808207" class="footer-col-link">+7 930 980-82-07</a>
-        </address>
-        <div class="footer-col">
-          <span class="footer-col-label">Навигация</span>
-          <div class="footer-nav-grid">
-            <a href="#about" class="footer-col-link">О студии</a>
-            <a href="#services" class="footer-col-link">Услуги</a>
-            <a href="#faq" class="footer-col-link">Вопросы</a>
-            <a href="/pricing" class="footer-col-link">Прайс</a>
+        <div class="footer-content">
+          <div class="footer-row footer-nav-row">
+            <a href="#about">О студии</a>
+            <a href="#services">Услуги</a>
+            <a href="#faq">Вопросы</a>
+            <a href="/pricing">Прайс</a>
           </div>
-        </div>
-        <div class="footer-col">
-          <span class="footer-col-label">Мы в сети</span>
-          <a href="https://t.me/upgradelpg" target="_blank" rel="noopener" class="footer-col-link">Telegram</a>
-          <a href="https://yandex.ru/maps/?pt=37.445868,55.133406&z=17&l=map" target="_blank" rel="noopener" class="footer-col-link">Яндекс Карты</a>
+          <address class="footer-row footer-address-row">
+            <span class="footer-mini-label">Адрес</span>
+            <a href="https://yandex.ru/maps/?pt=37.445868,55.133406&z=17&l=map" target="_blank" rel="noopener">г. Чехов, ул. Церковная Горка, 1</a>
+          </address>
+          <div class="footer-row footer-contacts-row">
+            <span class="footer-mini-label">Контакты</span>
+            <a href="tel:+79309808207">+7 930 980-82-07</a>
+            <a href="https://t.me/upgradelpg" target="_blank" rel="noopener">Telegram</a>
+            <a href="https://yandex.ru/maps/?pt=37.445868,55.133406&z=17&l=map" target="_blank" rel="noopener">Яндекс Карты</a>
+          </div>
         </div>
       </div>
       <div class="footer-bottom">
