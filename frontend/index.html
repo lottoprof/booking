@@ -736,6 +736,10 @@
       padding: 0.15rem 0;
       transition: color 0.2s;
     }
+    .footer-nav-grid {
+      display: flex;
+      flex-direction: column;
+    }
     .footer-col-link:hover { color: var(--teal); }
     .footer-bottom {
       display: flex;
@@ -811,6 +815,14 @@
         text-transform: uppercase;
         color: var(--text-muted);
         padding: 0.15rem 0;
+      }
+
+      /* Nav 2x2 grid */
+      .footer-nav-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.15rem 1.5rem;
+        text-align: center;
       }
 
       .footer-bottom { padding: 0.6rem 0 1rem; }
@@ -1212,10 +1224,12 @@
         </address>
         <div class="footer-col">
           <span class="footer-col-label">Навигация</span>
-          <a href="#about" class="footer-col-link">О студии</a>
-          <a href="#services" class="footer-col-link">Услуги</a>
-          <a href="/pricing" class="footer-col-link">Прайс</a>
-          <a href="#faq" class="footer-col-link">Вопросы</a>
+          <div class="footer-nav-grid">
+            <a href="#about" class="footer-col-link">О студии</a>
+            <a href="#services" class="footer-col-link">Услуги</a>
+            <a href="#faq" class="footer-col-link">Вопросы</a>
+            <a href="/pricing" class="footer-col-link">Прайс</a>
+          </div>
         </div>
         <div class="footer-col">
           <span class="footer-col-label">Мы в сети</span>
