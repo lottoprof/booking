@@ -690,7 +690,6 @@
       gap: 2.5rem;
       padding-bottom: 2.5rem;
     }
-    .footer-brand {}
     .site-footer .footer-logo {
       display: flex;
       align-items: center;
@@ -705,55 +704,35 @@
       color: var(--text-muted);
       font-weight: 300;
     }
-    .footer-contact-label {
-      display: block;
+    .footer-col {
+      display: flex;
+      flex-direction: column;
+    }
+    .footer-col-label {
       font-size: 0.7rem;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.6rem;
     }
-    .footer-contact-item {
-      margin-bottom: 0.75rem;
-      font-size: 0.88rem;
+    .footer-col-value {
+      font-size: 0.85rem;
       color: var(--text-secondary);
+      line-height: 1.5;
     }
-    .footer-contact-item a {
-      color: var(--teal);
-      text-decoration: none;
-    }
-    .footer-contact-item a:hover {
-      text-decoration: underline;
-    }
-    .site-footer .footer-links {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .site-footer .footer-links a {
+    .footer-col-link {
       font-size: 0.85rem;
       color: var(--text-secondary);
       text-decoration: none;
+      line-height: 1.5;
+      padding: 0.15rem 0;
       transition: color 0.2s;
     }
-    .site-footer .footer-links a:hover { color: var(--teal); }
-    .footer-social-links {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .footer-social-link {
-      font-size: 0.85rem;
-      color: var(--teal);
-      text-decoration: none;
-      transition: opacity 0.2s;
-    }
-    .footer-social-link:hover { opacity: 0.7; }
+    .footer-col-link:hover { color: var(--teal); }
     .footer-bottom {
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
       padding: 1.5rem 0;
       border-top: 1px solid var(--border-light);
@@ -771,9 +750,6 @@
       }
       .footer-brand { grid-column: 1 / -1; }
       .footer-bottom {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
         padding: 1.25rem 0 1.5rem;
       }
     }
@@ -1177,40 +1153,27 @@
           </a>
           <p class="footer-tagline">Студия аппаратной эстетики в&nbsp;Чехове</p>
         </div>
-        <div class="footer-contacts">
-          <div class="footer-contact-item">
-            <span class="footer-contact-label">Адрес</span>
-            <span>г. Чехов, ул. Церковная Горка, 1</span>
-          </div>
-          <div class="footer-contact-item">
-            <span class="footer-contact-label">Телефон</span>
-            <a href="tel:+79309808207">+7 930 980-82-07</a>
-          </div>
-          <div class="footer-contact-item">
-            <span class="footer-contact-label">Режим работы</span>
-            <span>Пн–Вс 09:00–21:00</span>
-          </div>
+        <div class="footer-col">
+          <span class="footer-col-label">Адрес</span>
+          <span class="footer-col-value">г. Чехов, ул. Церковная Горка, 1</span>
+          <span class="footer-col-label" style="margin-top:0.75rem">Телефон</span>
+          <a href="tel:+79309808207" class="footer-col-link">+7 930 980-82-07</a>
         </div>
-        <nav class="footer-nav">
-          <span class="footer-contact-label">Навигация</span>
-          <ul class="footer-links">
-            <li><a href="#about">О студии</a></li>
-            <li><a href="#services">Услуги</a></li>
-            <li><a href="/pricing">Прайс</a></li>
-            <li><a href="#faq">Вопросы</a></li>
-          </ul>
-        </nav>
-        <div class="footer-social">
-          <span class="footer-contact-label">Мы в сети</span>
-          <div class="footer-social-links">
-            <a href="https://t.me/upgradelpg" target="_blank" rel="noopener" class="footer-social-link">Telegram</a>
-            <a href="https://yandex.ru/maps/?pt=37.445868,55.133406&z=17&l=map" target="_blank" rel="noopener" class="footer-social-link">Яндекс Карты</a>
-          </div>
+        <div class="footer-col">
+          <span class="footer-col-label">Навигация</span>
+          <a href="#about" class="footer-col-link">О студии</a>
+          <a href="#services" class="footer-col-link">Услуги</a>
+          <a href="/pricing" class="footer-col-link">Прайс</a>
+          <a href="#faq" class="footer-col-link">Вопросы</a>
+        </div>
+        <div class="footer-col">
+          <span class="footer-col-label">Мы в сети</span>
+          <a href="https://t.me/upgradelpg" target="_blank" rel="noopener" class="footer-col-link">Telegram</a>
+          <a href="https://yandex.ru/maps/?pt=37.445868,55.133406&z=17&l=map" target="_blank" rel="noopener" class="footer-col-link">Яндекс Карты</a>
         </div>
       </div>
       <div class="footer-bottom">
         <span class="footer-copy">© 2026 UPGRADE. Все права защищены.</span>
-        <a href="/book" class="btn btn-primary btn-sm">Записаться</a>
       </div>
     </div>
   </footer>
@@ -1316,4 +1279,3 @@
 
 </body>
 </html>
-
