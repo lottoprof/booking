@@ -750,54 +750,56 @@
     }
 
     @media (max-width: 768px) {
-      .site-footer { padding: 2rem 1.25rem 0; }
+      .site-footer { padding: 1.5rem 1.25rem 0; }
       .footer-top {
         grid-template-columns: 1fr;
         gap: 0;
         text-align: center;
-        padding-bottom: 1.5rem;
+        padding-bottom: 1rem;
       }
       .footer-brand {
-        padding-bottom: 1.5rem;
-        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        margin-bottom: 0.75rem;
         border-bottom: 1px solid var(--border-light);
       }
-      .site-footer .footer-logo {
-        justify-content: center;
-      }
+      .site-footer .footer-logo { justify-content: center; }
       .footer-tagline { text-align: center; }
-      .footer-col, address.footer-col {
+
+      /* Contacts inline */
+      address.footer-col {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.25rem 1rem;
+        padding: 0.5rem 0;
+      }
+      address.footer-col .footer-col-label { display: none; }
+      address.footer-col .footer-col-link {
+        font-size: 0.8rem;
+      }
+
+      /* Nav links horizontal */
+      .footer-col:not(address) {
         align-items: center;
-        padding: 0.75rem 0;
+        padding: 0.5rem 0;
       }
-      .footer-col-label {
-        font-size: 0.65rem;
-        margin-bottom: 0.4rem;
+      .footer-col:not(address) .footer-col-label {
+        font-size: 0.6rem;
+        margin-bottom: 0.3rem;
       }
-      .footer-col-link {
-        font-size: 0.82rem;
-        padding: 0.2rem 0;
+      .footer-col:not(address) .footer-col-link {
+        display: inline;
+        font-size: 0.8rem;
       }
+      .footer-col:not(address) .footer-col-link + .footer-col-link::before {
+        content: " · ";
+        color: var(--text-muted);
+      }
+
       .footer-bottom {
-        padding: 1rem 0 1.25rem;
+        padding: 0.75rem 0 1rem;
       }
-      .footer-bottom .footer-copy {
-        font-size: 0.72rem;
-      }
-    }
-
-    @media (min-width: 481px) and (max-width: 768px) {
-      /* Contacts + Nav + Social in a compact row */
-      .footer-top {
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 1rem;
-      }
-      .footer-brand { grid-column: 1 / -1; }
-      .footer-col, address.footer-col { align-items: center; }
-    }
-
-    @media (max-width: 480px) {
-      .footer-top { grid-template-columns: 1fr; }
+      .footer-bottom .footer-copy { font-size: 0.7rem; }
     }
     /* Copy protection */
     body { -webkit-user-select: none; user-select: none; }
