@@ -752,57 +752,65 @@
     @media (max-width: 768px) {
       .site-footer { padding: 1.25rem 1.25rem 0; }
       .footer-top {
-        grid-template-columns: 1fr;
-        gap: 0;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
         text-align: center;
+        gap: 0;
         padding-bottom: 0.75rem;
       }
+
+      /* Brand full width */
       .footer-brand {
-        padding-bottom: 0.75rem;
-        margin-bottom: 0.75rem;
-        border-bottom: 1px solid var(--border-light);
+        width: 100%;
+        padding-bottom: 0.5rem;
       }
       .site-footer .footer-logo { justify-content: center; }
       .footer-tagline { text-align: center; font-size: 0.75rem; }
 
-      /* Row 1: address + phone inline */
+      /* Row 1-2: address + phone as tagline style */
       address.footer-col {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0 1rem;
-        padding: 0.5rem 0;
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        padding: 0 0 0.6rem;
+        margin-bottom: 0.6rem;
         border-bottom: 1px solid var(--border-light);
-        margin-bottom: 0.5rem;
       }
       address.footer-col .footer-col-label { display: none; }
-      address.footer-col .footer-col-link { font-size: 0.78rem; }
+      address.footer-col .footer-col-link {
+        font-size: 0.82rem;
+        font-weight: 300;
+        color: var(--text-muted);
+        padding: 0.1rem 0;
+      }
 
-      /* Row 2: nav + social side by side */
+      /* Row 3: two columns 50/50 */
       .footer-top > .footer-col:not(address) {
-        display: inline-flex;
+        width: 50%;
+        display: flex;
         flex-direction: column;
         align-items: center;
         padding: 0.4rem 0;
       }
-      .footer-top {
-        /* Make nav and social sit side by side */
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      .footer-brand { width: 100%; }
-      address.footer-col { width: 100%; }
-      .footer-top > .footer-col:not(address) {
-        width: 50%;
-      }
+
+      /* Swapped fonts: headers look like links, links look like labels */
       .footer-top > .footer-col:not(address) .footer-col-label {
-        font-size: 0.6rem;
-        margin-bottom: 0.25rem;
+        font-size: 0.82rem;
+        font-weight: 300;
+        letter-spacing: 0;
+        text-transform: none;
+        color: var(--text-secondary);
+        margin-bottom: 0.4rem;
       }
       .footer-top > .footer-col:not(address) .footer-col-link {
-        font-size: 0.78rem;
-        padding: 0.1rem 0;
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        padding: 0.15rem 0;
       }
 
       .footer-bottom { padding: 0.6rem 0 1rem; }
