@@ -793,8 +793,6 @@
       .footer-bottom { padding: 0.75rem 0 1rem; }
       .footer-bottom .footer-copy { font-size: 0.7rem; }
     }
-    /* Copy protection */
-    body { -webkit-user-select: none; user-select: none; }
   </style>
 </head>
 <body>
@@ -882,7 +880,7 @@
               <div class="stat-label">опыта работы</div>
             </div>
             <div class="stat">
-              <div class="stat-number"> 6</div>
+              <div class="stat-number">6</div>
               <div class="stat-label">видов процедур</div>
             </div>
             <div class="stat">
@@ -898,7 +896,7 @@
   <!-- ═══ SEO TEXT ═══ -->
   <section class="seo-text" id="seo-about">
     <div class="section-inner">
-      <h2 class="section-title reveal">Аппаратная эстетика тела <em>в Чехове</em></h2>
+      <h2 class="section-title reveal">Аппаратная эстетика тела</h2>
       <div class="seo-text-content reveal">
         <p>
           Студия UPGRADE работает на сертифицированном оборудовании.<br>
@@ -987,7 +985,7 @@
         <article class="service-card">
           <div class="service-icon">◎</div>
           <h3>«Сфера»</h3>
-          <p>Роликовая методика- убирает отёки и тяжесть в ногах, делает кожу более гладкой и&nbsp;упругой. Идеален при склонности к&nbsp;задержке жидкости.</p>
+          <p>Роликовая методика — убирает отёки и тяжесть в ногах, делает кожу более гладкой и&nbsp;упругой. Идеален при склонности к&nbsp;задержке жидкости.</p>
           <div class="service-meta">
             <span>⏱ 60 мин</span>
             <span>↗ Курс 8 сеансов</span>
@@ -997,7 +995,7 @@
         <article class="service-card">
           <div class="service-icon">≋</div>
           <h3>Indiba</h3>
-          <p>Мягкий прогрев тканей — воздействует на глубокие слои для ремоделирования контуров. Подтягивает кожу после похудения или родов, помогает убрать целлюлит.</p>
+          <p>Мягкий прогрев тканей — воздействует на глубокие слои для формирования контуров. Подтягивает кожу после похудения или родов, помогает убрать целлюлит.</p>
           <div class="service-meta">
             <span>⏱ 45-70 мин</span>
             <span>↗ Курс 10 сеансов</span>
@@ -1304,9 +1302,6 @@
     }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
 
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-    /* Copy protection */
-    document.addEventListener('contextmenu', e => e.preventDefault());
   </script>
 
 </body>
