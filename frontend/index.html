@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Студия аппаратной эстетики в Чехове — коррекция фигуры LPG, Indiba | UPGRADE</title>
-  <meta name="description" content="Студия аппаратной эстетики UPGRADE в Чехове — LPG, Indiba, прессотерапия, обёртывание. Коррекция фигуры и аппаратная эстетика тела в Чехове. Запись онлайн.">
-  <meta name="keywords" content="аппаратная эстетика Чехов, LPG Чехов, коррекция фигуры Чехов, прессотерапия, обёртывание, Indiba, антицеллюлитные процедуры, студия эстетики Чехов">
+  <meta name="description" content="Студия аппаратной эстетики UPGRADE в Чехове — LPG, Indiba, прессотерапия, обёртывание. Коррекция фигуры и подтяжка кожи без хирургии. Запись онлайн.">
+  <meta name="keywords" content="аппаратная эстетика Чехов, LPG-массаж, коррекция фигуры, прессотерапия, обёртывание, Indiba, антицеллюлитные процедуры, студия UPGRADE">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
@@ -563,9 +563,17 @@
     }
 
     .faq-answer {
-      max-height: 0;
       overflow: hidden;
       transition: max-height 0.4s ease, padding 0.4s ease;
+    }
+
+    /* After JS loads — collapse answers */
+    .js-faq .faq-answer {
+      max-height: 0;
+    }
+
+    .js-faq .faq-item.open .faq-answer {
+      /* max-height set by JS */
     }
 
     .faq-answer-inner {
@@ -660,19 +668,17 @@
     }
 
     /* SEO text section */
-    .seo-text { padding: 60px 2rem; background: var(--bg-primary); }
+    .seo-text { padding: 60px 2rem; background: var(--bg-primary); text-align: center; }
     .seo-text-content {
-      max-width: 720px;
+      max-width: 680px;
       margin: 0 auto;
-      font-size: .97rem;
-      line-height: 1.7;
+      font-size: .92rem;
+      line-height: 1.8;
       color: var(--text-secondary);
-      columns: 1;
+      font-weight: 300;
+      text-align: left;
     }
     .seo-text-content p { margin-bottom: 1em; }
-    @media (min-width: 769px) {
-      .seo-text-content { columns: 2; column-gap: 2.5rem; }
-    }
 
     /* Site Footer */
     .site-footer {
@@ -704,9 +710,10 @@
       color: var(--text-muted);
       font-weight: 300;
     }
-    .footer-col {
+    .footer-col, address.footer-col {
       display: flex;
       flex-direction: column;
+      font-style: normal;
     }
     .footer-col-label {
       font-size: 0.7rem;
@@ -804,8 +811,8 @@
       <div class="hero-badge reveal">Студия аппаратной эстетики</div>
       <h1 class="reveal">Коррекция фигуры и <em>аппаратная эстетика</em> тела в&nbsp;Чехове</h1>
       <p class="hero-sub reveal">
-        LPG, прессотерапия и обёртывания — аппаратные процедуры
-        для уменьшения объёмов, подтяжки кожи и коррекции силуэта в&nbsp;Чехове
+        LPG, прессотерапия и&nbsp;обёртывания — аппаратные процедуры
+        для уменьшения объёмов, подтяжки кожи и&nbsp;коррекции силуэта
       </p>
       <div class="hero-actions reveal">
         <a href="/book" class="btn btn-primary">Записаться</a>
@@ -838,7 +845,7 @@
           </p>
           <div class="about-stats stagger reveal">
             <div class="stat">
-              <div class="stat-number">2 000+</div>
+              <div class="stat-number">1 000+</div>
               <div class="stat-label">довольных клиентов</div>
             </div>
             <div class="stat">
@@ -850,7 +857,7 @@
               <div class="stat-label">видов процедур</div>
             </div>
             <div class="stat">
-              <div class="stat-number">98%</div>
+              <div class="stat-number">95%</div>
               <div class="stat-label">рекомендуют нас</div>
             </div>
           </div>
@@ -865,20 +872,10 @@
       <h2 class="section-title reveal">Аппаратная эстетика тела <em>в Чехове</em></h2>
       <div class="seo-text-content reveal">
         <p>
-          Студия UPGRADE специализируется на аппаратной коррекции фигуры в Чехове.
-          Мы работаем на сертифицированном оборудовании LPG Alliance и Indiba,
-          которое позволяет уменьшать объёмы, бороться с целлюлитом и улучшать
-          тонус кожи без хирургического вмешательства.
-        </p>
-        <p>
-          В нашем арсенале — LPG-массаж, прессотерапия, обёртывания и радиочастотная
-          терапия Indiba. Каждая программа подбирается индивидуально: учитываются
-          особенности тела, пожелания и цели клиента.
-        </p>
-        <p>
-          Студия расположена в г.&nbsp;Чехов.
-          Запишитесь онлайн или через наш Telegram-бот — мы подберём удобное время
-          и поможем начать путь к фигуре вашей мечты.
+          Студия UPGRADE работает на сертифицированном оборудовании LPG  и&nbsp;Indiba.
+          В&nbsp;арсенале — LPG-массаж, прессотерапия, обёртывания и&nbsp;радиочастотная терапия.
+          Каждая программа подбирается индивидуально: учитываются особенности тела, пожелания и&nbsp;цели клиента.
+          Запишитесь онлайн или через Telegram-бот — подберём удобное время.
         </p>
       </div>
     </div>
@@ -951,7 +948,7 @@
         <article class="service-card">
           <div class="service-icon">✦</div>
           <h3>LPG</h3>
-          <p>Уменьшает объёмы, помогает убрать целлюлит и подтянуть кожу — без диет и&nbsp;нагрузок. Подходит для коррекции фигуры в&nbsp;Чехове.</p>
+          <p>Уменьшает объёмы, помогает убрать целлюлит и подтянуть кожу — без диет и&nbsp;нагрузок. Подходит для коррекции фигуры.</p>
           <div class="service-meta">
             <span>⏱ 40–60 мин</span>
             <span>↗ Курс 10 сеансов</span>
@@ -1023,7 +1020,7 @@
         <div class="specialist-text">
           <p>Работаем с&nbsp;LPG, прессотерапией, Indiba и&nbsp;комплексными программами.
             Наш подход — безопасная коррекция фигуры и&nbsp;естественная стимуляция коллагена без операций и&nbsp;реабилитации.</p>
-          <p>В студии аппаратной эстетики в&nbsp;Чехове работают сертифицированные специалисты с&nbsp;опытом коррекции фигуры и&nbsp;снижения веса.
+          <p>В нашей студии работают сертифицированные специалисты с&nbsp;опытом коррекции фигуры и&nbsp;снижения веса.
             Подбираем процедуры индивидуально — с&nbsp;учётом состояния кожи, объёмов и&nbsp;желаемого результата.</p>
           <a href="/book" class="btn btn-primary btn-sm" style="margin-top: 1.25rem;">Записаться</a>
         </div>
@@ -1155,12 +1152,12 @@
           </a>
           <p class="footer-tagline">Студия аппаратной эстетики в&nbsp;Чехове</p>
         </div>
-        <div class="footer-col">
+        <address class="footer-col">
           <span class="footer-col-label">Адрес</span>
           <a href="https://yandex.ru/maps/?pt=37.445868,55.133406&z=17&l=map" target="_blank" rel="noopener" class="footer-col-link">г. Чехов, ул. Церковная Горка, 1</a>
           <span class="footer-col-label" style="margin-top:0.75rem">Телефон</span>
           <a href="tel:+79309808207" class="footer-col-link">+7 930 980-82-07</a>
-        </div>
+        </address>
         <div class="footer-col">
           <span class="footer-col-label">Навигация</span>
           <a href="#about" class="footer-col-link">О студии</a>
@@ -1210,6 +1207,10 @@
     function closeMobile() { mobileMenu.classList.remove('active'); }
 
     /* ── FAQ accordion ── */
+    // Collapse answers after JS loads (visible by default for crawlers)
+    const faqList = document.querySelector('.faq-list');
+    if (faqList) faqList.classList.add('js-faq');
+
     document.querySelectorAll('.faq-question').forEach(btn => {
       btn.addEventListener('click', () => {
         const item = btn.parentElement;
