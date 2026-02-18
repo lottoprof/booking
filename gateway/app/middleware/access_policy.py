@@ -45,7 +45,7 @@ async def access_policy_middleware(request: Request, call_next):
     # Инфраструктурные и frontend endpoints — без policy check
     if path in ("/tg/webhook", "/oauth/google/callback"):
         return await call_next(request)
-    if path in ("/", "/book", "/pricing", "/miniapp", "/logo.svg") or path.startswith(("/blog", "/css/", "/logo/")):
+    if path in ("/", "/book", "/pricing", "/miniapp", "/logo.svg") or path.startswith(("/blog", "/css/", "/logo/", "/images/")):
         return await call_next(request)
 
     client_type = request.state.client_type
