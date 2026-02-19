@@ -25,6 +25,7 @@ from .routers import (
     client_packages,
     client_discounts,
     booking_discounts,
+    promotions,
     client_wallets,
     wallet_transactions,
     push_subscriptions,
@@ -96,6 +97,7 @@ app.include_router(bookings.router)
 app.include_router(client_packages.router)
 app.include_router(client_discounts.router)
 app.include_router(booking_discounts.router)
+app.include_router(promotions.router)
 app.include_router(client_wallets.router)
 app.include_router(wallet_transactions.router)
 app.include_router(push_subscriptions.router)

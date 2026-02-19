@@ -431,6 +431,25 @@ class SpecialistIntegrations(Base):
     booking_external_events = relationship('BookingExternalEvents', back_populates='specialist_integration')
 
 
+class Promotions(Base):
+    __tablename__ = 'promotions'
+
+    id = Column(Integer, primary_key=True)
+    badge_type = Column(Text, nullable=False, server_default=text("'sale'"))
+    badge_text = Column(Text, nullable=False)
+    title = Column(Text, nullable=False)
+    description = Column(Text, nullable=False)
+    price_new = Column(Integer)
+    price_old = Column(Integer)
+    end_date = Column(Text)
+    cta_text = Column(Text)
+    cta_url = Column(Text)
+    is_active = Column(Integer, nullable=False, server_default=text('1'))
+    sort_order = Column(Integer, nullable=False, server_default=text('0'))
+    created_at = Column(Text, server_default=text('CURRENT_TIMESTAMP'))
+    updated_at = Column(Text, server_default=text('CURRENT_TIMESTAMP'))
+
+
 class BookingExternalEvents(Base):
     __tablename__ = 'booking_external_events'
     __table_args__ = (
