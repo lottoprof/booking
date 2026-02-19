@@ -409,11 +409,10 @@ body {
   margin: 0 auto;
 }
 
-/* Auto-adapt: 1 card → single column centered */
+/* Auto-adapt: 1 card → single column, left-aligned */
 .promos-grid:has(> :last-child:nth-child(1)) {
   grid-template-columns: 1fr;
   max-width: 480px;
-  margin: 0 auto;
 }
 
 .promo-card {
