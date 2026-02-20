@@ -1,3 +1,13 @@
+-- =============================================
+-- UPGRADE Booking — Full PostgreSQL Schema
+-- Consolidated from migrations 001–016
+-- =============================================
+--
+-- Reference schema. Primary deployment uses SQLite.
+--
+
+-- ── Company ───────────────────────────────────
+
 CREATE TABLE company (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
@@ -6,13 +16,11 @@ CREATE TABLE company (
 );
 
 COMMENT ON TABLE company IS 'Компания-владелец локаций и пользователей.';
-COMMENT ON COLUMN company.id IS 'Уникальный идентификатор компании.';
-COMMENT ON COLUMN company.name IS 'Название компании.';
-COMMENT ON COLUMN company.description IS 'Описание компании.';
-COMMENT ON COLUMN company.created_at IS 'Дата создания записи.';
+
+-- ── Locations ─────────────────────────────────
 
 CREATE TABLE locations (
-y    id SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     company_id INT NOT NULL REFERENCES company(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     country TEXT,
@@ -25,24 +33,15 @@ y    id SERIAL PRIMARY KEY,
     postal_code TEXT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     work_schedule JSONB NOT NULL DEFAULT '{}'::jsonb,
-    notes TEXT
+    notes TEXT,
+    remind_before_minutes INT NOT NULL DEFAULT 120
 );
 
 COMMENT ON TABLE locations IS 'Справочник локаций (адреса, филиалы, студии).';
-COMMENT ON COLUMN locations.id IS 'Уникальный идентификатор локации.';
-COMMENT ON COLUMN locations.company_id IS 'FK → company.id.';
-COMMENT ON COLUMN locations.name IS 'Название локации.';
-COMMENT ON COLUMN locations.country IS 'Страна.';
-COMMENT ON COLUMN locations.region IS 'Регион или область.';
-COMMENT ON COLUMN locations.city IS 'Город.';
-COMMENT ON COLUMN locations.street IS 'Улица.';
-COMMENT ON COLUMN locations.house IS 'Номер дома.';
-COMMENT ON COLUMN locations.building IS 'Корпус или строение.';
-COMMENT ON COLUMN locations.office IS 'Офис или кабинет.';
-COMMENT ON COLUMN locations.postal_code IS 'Почтовый индекс.';
-COMMENT ON COLUMN locations.is_active IS 'Флаг активности.';
 COMMENT ON COLUMN locations.work_schedule IS 'График работы локации в формате JSON: интервалы по дням недели.';
-COMMENT ON COLUMN locations.notes IS 'Дополнительные комментарии.';
+COMMENT ON COLUMN locations.remind_before_minutes IS 'За сколько минут до визита отправлять напоминание клиенту.';
+
+-- ── Rooms ─────────────────────────────────────
 
 CREATE TABLE rooms (
     id SERIAL PRIMARY KEY,
@@ -53,29 +52,26 @@ CREATE TABLE rooms (
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-COMMENT ON TABLE rooms IS 'Кабинеты / комнаты внутри локации.';
-COMMENT ON COLUMN rooms.id IS 'Уникальный идентификатор комнаты.';
-COMMENT ON COLUMN rooms.location_id IS 'FK → locations.id. Локация, к которой относится комната.';
-COMMENT ON COLUMN rooms.name IS 'Название комнаты (например: Кабинет №1).';
-COMMENT ON COLUMN rooms.display_order IS 'Порядок отображения в UI.';
-COMMENT ON COLUMN rooms.notes IS 'Дополнительные комментарии.';
-COMMENT ON COLUMN rooms.is_active IS 'Флаг активности комнаты.';
+CREATE UNIQUE INDEX uq_rooms_location_name ON rooms (location_id, name);
 
--- Таблица: roles
+COMMENT ON TABLE rooms IS 'Кабинеты / комнаты внутри локации.';
+
+-- ── Roles ─────────────────────────────────────
+
 CREATE TABLE roles (
     id SERIAL PRIMARY KEY,
     name TEXT UNIQUE NOT NULL
 );
 
-COMMENT ON TABLE roles IS 'Справочник ролей пользователей.';
-COMMENT ON COLUMN roles.id IS 'Уникальный идентификатор роли.';
-COMMENT ON COLUMN roles.name IS 'Название роли (admin, manager, specialist, client).';
-
 INSERT INTO roles (name) VALUES
-('admin'),
-('manager'),
-('specialist'),
-('client');
+    ('admin'),
+    ('manager'),
+    ('specialist'),
+    ('client');
+
+COMMENT ON TABLE roles IS 'Справочник ролей пользователей.';
+
+-- ── Users ─────────────────────────────────────
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -96,20 +92,8 @@ CREATE TABLE users (
 );
 
 COMMENT ON TABLE users IS 'Пользователи системы (админ, специалист, клиент).';
-COMMENT ON COLUMN users.company_id IS 'FK → company.id. Компания, к которой относится пользователь.';
-COMMENT ON COLUMN users.first_name IS 'Имя пользователя.';
-COMMENT ON COLUMN users.last_name IS 'Фамилия пользователя.';
-COMMENT ON COLUMN users.middle_name IS 'Отчество пользователя.';
-COMMENT ON COLUMN users.email IS 'Адрес электронной почты.';
-COMMENT ON COLUMN users.phone IS 'Телефон пользователя.';
-COMMENT ON COLUMN users.tg_id IS 'Telegram ID пользователя.';
-COMMENT ON COLUMN users.tg_username IS 'Telegram username (@username).';
-COMMENT ON COLUMN users.birth_date IS 'Дата рождения клиента (для проверки возрастных ограничений).';
-COMMENT ON COLUMN users.gender IS 'Пол клиента (male/female/other).';
-COMMENT ON COLUMN users.notes IS 'Примечания о клиенте (комментарии, особенности).';
-COMMENT ON COLUMN users.is_active IS 'Флаг активности.';
-COMMENT ON COLUMN users.created_at IS 'Дата создания записи.';
-COMMENT ON COLUMN users.updated_at IS 'Дата последнего обновления.';
+
+-- ── User Roles ────────────────────────────────
 
 CREATE TABLE user_roles (
     id SERIAL PRIMARY KEY,
@@ -119,7 +103,9 @@ CREATE TABLE user_roles (
     UNIQUE(user_id, role_id, location_id)
 );
 
-COMMENT ON TABLE user_roles IS 'Назначение ролей пользователю. Для специалистов и менеджеров может содержать привязку к конкретной локации.';
+COMMENT ON TABLE user_roles IS 'Назначение ролей пользователю. Для специалистов и менеджеров может содержать привязку к локации.';
+
+-- ── Services ──────────────────────────────────
 
 CREATE TABLE services (
     id SERIAL PRIMARY KEY,
@@ -131,38 +117,34 @@ CREATE TABLE services (
     break_min INT NOT NULL DEFAULT 0,
     price NUMERIC(10,2) NOT NULL,
     color_code TEXT,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    price_5 NUMERIC(10,2),
+    price_10 NUMERIC(10,2)
 );
 
 COMMENT ON TABLE services IS 'Справочник услуг для записи.';
-COMMENT ON COLUMN services.company_id IS 'FK → company.id.';
-COMMENT ON COLUMN services.name IS 'Название услуги.';
-COMMENT ON COLUMN services.description IS 'Описание услуги.';
-COMMENT ON COLUMN services.category IS 'Категория услуги.';
-COMMENT ON COLUMN services.duration_min IS 'Длительность услуги (минуты).';
-COMMENT ON COLUMN services.break_min IS 'Перерыв после услуги (минуты).';
-COMMENT ON COLUMN services.price IS 'Стоимость услуги.';
-COMMENT ON COLUMN services.color_code IS 'Цветовая метка для UI.';
-COMMENT ON COLUMN services.is_active IS 'Флаг активности услуги.';
+COMMENT ON COLUMN services.price_5 IS 'Цена за сеанс при покупке курса из 5.';
+COMMENT ON COLUMN services.price_10 IS 'Цена за сеанс при покупке курса из 10.';
+
+-- ── Service Packages ──────────────────────────
 
 CREATE TABLE service_packages (
     id SERIAL PRIMARY KEY,
     company_id INT NOT NULL REFERENCES company(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
-    package_items JSONB NOT NULL,               -- состав пакета
-    package_price NUMERIC(10,2) NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    package_items JSONB NOT NULL DEFAULT '[]'::jsonb,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    show_on_pricing BOOLEAN NOT NULL DEFAULT TRUE,
+    show_on_booking BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 COMMENT ON TABLE service_packages IS 'Пакеты услуг (комплексы из одной или нескольких услуг).';
-COMMENT ON COLUMN service_packages.id IS 'Уникальный идентификатор пакета.';
-COMMENT ON COLUMN service_packages.company_id IS 'FK → company.id.';
-COMMENT ON COLUMN service_packages.name IS 'Название пакета.';
-COMMENT ON COLUMN service_packages.description IS 'Описание пакета.';
 COMMENT ON COLUMN service_packages.package_items IS 'JSON-массив: service_id + quantity.';
-COMMENT ON COLUMN service_packages.package_price IS 'Общая цена пакета.';
-COMMENT ON COLUMN service_packages.is_active IS 'Флаг активности пакета.';
+COMMENT ON COLUMN service_packages.show_on_pricing IS 'Показывать на странице /pricing.';
+COMMENT ON COLUMN service_packages.show_on_booking IS 'Показывать при бронировании.';
+
+-- ── Service Rooms ─────────────────────────────
 
 CREATE TABLE service_rooms (
     id SERIAL PRIMARY KEY,
@@ -174,11 +156,8 @@ CREATE TABLE service_rooms (
 );
 
 COMMENT ON TABLE service_rooms IS 'Привязка услуг к комнатам (кабинетам).';
-COMMENT ON COLUMN service_rooms.id IS 'Уникальный идентификатор записи.';
-COMMENT ON COLUMN service_rooms.room_id IS 'FK → rooms.id. Комната/кабинет.';
-COMMENT ON COLUMN service_rooms.service_id IS 'FK → services.id. Услуга.';
-COMMENT ON COLUMN service_rooms.is_active IS 'Флаг активности услуги в данной комнате.';
-COMMENT ON COLUMN service_rooms.notes IS 'Ограничения или дополнительные комментарии.';
+
+-- ── Specialists ───────────────────────────────
 
 CREATE TABLE specialists (
     id SERIAL PRIMARY KEY,
@@ -193,13 +172,8 @@ CREATE TABLE specialists (
 );
 
 COMMENT ON TABLE specialists IS 'Профили специалистов. Расширение данных users.';
-COMMENT ON COLUMN specialists.id IS 'Уникальный идентификатор специалиста.';
-COMMENT ON COLUMN specialists.user_id IS 'FK → users.id. Один пользователь = один специалист.';
-COMMENT ON COLUMN specialists.display_name IS 'Отображаемое имя специалиста.';
-COMMENT ON COLUMN specialists.description IS 'Описание, заметки.';
-COMMENT ON COLUMN specialists.photo_url IS 'Фото специалиста.';
-COMMENT ON COLUMN specialists.work_schedule IS 'График работы в формате JSON: интервалы по дням недели.';
-COMMENT ON COLUMN specialists.is_active IS 'Флаг активности.';
+
+-- ── Specialist Services ───────────────────────
 
 CREATE TABLE specialist_services (
     service_id INT NOT NULL REFERENCES services(id) ON DELETE CASCADE,
@@ -211,11 +185,8 @@ CREATE TABLE specialist_services (
 );
 
 COMMENT ON TABLE specialist_services IS 'Компетенции специалистов: какие услуги они оказывают.';
-COMMENT ON COLUMN specialist_services.service_id IS 'FK → services.id.';
-COMMENT ON COLUMN specialist_services.specialist_id IS 'FK → specialists.id (профиль специалиста).';
-COMMENT ON COLUMN specialist_services.is_default IS 'Основной специалист для услуги.';
-COMMENT ON COLUMN specialist_services.is_active IS 'Флаг активности компетенции.';
-COMMENT ON COLUMN specialist_services.notes IS 'Ограничения или примечания.';
+
+-- ── Calendar Overrides ────────────────────────
 
 CREATE TABLE calendar_overrides (
     id SERIAL PRIMARY KEY,
@@ -224,7 +195,7 @@ CREATE TABLE calendar_overrides (
     ),
     target_id INT,
     date_start TIMESTAMP NOT NULL,
-    date_end TIMESTAMP NOT NULL,
+    date_end   TIMESTAMP NOT NULL,
     override_kind TEXT NOT NULL CHECK (
         override_kind IN (
             'day_off',
@@ -240,14 +211,8 @@ CREATE TABLE calendar_overrides (
 );
 
 COMMENT ON TABLE calendar_overrides IS 'Универсальная таблица блокировок времени.';
-COMMENT ON COLUMN calendar_overrides.target_type IS 'Тип цели блокировки: location, room, specialist, service, system.';
-COMMENT ON COLUMN calendar_overrides.target_id IS 'ID цели блокировки (может быть NULL для system).';
-COMMENT ON COLUMN calendar_overrides.date_start IS 'Начало блокировки.';
-COMMENT ON COLUMN calendar_overrides.date_end IS 'Окончание блокировки.';
-COMMENT ON COLUMN calendar_overrides.override_kind IS 'Тип блокировки (выходной, блокировка времени, уборка, обслуживание, ручная).';
-COMMENT ON COLUMN calendar_overrides.reason IS 'Причина блокировки.';
-COMMENT ON COLUMN calendar_overrides.created_by IS 'Пользователь, создавший блокировку.';
-COMMENT ON COLUMN calendar_overrides.created_at IS 'Дата создания записи.';
+
+-- ── Bookings ──────────────────────────────────
 
 CREATE TABLE bookings (
     id SERIAL PRIMARY KEY,
@@ -262,33 +227,20 @@ CREATE TABLE bookings (
     duration_minutes INT NOT NULL,
     break_minutes INT NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (
-        status IN ('pending','confirmed','cancelled','done')
+        status IN ('pending','confirmed','cancelled','done','no_show')
     ),
     final_price NUMERIC(10,2),
     notes TEXT,
     cancel_reason TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP NOT NULL DEFAULT now()
+    updated_at TIMESTAMP NOT NULL DEFAULT now(),
+    client_package_id INT REFERENCES client_packages(id) ON DELETE SET NULL,
+    service_package_id INT REFERENCES service_packages(id)
 );
 
 COMMENT ON TABLE bookings IS 'Записи клиентов на услуги.';
-COMMENT ON COLUMN bookings.id IS 'Уникальный идентификатор записи.';
-COMMENT ON COLUMN bookings.company_id IS 'FK → company.id.';
-COMMENT ON COLUMN bookings.location_id IS 'FK → locations.id.';
-COMMENT ON COLUMN bookings.service_id IS 'FK → services.id.';
-COMMENT ON COLUMN bookings.room_id IS 'FK → rooms.id.';
-COMMENT ON COLUMN bookings.client_id IS 'FK → users.id (клиент).';
-COMMENT ON COLUMN bookings.specialist_id IS 'FK → specialists.id (специалист).';
-COMMENT ON COLUMN bookings.date_start IS 'Дата и время начала услуги.';
-COMMENT ON COLUMN bookings.date_end IS 'Дата и время окончания услуги (duration + break).';
-COMMENT ON COLUMN bookings.duration_minutes IS 'Фактическая длительность услуги на момент брони.';
-COMMENT ON COLUMN bookings.break_minutes IS 'Перерыв после услуги, сохранённый в момент брони.';
-COMMENT ON COLUMN bookings.status IS 'Статус записи.';
-COMMENT ON COLUMN bookings.final_price IS 'Фактическая цена услуги.';
-COMMENT ON COLUMN bookings.notes IS 'Комментарии.';
-COMMENT ON COLUMN bookings.cancel_reason IS 'Причина отмены.';
-COMMENT ON COLUMN bookings.created_at IS 'Время создания записи.';
-COMMENT ON COLUMN bookings.updated_at IS 'Время обновления записи.';
+
+-- ── Client Packages ───────────────────────────
 
 CREATE TABLE client_packages (
     id SERIAL PRIMARY KEY,
@@ -297,34 +249,31 @@ CREATE TABLE client_packages (
     used_quantity INT NOT NULL DEFAULT 0,
     purchased_at TIMESTAMP NOT NULL DEFAULT now(),
     valid_to DATE,
-    notes TEXT
+    notes TEXT,
+    used_items JSONB NOT NULL DEFAULT '{}'::jsonb,
+    is_closed BOOLEAN NOT NULL DEFAULT FALSE,
+    purchase_price NUMERIC(10,2)
 );
 
 COMMENT ON TABLE client_packages IS 'Купленные клиентами пакеты услуг.';
-COMMENT ON COLUMN client_packages.id IS 'Уникальный идентификатор покупки пакета.';
-COMMENT ON COLUMN client_packages.user_id IS 'FK → users.id (клиент).';
-COMMENT ON COLUMN client_packages.package_id IS 'FK → service_packages.id.';
-COMMENT ON COLUMN client_packages.used_quantity IS 'Сколько услуг уже использовано из пакета.';
-COMMENT ON COLUMN client_packages.purchased_at IS 'Дата покупки пакета.';
-COMMENT ON COLUMN client_packages.valid_to IS 'Дата окончания действия пакета.';
-COMMENT ON COLUMN client_packages.notes IS 'Примечания к пакету.';
+COMMENT ON COLUMN client_packages.used_items IS 'JSON: {"service_id": quantity} — учёт использования по услугам.';
+COMMENT ON COLUMN client_packages.is_closed IS 'Пакет закрыт (использован полностью или вручную).';
+COMMENT ON COLUMN client_packages.purchase_price IS 'Цена на момент покупки (snapshot).';
+
+-- ── Client Discounts ──────────────────────────
 
 CREATE TABLE client_discounts (
     id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
     discount_percent NUMERIC(5,2) NOT NULL DEFAULT 0,
     valid_from DATE,
     valid_to DATE,
     description TEXT
 );
 
-COMMENT ON TABLE client_discounts IS 'Персональные скидки клиентов.';
-COMMENT ON COLUMN client_discounts.id IS 'Уникальный идентификатор скидки.';
-COMMENT ON COLUMN client_discounts.user_id IS 'FK → users.id (клиент).';
-COMMENT ON COLUMN client_discounts.discount_percent IS 'Размер скидки в процентах.';
-COMMENT ON COLUMN client_discounts.valid_from IS 'Дата начала действия скидки.';
-COMMENT ON COLUMN client_discounts.valid_to IS 'Дата окончания действия скидки.';
-COMMENT ON COLUMN client_discounts.description IS 'Описание скидки.';
+COMMENT ON TABLE client_discounts IS 'Персональные скидки клиентов. user_id=NULL — промо для всех.';
+
+-- ── Booking Discounts ─────────────────────────
 
 CREATE TABLE booking_discounts (
     id SERIAL PRIMARY KEY,
@@ -334,10 +283,8 @@ CREATE TABLE booking_discounts (
 );
 
 COMMENT ON TABLE booking_discounts IS 'Разовые скидки, применённые к конкретной записи.';
-COMMENT ON COLUMN booking_discounts.id IS 'Уникальный идентификатор записи скидки.';
-COMMENT ON COLUMN booking_discounts.booking_id IS 'FK → bookings.id.';
-COMMENT ON COLUMN booking_discounts.discount_percent IS 'Разовая скидка в процентах.';
-COMMENT ON COLUMN booking_discounts.discount_reason IS 'Причина применения скидки.';
+
+-- ── Client Wallets ────────────────────────────
 
 CREATE TABLE client_wallets (
     id SERIAL PRIMARY KEY,
@@ -348,10 +295,8 @@ CREATE TABLE client_wallets (
 );
 
 COMMENT ON TABLE client_wallets IS 'Кошельки клиентов. Текущий баланс.';
-COMMENT ON COLUMN client_wallets.user_id IS 'FK → users.id (клиент).';
-COMMENT ON COLUMN client_wallets.balance IS 'Остаток средств клиента.';
-COMMENT ON COLUMN client_wallets.currency IS 'Валюта кошелька.';
-COMMENT ON COLUMN client_wallets.is_blocked IS 'Флаг блокировки кошелька.';
+
+-- ── Wallet Transactions ───────────────────────
 
 CREATE TABLE wallet_transactions (
     id SERIAL PRIMARY KEY,
@@ -366,14 +311,8 @@ CREATE TABLE wallet_transactions (
 );
 
 COMMENT ON TABLE wallet_transactions IS 'Финансовые операции по клиентским кошелькам.';
-COMMENT ON COLUMN wallet_transactions.id IS 'Уникальный идентификатор транзакции.';
-COMMENT ON COLUMN wallet_transactions.wallet_id IS 'FK → client_wallets.id.';
-COMMENT ON COLUMN wallet_transactions.booking_id IS 'FK → bookings.id.';
-COMMENT ON COLUMN wallet_transactions.amount IS 'Сумма транзакции.';
-COMMENT ON COLUMN wallet_transactions.type IS 'Тип транзакции.';
-COMMENT ON COLUMN wallet_transactions.description IS 'Описание транзакции.';
-COMMENT ON COLUMN wallet_transactions.created_by IS 'FK → users.id (создатель транзакции).';
-COMMENT ON COLUMN wallet_transactions.created_at IS 'Дата создания транзакции.';
+
+-- ── Push Subscriptions ────────────────────────
 
 CREATE TABLE push_subscriptions (
     id SERIAL PRIMARY KEY,
@@ -385,16 +324,190 @@ CREATE TABLE push_subscriptions (
 );
 
 COMMENT ON TABLE push_subscriptions IS 'Подписки клиентов на WebPush (VAPID).';
-COMMENT ON COLUMN push_subscriptions.user_id IS 'FK → users.id. Пользователь, связанный с подпиской.';
-COMMENT ON COLUMN push_subscriptions.endpoint IS 'Уникальный endpoint браузера для Web Push.';
-COMMENT ON COLUMN push_subscriptions.auth IS 'Auth secret клиента для Web Push.';
-COMMENT ON COLUMN push_subscriptions.p256dh IS 'Публичный ключ клиента для шифрования сообщений (Base64).';
-COMMENT ON COLUMN push_subscriptions.created_at IS 'Дата добавления подписки.';
+
+-- ── Audit Log ─────────────────────────────────
+
+CREATE TABLE audit_log (
+    id SERIAL PRIMARY KEY,
+    event_type TEXT NOT NULL,
+    actor_user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    target_user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    payload TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_audit_event_type ON audit_log(event_type);
+CREATE INDEX idx_audit_created_at ON audit_log(created_at);
+
+COMMENT ON TABLE audit_log IS 'Лог аудита действий пользователей.';
+
+-- ── Imported Clients ──────────────────────────
+
+CREATE TABLE imported_clients (
+    id SERIAL PRIMARY KEY,
+    phone TEXT NOT NULL UNIQUE,
+    first_name TEXT,
+    last_name TEXT,
+    notes TEXT,
+    matched_user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    matched_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE INDEX idx_imported_clients_phone ON imported_clients(phone);
+
+COMMENT ON TABLE imported_clients IS 'Импортированные клиенты (сопоставление по телефону).';
+
+-- ── Notification Settings ─────────────────────
+
+CREATE TABLE notification_settings (
+    id SERIAL PRIMARY KEY,
+    event_type TEXT NOT NULL,
+    recipient_role TEXT NOT NULL,
+    channel TEXT NOT NULL DEFAULT 'all',
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    ad_template_id INT,
+    company_id INT NOT NULL REFERENCES company(id) ON DELETE CASCADE,
+    UNIQUE(event_type, recipient_role, channel, company_id)
+);
+
+INSERT INTO notification_settings (event_type, recipient_role, channel, enabled, company_id) VALUES
+    ('booking_created',     'admin',      'all', TRUE, 1),
+    ('booking_created',     'specialist', 'all', TRUE, 1),
+    ('booking_created',     'client',     'all', TRUE, 1),
+    ('booking_cancelled',   'admin',      'all', TRUE, 1),
+    ('booking_cancelled',   'specialist', 'all', TRUE, 1),
+    ('booking_cancelled',   'client',     'all', TRUE, 1),
+    ('booking_rescheduled', 'admin',      'all', TRUE, 1),
+    ('booking_rescheduled', 'specialist', 'all', TRUE, 1),
+    ('booking_rescheduled', 'client',     'all', TRUE, 1),
+    ('booking_done',        'admin',      'all', TRUE, 1),
+    ('booking_done',        'manager',    'all', TRUE, 1),
+    ('booking_reminder',    'client',     'all', TRUE, 1);
+
+COMMENT ON TABLE notification_settings IS 'Маршрутизация уведомлений по событиям и ролям.';
+
+-- ── Ad Templates ──────────────────────────────
+
+CREATE TABLE ad_templates (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    content_tg TEXT NOT NULL,
+    content_html TEXT,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    valid_until TIMESTAMP,
+    company_id INT NOT NULL REFERENCES company(id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE ad_templates IS 'Рекламные шаблоны, встраиваемые в уведомления.';
+
+-- ── Specialist Integrations (Google Calendar) ─
+
+CREATE TABLE specialist_integrations (
+    id SERIAL PRIMARY KEY,
+    specialist_id INT REFERENCES specialists(id) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL DEFAULT 'google_calendar',
+    access_token TEXT,
+    refresh_token TEXT,
+    token_expires_at TIMESTAMP,
+    calendar_id TEXT DEFAULT 'primary',
+    sync_enabled BOOLEAN DEFAULT TRUE,
+    sync_scope TEXT DEFAULT 'own',
+    location_id INT REFERENCES locations(id) ON DELETE CASCADE,
+    last_sync_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT now(),
+    updated_at TIMESTAMP DEFAULT now(),
+    UNIQUE(specialist_id, provider)
+);
+
+CREATE INDEX idx_specialist_integrations_specialist_id ON specialist_integrations(specialist_id);
+CREATE INDEX idx_specialist_integrations_user_id ON specialist_integrations(user_id);
+
+COMMENT ON TABLE specialist_integrations IS 'OAuth-интеграции специалистов с внешними календарями.';
+COMMENT ON COLUMN specialist_integrations.sync_scope IS 'own — свои букинги, location — вся локация, all — все.';
+
+-- ── Booking External Events ───────────────────
+
+CREATE TABLE booking_external_events (
+    id SERIAL PRIMARY KEY,
+    booking_id INT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL DEFAULT 'google_calendar',
+    external_event_id TEXT NOT NULL,
+    specialist_integration_id INT NOT NULL REFERENCES specialist_integrations(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT now(),
+    UNIQUE(booking_id, specialist_integration_id)
+);
+
+CREATE INDEX idx_booking_external_events_booking_id ON booking_external_events(booking_id);
+CREATE INDEX idx_booking_external_events_external_event_id ON booking_external_events(external_event_id);
+
+COMMENT ON TABLE booking_external_events IS 'Связь букингов с событиями во внешних календарях.';
+
+-- ── Categories (Blog) ─────────────────────────
+
+CREATE TABLE categories (
+    id SERIAL PRIMARY KEY,
+    slug TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT now()
+);
+
+INSERT INTO categories (slug, name, sort_order) VALUES
+    ('services',  'Услуги',             1),
+    ('body-care', 'Уход за телом',      2),
+    ('results',   'Результаты',         3),
+    ('faq',       'Ответы на вопросы',  4);
+
+COMMENT ON TABLE categories IS 'Категории статей блога.';
+
+-- ── Articles (Blog) ───────────────────────────
+
+CREATE TABLE articles (
+    id SERIAL PRIMARY KEY,
+    slug TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    meta_description TEXT,
+    category_id INT REFERENCES categories(id),
+    body_html TEXT NOT NULL,
+    image_url TEXT,
+    is_published BOOLEAN DEFAULT FALSE,
+    sort_order INT DEFAULT 0,
+    published_at TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT now(),
+    created_at TIMESTAMP DEFAULT now()
+);
+
+COMMENT ON TABLE articles IS 'Статьи блога.';
+
+-- ── Promotions ────────────────────────────────
+
+CREATE TABLE promotions (
+    id SERIAL PRIMARY KEY,
+    badge_type TEXT NOT NULL DEFAULT 'sale',
+    badge_text TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    price_new INT,
+    price_old INT,
+    end_date DATE,
+    cta_text TEXT,
+    cta_url TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT now(),
+    updated_at TIMESTAMP DEFAULT now()
+);
+
+COMMENT ON TABLE promotions IS 'Промо-блоки на главной странице.';
+
+-- ── Schema Migrations ─────────────────────────
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
     version INTEGER PRIMARY KEY,
     applied_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
-
-COMMENT ON TABLE schema_migrations IS 'Схема миграций.';
+INSERT INTO schema_migrations (version) VALUES
+    (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12),(13),(14),(15),(16);
