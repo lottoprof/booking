@@ -16,6 +16,18 @@ from ..models.generated import Services as DBServices, ServicePackages as DBServ
 from .package_pricing import calc_package_price
 from .slug import slugify
 
+# service_id → unicode icon (single-service packages)
+_ICON_MAP: dict[int, str] = {
+    1: "✦",   # LPG
+    2: "◎",   # Сфера
+    3: "◎",   # Сфера
+    4: "◇",   # Прессотерапия
+    5: "❋",   # Обёртывание
+    6: "≋",   # Indiba
+    7: "≋",   # Indiba
+}
+_ICON_COMBO = "◈"  # composite packages
+
 
 def build_pricing_cards(db: Session, view: Optional[str] = None) -> list[dict]:
     """
@@ -121,7 +133,7 @@ def build_pricing_cards(db: Session, view: Optional[str] = None) -> list[dict]:
             "service_id": first_sid,
             "description": description,
             "category": category,
-            "icon": "✦",
+            "icon": _ICON_MAP.get(first_sid, _ICON_COMBO) if len(first_items) == 1 else _ICON_COMBO,
             "duration_min": total_duration,
             "variants": variants,
         })

@@ -1031,18 +1031,8 @@
 
       renderServices() {
         const container = document.getElementById('services-list');
-        const iconMap = {
-          'lpg':          '✦',
-          'роликовый':    '◎',
-          'прессотерапия':'◇',
-          'индибо':       '≋',
-          'обёртывание':  '❋',
-          'обертывание':  '❋',
-        };
-
         container.innerHTML = this.services.map(s => {
-          const key = Object.keys(iconMap).find(k => s.name.toLowerCase().includes(k));
-          const icon = key ? iconMap[key] : '◈';
+          const icon = s.icon || '◈';
           const range = this.priceRange(s.variants);
           return `
             <div class="service-card" data-id="${s.id}">
