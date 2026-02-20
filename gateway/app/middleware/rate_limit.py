@@ -140,10 +140,14 @@ async def rate_limit_middleware(request: Request, call_next):
     """
     client_type = getattr(request.state, 'client_type', None)
     path = request.url.path
-    
+
     # Internal и webhook — без middleware rate limit
     # (webhook проверяется отдельно по tg_id)
     if client_type == "internal" or path == "/tg/webhook":
+        return await call_next(request)
+
+    # Static assets — не считаем в rate limit
+    if path.startswith(("/css/", "/logo/", "/images/", "/blog/")):
         return await call_next(request)
     
     # Неизвестный клиент — public лимиты
