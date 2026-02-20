@@ -20,6 +20,11 @@ server {
 
     client_max_body_size 1m;
 
+    # Block PHP scanners — silent connection drop
+    location ~* \.php$ {
+        return 444;
+    }
+
     location /tg/webhook {
         limit_except POST { deny all; }
 
