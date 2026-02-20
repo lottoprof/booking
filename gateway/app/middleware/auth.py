@@ -45,7 +45,7 @@ async def auth_middleware(request: Request, call_next):
             raise HTTPException(401, "Missing TG initData")
 
         if not TG_BOT_TOKEN:
-            raise HTTPException(500, "TG_BOT_TOKEN not configured")
+            raise HTTPException(500, "Internal server error")
 
         try:
             data = verify_init_data(init_data, TG_BOT_TOKEN)
