@@ -1,7 +1,7 @@
 # backend/app/routers/promotions.py
 
-import asyncio
 import logging
+import threading
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,8 +11,8 @@ from ..database import get_db
 from ..models.generated import Promotions as DBPromotions
 from ..schemas.promotions import (
     PromotionCreate,
-    PromotionUpdate,
     PromotionRead,
+    PromotionUpdate,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,8 +25,7 @@ def _trigger_render():
     from backend.app.services.ssg.render_promo import render_promo_all
 
     try:
-        loop = asyncio.get_running_loop()
-        loop.run_in_executor(None, render_promo_all)
+        threading.Thread(target=render_promo_all, daemon=True).start()
     except Exception:
         logger.exception("Failed to trigger promo render")
 
