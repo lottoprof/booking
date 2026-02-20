@@ -39,6 +39,7 @@ INTERNAL_TOKEN=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 SUPPORT_TG_ID=9876543210
 CHANNEL_URL=https://t.me/channel
+TG_BOT_URL=https://t.me/upgradelpgbot
 
 # Google Calendar OAuth
 GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
