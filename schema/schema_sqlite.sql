@@ -59,7 +59,7 @@ CREATE TABLE roles (
     name TEXT NOT NULL UNIQUE
 );
 
-INSERT INTO roles (name) VALUES
+INSERT OR IGNORE INTO roles (name) VALUES
     ('admin'),
     ('manager'),
     ('specialist'),
@@ -358,7 +358,7 @@ CREATE TABLE notification_settings (
 );
 
 -- Seed: notification_settings (company_id=1, создаётся init_admin.py)
-INSERT INTO notification_settings (event_type, recipient_role, channel, enabled, company_id) VALUES
+INSERT OR IGNORE INTO notification_settings (event_type, recipient_role, channel, enabled, company_id) VALUES
     ('booking_created',     'admin',      'all', 1, 1),
     ('booking_created',     'specialist', 'all', 1, 1),
     ('booking_created',     'client',     'all', 1, 1),
@@ -435,7 +435,7 @@ CREATE TABLE categories (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO categories (slug, name, sort_order) VALUES
+INSERT OR IGNORE INTO categories (slug, name, sort_order) VALUES
     ('services',  'Услуги',             1),
     ('body-care', 'Уход за телом',      2),
     ('results',   'Результаты',         3),
@@ -485,5 +485,5 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 );
 
 -- Mark all existing migrations as applied
-INSERT INTO schema_migrations (version) VALUES
+INSERT OR IGNORE INTO schema_migrations (version) VALUES
     (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12),(13),(14),(15),(16);
