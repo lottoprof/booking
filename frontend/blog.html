@@ -5,17 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Блог — UPGRADE | Статьи об аппаратной эстетике и уходе за телом</title>
   <meta name="description" content="Полезные статьи о LPG-массаже, прессотерапии, обёртывании и уходе за телом. Экспертные советы от специалистов студии UPGRADE.">
-  <link rel="canonical" href="https://upgrade-studio.ru/blog/">
+  <link rel="canonical" href="https://upgradelpg.site/blog/">
 
   <meta property="og:type" content="website">
   <meta property="og:title" content="Блог UPGRADE — статьи об аппаратной эстетике">
   <meta property="og:description" content="Полезные статьи о LPG-массаже, прессотерапии, обёртывании и уходе за телом.">
-  <meta property="og:url" content="https://upgrade-studio.ru/blog/">
+  <meta property="og:url" content="https://upgradelpg.site/blog/">
 
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/shared.css">
+  <link rel="icon" href="/logo/favicon.svg" type="image/svg+xml">
 
   <style>
     body {
@@ -286,22 +288,39 @@
 </head>
 <body>
 
-  <!-- ─── NAV ─── -->
-  <nav class="nav" id="navbar">
-    <a href="/" class="nav-logo"><img src="data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKIHdpZHRoPSI4NjgiIGhlaWdodD0iNTk1IiB2aWV3Qm94PSIwIDAgODY4IDU5NSIKIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiPgo8ZyBjbGFzcz0ibG9nby1wYXRocyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCw1OTUpIHNjYWxlKDAuMSwtMC4xKSIKZmlsbD0iIzJCQjVCOCIgc3Ryb2tlPSJub25lIj4KPHBhdGggZD0iTTMwNzcgNTkzOCBjLTIgLTcgLTI2OSAtNjQ5IC01OTIgLTE0MjcgLTMyMyAtNzc3IC01ODMgLTE0MTcgLTU3OAotMTQyMSA0IC00IDc4NiAtMzMwIDE3MzggLTcyNCA5NTIgLTM5NSAxNzM0IC03MjEgMTczOCAtNzI1IDUgLTUgLTEzOCAtMzYxCi0zMTcgLTc5MiAtMzAyIC03MzAgLTMyMyAtNzg1IC0zMDUgLTc5MyAxMiAtNiAyMyAtNiAyOCAwIDQgNSAxMzYgMzE4IDI5Mgo2OTcgMTU2IDM3OCAyODYgNjg3IDI4OSA2ODcgMyAwIDE0NyAtMzI0IDMxOSAtNzIwIDE3MyAtMzk2IDMxNyAtNzIwIDMyMAotNzIwIDQgMCAxNCA2IDIzIDEzIDEzIDEwIC0yNCAxMDIgLTMwOCA3NTIgLTE3OCA0MDcgLTMyNCA3NDUgLTMyNCA3NTIgMCAxMgo0OSAxMzMgNjAgMTQ1IDMgNCAxNTggLTM1NiAzNDUgLTgwMCAxODYgLTQ0NCAzNDEgLTgxMCAzNDUgLTgxNSAzIC00IDE0IC0xCjI1IDYgMTcgMTMgLTMgNjMgLTM0NCA4NzQgbC0zNjEgODYxIDU2MSAxMzUxIGMzMDkgNzQ0IDU1OSAxMzU0IDU1OCAxMzU1IC0zCjMgLTMzODUgMTQwOCAtMzQ5NSAxNDUzIC02IDIgLTE0IC0yIC0xNyAtOXogbTE3NTcgLTc0NCBjOTQwIC0zOTAgMTcxMCAtNzE0CjE3MTIgLTcxOSA1IC0xMyAtMTE1MCAtMjgwMCAtMTE2MCAtMjc5OSAtMzAgNCAtMzQ0NiAxNDMwIC0zNDQ2IDE0MzggMCA2IDI2MAo2MzggNTc4IDE0MDQgNDM5IDEwNjAgNTgxIDEzOTIgNTkyIDEzODkgOCAtMiA3ODQgLTMyMyAxNzI0IC03MTN6IE00MjIwIDUyNDYKYy04NSAtMjQgLTE2NiAtODMgLTIxMiAtMTU1IC0zMSAtNTAgLTM1IC04MyAtMTMgLTEyMSA4IC0xNCAxNCAtNDggMTUgLTc2IDAKLTYwIDE1IC0xMTEgNDIgLTE0MCAxNiAtMTkgMTcgLTI2IDcgLTczIC0xMiAtNTkgLTMgLTgxIDM2IC04MSAxMyAwIDI2IC05IDMyCi0yMiA2IC0xMyAyNyAtNDEgNDYgLTYzIDMyIC0zNyAzOCAtNDAgNzYgLTM3IDM1IDMgNDcgMTEgNzcgNDggMjAgMjQgNDAgNDQKNDQgNDQgMTkgMCAxOSAtNTEgMSAtOTQgLTI3IC02MSAtNTQgLTc2IC0xNDggLTgzIC05MSAtNyAtMTIyIC0yMCAtMTgxIC03NwotODEgLTc2IC04NSAtMTAxIC00NiAtMjM5IDMwIC0xMDQgMzggLTEyMSA5OSAtMjE2IDkwIC0xMzkgMTEwIC0yNTEgNTkgLTMyNwotNTEgLTc1IC0xNTAgLTE3OCAtMjU2IC0yNjUgLTE4OCAtMTU2IC0yODggLTMyOSAtMjg4IC01MDAgMCAtOTEgMjggLTIyOSA1NwotMjc5IDM5IC02OSAxMTQgLTEzNSAxNzAgLTE1MSA2OSAtMjAgMTcwIC0xOCAyMTQgNCA0MSAyMCAxMDAgNzIgMTE2IDEwMiAxMQoxOCAxMiAxOCA0MCAtMTEgMzggLTQxIDc3IC02MCAxNTEgLTc0IDc4IC0xNCAxNTEgMyAyNTQgNTcgODEgNDIgMTI4IDkzIDE3MgoxODMgMjkgNjEgMzEgNzEgMjkgMTcwIC0zIDEyNCAtMjMgMTk1IC0xMDkgMzc5IC03MSAxNTQgLTcwIDE2MyAyNyAyNjggNzEgNzcKMTkwIDI0NSAyMzMgMzMxIDEzIDI2IDM4IDg5IDU1IDE0MSA0MSAxMjEgODAgMjA0IDEyMyAyNjQgbDM1IDQ4IDcgLTEwOSBjOAotMTE2IDAgLTE2NCAtMzYgLTIzNSAtMjEgLTQyIC03MiAtMjQxIC04MyAtMzI0IC01IC0zOCAtMSAtNzEgMTUgLTEzMCAyMCAtNjkKMjIgLTk0IDE3IC0yMTMgLTIgLTc0IC0xNSAtMjA1IC0yNyAtMjkyIC0xMyAtODYgLTIwIC0xNzIgLTE2IC0xOTAgMyAtMTkgMTkKLTU1IDM2IC04MSAzNiAtNTggNzUgLTY4IDE2NiAtNDQgNzYgMjEgMTgzIDIyIDIwOSAzIDE3IC0xMiAxNiAtMTQgLTE3IC0yNQotNDcgLTE2IC0xODQgLTMxIC0yODggLTMyIC00NyAwIC05MyAtNCAtMTA0IC04IC0xNyAtNiAtMTUgLTEwIDE1IC0zNiA2MCAtNTAKODcgLTU2IDI2MiAtNTcgMTY2IC0yIDIxMCA0IDIwMSAyNSAtMyA5IC01MiAxMyAtMTgzIDE0IC0xMDcgMSAtMTg3IDUgLTE5OAoxMiAtMTQgOCAtNyAxMCAzNiAxMSA4NCAwIDIzMSAyMCAyNzkgMzcgNDEgMTUgNjMgNDcgNDggNzEgLTI1IDQwIC0xNDggNTQKLTI0OSAyNyAtOTAgLTIzIC0xMTIgLTIwIC0xNDIgMTkgLTM4IDUwIC00MCA4NSAtMTQgMjY3IDMwIDIxNCAzMiA0NDEgNSA1MTEKLTE0IDM3IC0xNyA2MSAtMTIgMTA1IDkgODAgNTggMjY2IDg5IDMzOCAzMyA3NiA0MSAxNDAgMjkgMjM1IC01IDQxIC01IDkwIC0xCjEwOSA1IDIyIDQgMzggLTIgNDIgLTcgNCAtNiAyMSAxIDUxIDE2IDYyIC0xIDExOCAtNTEgMTczIC01MCA1NCAtMTA5IDc5Ci0yNjAgMTEwIC0xNTMgMzEgLTE5MCA0OCAtMjM3IDEwOSAtMzEgNDAgLTMwIDYyIDIgNDEgNDIgLTI4IDE0NiAtMiAxOTQgNDgKNzYgNzkgNjkgMjIwIC0xNSAyOTkgLTUzIDUwIC0yMDQgMTE4IC0yOTUgMTMzIC00NSA4IC0xMDUgMjEgLTEzMiAzMCAtNTggMTgKLTE0MyAxOCAtMjA2IDF6IG0tMzUgLTcyIGMtODEgLTQ5IC0xMTMgLTgwIC0xNDEgLTEzOSAtMjQgLTUwIC0yNCAtNTAgLTI0Ci0xNiAwIDI4IDExIDQ0IDY4IDEwMSA2MCA2MSAxMDEgODUgMTQ3IDg5IDYgMSAtMTcgLTE1IC01MCAtMzV6IG0zNDYgLTE2IGM5MAotNTUgMTIwIC0xMTggMTExIC0yMzcgLTYgLTg0IC0yNCAtOTEgLTI4IC0xMiAtNSAxMDEgLTIzIDE1MCAtNzMgMjAxIC0yNSAyNQotNTkgNTYgLTc2IDY5IC0yOCAyMCAtMjggMjIgLTYgMTUgMTQgLTQgNDYgLTIwIDcyIC0zNnogbS0xMTYgMyBjNzQgLTQzIDEzMgotMTA0IDE0NyAtMTU0IDggLTI4IDEyIC05NCAxMCAtMTk3IC0zIC0xNzcgNSAtMjE3IDYxIC0yOTkgNTggLTg0IDY5IC0xMzcgNzAKLTM0MCAyIC0xNjYgMCAtMTgxIC0yNiAtMjY2IC0zNyAtMTIxIC05MCAtMjI4IC0xNzYgLTM2MCAtNDAgLTYwIC05NyAtMTYwCi0xMjcgLTIyMCAtNTUgLTExMCAtNTYgLTExMiAtNjQgLTIzMCAtMTEgLTE2MiAtNjEgLTMxMyAtMTQzIC00MzUgLTc1IC0xMTAKLTIxOSAtMjYwIC0yNTAgLTI2MCAtNSAwIC03IC05IC00IC0yMCA0IC0xNyAxIC0xOSAtMjEgLTE0IC02OSAxNSAtOTMgMjgKLTEzNSA3MyAtNTggNjIgLTc1IDk2IC05MyAxODggLTQ3IDI0NyAyNiA0MTggMjY3IDYxOSAxMTQgOTUgMjM0IDIyNiAyNjggMjkxCjQ1IDg5IDIxIDIwMSAtNzUgMzUwIC02OSAxMDYgLTEyNCAyNzEgLTExMCAzMjYgMTYgNjcgMTEwIDEzNyAxODMgMTM3IDY0IDEKMTIxIDE1IDE1MiAzOCAzNSAyNiA3MyA5NiA3MyAxMzUgMCAzMiAtNTEgMTQ1IC04MCAxNzkgLTEzIDE1IC0xMiAxOSAyIDMzIDIyCjIyIDIwIDgwIC00IDEzMyAtMTYgMzYgLTIzIDQyIC00OSA0MiAtMzIgMCAtNjEgLTMwIC02MSAtNjQgMCAtMzIgLTEyIC0xMAotMjEgNDAgLTUgMjYgLTE2IDU2IC0yNSA2NiAtMjIgMjQgLTgyIDM0IC0xMDcgMTkgLTE4IC0xMiAtMTkgLTExIC0xMyAxNiAxNwo2OSA4NSAxMzIgMTk2IDE4MiA2MSAyOCA5NiAyNiAxNTUgLTh6IG0zMjMgLTUzIGMxMTMgLTYxIDE0MiAtOTcgMTQyIC0xNzYgMAotOTkgLTQyIC0xNTIgLTEzMiAtMTY2IC0zMCAtNSAtNDYgLTMgLTU2IDggLTE2IDE2IC0xNyAyOCAtMTIgMTY2IDMgOTggLTEyCjE0NSAtNjMgMTk5IGwtMzIgMzQgMzAgLTcgYzE3IC00IDcyIC0zMCAxMjMgLTU4eiBtLTU4OSAtMTc3IGM3IC01IDE3IC0yOSAyMgotNTUgMTIgLTY0IDM1IC05NiA2OSAtOTYgMjMgMCAyNyAtMyAyMyAtMjQgLTQgLTE3IDUgLTM1IDMwIC02MiA1MSAtNTcgNTQKLTkwIDE0IC0xMzUgLTQ2IC01MiAtNzQgLTU4IC0xMDMgLTIzIC0xNCAxNiAtMzMgNDYgLTQ0IDY3IC0xNiAyOCAtMjcgMzcgLTQ2CjM3IC0yMyAwIC0yNSAzIC0yMCAyNiAyMCA3OCAxOSA4NCAtOSAxMTQgLTIyIDIzIC0yOSA0MiAtMzMgODMgLTQgNDggLTIgNTQKMTkgNjQgMjkgMTQgNTkgMTYgNzggNHogbTE2MSAtODcgYzYgLTE0IDEwIC0zOSAxMCAtNTYgMCAtMjMgLTQgLTI5IC0xNiAtMjQKLTkgMyAtMTcgNiAtMTkgNiAtOCAwIC0xNyA3MCAtMTEgODUgOCAyMyAyNSAxOCAzNiAtMTF6IG0zMzYgLTE4MSBjNDEgLTU0CjEwMCAtODEgMjQ5IC0xMTMgMTk5IC00MyAyNTkgLTc4IDI4NiAtMTY4IDE2IC01NCAwIC0xMDMgLTY5IC0yMDggLTY0IC05OAotODcgLTE0NiAtMTQyIC0zMDUgLTI5IC04NCAtNTUgLTEzNCAtMTIyIC0yMzUgLTQ3IC03MSAtMTE1IC0xNjAgLTE1MiAtMTk4Ci0xMDMgLTEwNyAtMTA2IC0xNDUgLTI2IC0zMDYgNzYgLTE1MiAxMDEgLTIzOCAxMDMgLTM2MSAyIC05OCAwIC0xMDcgLTI4Ci0xNjIgLTM5IC03NyAtOTUgLTEzMSAtMTcyIC0xNjcgLTkxIC00MyAtMTUwIC01NCAtMjE3IC00MCAtNjYgMTQgLTExMyA0MwotMTQ0IDkyIC0yOSA0MyAtNTMgNDEgLTcxIC03IC0yMiAtNjIgLTEyNiAtMTMyIC0xODEgLTEyMyAtMTYgMiAtMTAgMTEgMzQgNDUKNjUgNTAgMTYzIDE2NiAyMjcgMjY5IDcxIDExNCAxMjAgMjcxIDEyOSA0MTQgNyAxMTMgOCAxMTcgNjAgMjIwIDI5IDU4IDg3CjE1OSAxMzAgMjI1IDExNiAxODEgMTQ5IDI1NCAxOTAgNDI1IDIwIDg2IDIxIDEwOSAxNSAyNTAgLTggMTc1IC0yNiAyNTEgLTc3CjMyMSAtNDEgNTYgLTU3IDEwMyAtNTYgMTU5IDAgMjUgMyAzNiA1IDI1IDMgLTExIDE2IC0zNSAyOSAtNTJ6IE02MzQwIDkyNSBsMAotODY1IDIzIDAgYzEyIDAgMTQ0IDE2IDI5MiAzNSAzMTggNDEgNDMzIDcxIDU3NCAxNDggMTIxIDY3IDI0MyAxOTIgMjk2IDMwMgo0NyA5OSA3NSAyMTcgNzUgMzEzIDAgMTM3IC03MSAzNDEgLTE1OSA0NjEgLTU2IDc2IC0xNjUgMTgzIC0yMzEgMjI4IC01OSA0MAotMTkyIDEwNiAtMjU1IDEyNiAtNDUgMTUgLTU3MiAxMTcgLTYwMiAxMTcgLTEwIDAgLTEzIC0xODAgLTEzIC04NjV6IE0zMDA1CjE3NDAgYy0zNjIgLTM4IC02NjMgLTI0NyAtNzkwIC01NDkgLTQwIC05NSAtNjkgLTI3MSAtNjEgLTM3MSAxNiAtMTkxIDEzNwotNDMzIDI4OCAtNTc2IDE5MiAtMTgxIDM3NSAtMjQwIDcxOCAtMjMzIGwxNjUgNCAzOSAzMCAzOSAzMCAtNiAxNzAgYy00IDkzCi03IDI3MCAtNyAzOTMgbDAgMjIyIC0yNyAwIC0yNiAwIDYgLTM4NCA2IC0zODQgLTM0IC0xNiBjLTUwIC0yNCAtMzM5IC0yMgotNDYwIDMgLTI0MiA1MCAtNDM5IDIwOSAtNTYwIDQ1MSAtOTAgMTc5IC0xMTEgMzEyIC03NyA0ODYgNjQgMzIyIDI3MyA1MzkKNjE3IDYzOSAxMzYgMzkgMjU3IDUwIDM1OCAzMSAxMDUgLTIwIDEwNCAtMjAgMTEwIDQgNCAxNiAtMiAyMiAtMzEgMjkgLTQ3IDEzCi0xNjIgMzEgLTE4MiAzMCAtOCAtMSAtNDcgLTUgLTg1IC05eiBNMCAxMDEwIGwwIC03MDAgMzYgLTcxIGM0NyAtOTQgMTAyCi0xNTIgMTgyIC0xOTEgNTUgLTI4IDc4IC0zMyAxNTYgLTM2IDc1IC0zIDEwMSAwIDE0OSAxOCA3NCAyOCAxNjMgMTEwIDIwNQoxODggbDMyIDYwIDAgNzE2IDAgNzE2IC0yNSAwIC0yNSAwIDAgLTcxMiAwIC03MTMgLTI5IC01MSBjLTM4IC02NiAtMTE5IC0xMzgKLTE3OCAtMTU4IC0yNiAtOSAtNzcgLTE2IC0xMTQgLTE2IC0xMzIgMCAtMjM1IDYzIC0zMDAgMTgyIGwtMzQgNjMgLTUgNzAwIC01CjcwMCAtMjIgMyAtMjMgMyAwIC03MDF6IE03NzkwIDg3NSBsMCAtODM1IDQ0NiAwIDQ0NSAwIC0zIDIzIC0zIDIyIC00MTcgMwotNDE4IDIgMCAzNjAgMCAzNjAgMjQwIDAgMjQwIDAgMCAyNSAwIDI1IC0yNDAgMCBjLTIwNyAwIC0yNDAgMiAtMjQwIDE1IDAgMTMKMzMgMTUgMjQwIDE1IGwyNDAgMCAwIDI1IDAgMjUgLTI0MCAwIC0yNDAgMCAwIDM2MCAwIDM2MCA0MTggMiBjNDA5IDMgNDE3IDMKNDE3IDIzIDAgMjAgLTggMjAgLTQ0MiAyMyBsLTQ0MyAyIDAgLTgzNXogTTEyNzUgMTY5NCBjLTE2IC0yIC01NCAtNyAtODIgLTEwCmwtNTMgLTUgMCAtODI1IDAgLTgyNCAyNSAwIDI1IDAgMCA4MDQgMCA4MDQgMTE4IDcgYzIyMCAxNCA0MDMgLTExIDUxMyAtNzIKNjYgLTM2IDEyNCAtMTAwIDE2MiAtMTgxIDMwIC02MiAzMiAtNzUgMzIgLTE3MiAwIC05NCAtMyAtMTExIC0yOCAtMTYxIC01MgotMTA3IC0xNTggLTE3OSAtMjkyIC0xOTkgLTM5IC01IC0xNDEgLTEwIC0yMjcgLTEwIGwtMTU4IDAgMCAtNDEwIDAgLTQxMCAyNQowIDI1IDAgMCAzODUgMCAzODUgMTI5IDAgYzI1OSAwIDM4MCAzNyA0NzkgMTQ1IDc1IDgyIDk2IDE0NCA5NyAyODAgMCAxMDYgLTEKMTEzIC0zNyAxODcgLTk0IDE5OCAtMjUzIDI3NyAtNTY4IDI4MyAtODUgMiAtMTY4IDEgLTE4NSAtMXogTTM3NzUgMTY3MSBjLTQ3Ci00IC03MCAtMTAgLTY5IC0xOCAxIC03IDIgLTM3MSAzIC04MDkgbDEgLTc5NSAyMyAzIDIyIDMgMyA3ODIgMiA3ODEgODggOApjMTA4IDkgMzE1IC0yIDQwMyAtMjAgMTgzIC0zOSAyODAgLTE1MCAzMTAgLTM1MCAyNSAtMTY3IC01OCAtMzE2IC0yMDkgLTM3NgotNTEgLTIxIC03OSAtMjQgLTI4MiAtMjkgLTIyNCAtNiAtMjI1IC02IC0yMjggLTI4IC0zIC0yMiAwIC0yMyA2MSAtMjMgbDY0IDAKMjU5IC0zOTAgYzE0MiAtMjE0IDI2MiAtMzkwIDI2NSAtMzkwIDMgMCAxMiA2IDIxIDEzIDE0IDEwIC0xNiA1OSAtMjMzIDM4NwotMTM2IDIwNiAtMjQ0IDM3NyAtMjM4IDM3OCA1IDIgMTYgMiAyMyAtMSA3IC0zIDEyMCAtMTY5IDI1MSAtMzY5IDEzMSAtMTk5CjI0NCAtMzcwIDI1MSAtMzc4IDEyIC0xMiAxNiAtMTIgMzAgMSAxNCAxNSAtNyA1MCAtMjI0IDM4MCBsLTIzOCAzNjQgMzUgMwpjMTYyIDEyIDI3MiA1MyAzNDAgMTI3IDUxIDU1IDc3IDEwOCA5NyAxOTIgMTMgNTcgMTQgODEgNCAxNDggLTI4IDE5NCAtMTE5CjMxMyAtMjg0IDM3MSAtOTkgMzYgLTM0NyA1MSAtNTUxIDM1eiBNMzIwMCA0OTAgbDAgLTQwMCAyNSAwIDI1IDAgMCA0MDAgMAo0MDAgLTI1IDAgLTI1IDAgMCAtNDAweiIvPgo8L2c+Cjwvc3ZnPg==" alt="UPGRADE — студия эстетики тела" /></a>
-    <ul class="nav-links" id="navLinks">
-      <li><a href="/#about">О студии</a></li>
-      <li><a href="/pricing.html">Услуги</a></li>
-      <li><a href="/blog/">Блог</a></li>
-      <li><a href="/book.html">Записаться</a></li>
-      <li><button class="theme-toggle" id="themeToggle" aria-label="Сменить тему">☀️</button></li>
+  <!-- ═══ NAVIGATION ═══ -->
+  <nav class="nav" id="nav">
+    <a href="/" class="nav-logo"><img src="logo/logo2.svg" class="nav-logo-icon" alt="UPGRADE" /><img src="logo/logo1.svg" class="nav-logo-text" alt="UPGRADE — студия эстетики тела" /></a>
+    <ul class="nav-links">
+      <li><a href="/">Главная</a></li>
+      <li><a href="/#services">Услуги</a></li>
+      <li><a href="/pricing">Прайс</a></li>
+      <li><a href="/#specialists">Специалисты</a></li>
+      <li><a href="/blog" aria-current="page">Блог</a></li>
     </ul>
-    <button class="mobile-toggle" id="mobileToggle" aria-label="Меню">
-      <span></span><span></span><span></span>
-    </button>
+    <div class="nav-right">
+      <button class="theme-toggle-slider" id="themeToggle" aria-label="Переключить тему">
+        <span class="theme-toggle-icon sun">☀️</span>
+        <span class="theme-toggle-icon moon">🌙</span>
+      </button>
+      <button class="nav-burger" id="navBurger" aria-label="Меню">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </nav>
 
-  <!-- ─── BLOG ─── -->
+  <!-- ═══ MOBILE MENU ═══ -->
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="mobile-close" id="mobileClose">✕</button>
+    <a href="/" onclick="closeMobile()">Главная</a>
+    <a href="/#services" onclick="closeMobile()">Услуги</a>
+    <a href="/pricing" onclick="closeMobile()">Прайс</a>
+    <a href="/#specialists" onclick="closeMobile()">Специалисты</a>
+    <a href="/blog" onclick="closeMobile()">Блог</a>
+    <a href="/book" class="btn btn-primary" onclick="closeMobile()">Записаться</a>
+  </div>
+
+  <!-- ═══ BLOG ═══ -->
   <main class="page">
     <div class="container">
 
@@ -325,159 +344,47 @@
         Рендер-модуль генерирует этот блок из БД.
         Каждая карточка — один <article class="article-card" data-cat="{{category_slug}}">.
         Пагинация: отдельный blog/page/2.html, blog/page/3.html и т.д.
-        Ниже — mock для превью шаблона.
       -->
 
       <div class="articles-grid" id="articlesGrid">
-
-        <article class="article-card" data-cat="lpg">
-          <div class="article-card-image">
-            <span class="placeholder-icon">💆</span>
-          </div>
-          <div class="article-card-body">
-            <div class="article-card-meta">
-              <span class="article-category">LPG-массаж</span>
-              <span>12 февраля 2026</span>
-            </div>
-            <h2 class="article-card-title">
-              <a href="/blog/lpg-vs-ruchnoy-massazh.html">LPG vs ручной массаж: что эффективнее для борьбы с целлюлитом?</a>
-            </h2>
-            <p class="article-card-excerpt">Сравниваем два подхода к антицеллюлитному массажу — аппаратный LPG и классический ручной. Разбираем механизмы воздействия, результаты клинических исследований и реальные отзывы.</p>
-            <div class="article-card-footer">
-              <span class="read-time">7 мин чтения</span>
-              <a href="/blog/lpg-vs-ruchnoy-massazh.html" class="read-more">Читать →</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="article-card" data-cat="pressotherapy">
-          <div class="article-card-image">
-            <span class="placeholder-icon">🫧</span>
-          </div>
-          <div class="article-card-body">
-            <div class="article-card-meta">
-              <span class="article-category">Прессотерапия</span>
-              <span>8 февраля 2026</span>
-            </div>
-            <h2 class="article-card-title">
-              <a href="/blog/pressoterapiya-pokazaniya-protivopokazaniya.html">Прессотерапия: показания, противопоказания и чего ожидать от процедуры</a>
-            </h2>
-            <p class="article-card-excerpt">Всё о прессотерапии — кому подходит, когда лучше воздержаться, как проходит сеанс и какие результаты можно получить уже после первого посещения.</p>
-            <div class="article-card-footer">
-              <span class="read-time">5 мин чтения</span>
-              <a href="/blog/pressoterapiya-pokazaniya-protivopokazaniya.html" class="read-more">Читать →</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="article-card" data-cat="body-care">
-          <div class="article-card-image">
-            <span class="placeholder-icon">🌿</span>
-          </div>
-          <div class="article-card-body">
-            <div class="article-card-meta">
-              <span class="article-category">Уход за телом</span>
-              <span>5 февраля 2026</span>
-            </div>
-            <h2 class="article-card-title">
-              <a href="/blog/kak-ubrat-tsellyulit-na-bedrah.html">Как убрать целлюлит на бёдрах: 5 работающих методов в 2026 году</a>
-            </h2>
-            <p class="article-card-excerpt">Разбираем научно обоснованные подходы к борьбе с целлюлитом — от питания и спорта до аппаратных процедур. Что действительно работает, а что — маркетинг.</p>
-            <div class="article-card-footer">
-              <span class="read-time">9 мин чтения</span>
-              <a href="/blog/kak-ubrat-tsellyulit-na-bedrah.html" class="read-more">Читать →</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="article-card" data-cat="faq">
-          <div class="article-card-image">
-            <span class="placeholder-icon">❓</span>
-          </div>
-          <div class="article-card-body">
-            <div class="article-card-meta">
-              <span class="article-category">Ответы на вопросы</span>
-              <span>1 февраля 2026</span>
-            </div>
-            <h2 class="article-card-title">
-              <a href="/blog/skolko-seansov-lpg-nuzhno.html">Сколько сеансов LPG нужно для видимого результата?</a>
-            </h2>
-            <p class="article-card-excerpt">Отвечаем на самый частый вопрос. Разбираем от чего зависит количество процедур, как часто ходить и когда ждать первых изменений.</p>
-            <div class="article-card-footer">
-              <span class="read-time">4 мин чтения</span>
-              <a href="/blog/skolko-seansov-lpg-nuzhno.html" class="read-more">Читать →</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="article-card" data-cat="results">
-          <div class="article-card-image">
-            <span class="placeholder-icon">📐</span>
-          </div>
-          <div class="article-card-body">
-            <div class="article-card-meta">
-              <span class="article-category">Результаты</span>
-              <span>28 января 2026</span>
-            </div>
-            <h2 class="article-card-title">
-              <a href="/blog/minus-10-sm-za-kurs.html">Минус 10 см за курс: реальные замеры наших клиентов</a>
-            </h2>
-            <p class="article-card-excerpt">Публикуем реальные результаты с замерами до и после курса аппаратных процедур. Без фотошопа — только цифры, даты и программы.</p>
-            <div class="article-card-footer">
-              <span class="read-time">6 мин чтения</span>
-              <a href="/blog/minus-10-sm-za-kurs.html" class="read-more">Читать →</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="article-card" data-cat="lpg">
-          <div class="article-card-image">
-            <span class="placeholder-icon">✨</span>
-          </div>
-          <div class="article-card-body">
-            <div class="article-card-meta">
-              <span class="article-category">LPG-массаж</span>
-              <span>22 января 2026</span>
-            </div>
-            <h2 class="article-card-title">
-              <a href="/blog/lpg-bolno-ili-net.html">Больно ли делать LPG-массаж? Честный разбор ощущений</a>
-            </h2>
-            <p class="article-card-excerpt">Рассказываем, что чувствуют клиенты во время процедуры, как настраивается интенсивность и почему первый сеанс отличается от пятого.</p>
-            <div class="article-card-footer">
-              <span class="read-time">4 мин чтения</span>
-              <a href="/blog/lpg-bolno-ili-net.html" class="read-more">Читать →</a>
-            </div>
-          </div>
-        </article>
-
+        <!-- {{articles}} — SSG рендер-модуль вставляет карточки статей -->
       </div>
 
-      <!-- Pagination (SSG renders for multi-page) -->
-      <nav class="pagination" aria-label="Страницы блога">
-        <span class="current">1</span>
-        <a href="/blog/page/2.html">2</a>
-        <a href="/blog/page/3.html">3</a>
-        <span class="dots">…</span>
-        <a href="/blog/page/2.html" class="arrow" aria-label="Следующая страница">›</a>
-      </nav>
+      <!-- {{pagination}} — SSG рендер-модуль вставляет пагинацию -->
 
     </div>
   </main>
 
-  <!-- ─── FOOTER ─── -->
-  <footer class="footer">
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="site-footer">
     <div class="footer-inner">
-      <div class="footer-logo"><img src="data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKIHdpZHRoPSI4NjgiIGhlaWdodD0iNTk1IiB2aWV3Qm94PSIwIDAgODY4IDU5NSIKIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiPgo8ZyBjbGFzcz0ibG9nby1wYXRocyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCw1OTUpIHNjYWxlKDAuMSwtMC4xKSIKZmlsbD0iIzJCQjVCOCIgc3Ryb2tlPSJub25lIj4KPHBhdGggZD0iTTMwNzcgNTkzOCBjLTIgLTcgLTI2OSAtNjQ5IC01OTIgLTE0MjcgLTMyMyAtNzc3IC01ODMgLTE0MTcgLTU3OAotMTQyMSA0IC00IDc4NiAtMzMwIDE3MzggLTcyNCA5NTIgLTM5NSAxNzM0IC03MjEgMTczOCAtNzI1IDUgLTUgLTEzOCAtMzYxCi0zMTcgLTc5MiAtMzAyIC03MzAgLTMyMyAtNzg1IC0zMDUgLTc5MyAxMiAtNiAyMyAtNiAyOCAwIDQgNSAxMzYgMzE4IDI5Mgo2OTcgMTU2IDM3OCAyODYgNjg3IDI4OSA2ODcgMyAwIDE0NyAtMzI0IDMxOSAtNzIwIDE3MyAtMzk2IDMxNyAtNzIwIDMyMAotNzIwIDQgMCAxNCA2IDIzIDEzIDEzIDEwIC0yNCAxMDIgLTMwOCA3NTIgLTE3OCA0MDcgLTMyNCA3NDUgLTMyNCA3NTIgMCAxMgo0OSAxMzMgNjAgMTQ1IDMgNCAxNTggLTM1NiAzNDUgLTgwMCAxODYgLTQ0NCAzNDEgLTgxMCAzNDUgLTgxNSAzIC00IDE0IC0xCjI1IDYgMTcgMTMgLTMgNjMgLTM0NCA4NzQgbC0zNjEgODYxIDU2MSAxMzUxIGMzMDkgNzQ0IDU1OSAxMzU0IDU1OCAxMzU1IC0zCjMgLTMzODUgMTQwOCAtMzQ5NSAxNDUzIC02IDIgLTE0IC0yIC0xNyAtOXogbTE3NTcgLTc0NCBjOTQwIC0zOTAgMTcxMCAtNzE0CjE3MTIgLTcxOSA1IC0xMyAtMTE1MCAtMjgwMCAtMTE2MCAtMjc5OSAtMzAgNCAtMzQ0NiAxNDMwIC0zNDQ2IDE0MzggMCA2IDI2MAo2MzggNTc4IDE0MDQgNDM5IDEwNjAgNTgxIDEzOTIgNTkyIDEzODkgOCAtMiA3ODQgLTMyMyAxNzI0IC03MTN6IE00MjIwIDUyNDYKYy04NSAtMjQgLTE2NiAtODMgLTIxMiAtMTU1IC0zMSAtNTAgLTM1IC04MyAtMTMgLTEyMSA4IC0xNCAxNCAtNDggMTUgLTc2IDAKLTYwIDE1IC0xMTEgNDIgLTE0MCAxNiAtMTkgMTcgLTI2IDcgLTczIC0xMiAtNTkgLTMgLTgxIDM2IC04MSAxMyAwIDI2IC05IDMyCi0yMiA2IC0xMyAyNyAtNDEgNDYgLTYzIDMyIC0zNyAzOCAtNDAgNzYgLTM3IDM1IDMgNDcgMTEgNzcgNDggMjAgMjQgNDAgNDQKNDQgNDQgMTkgMCAxOSAtNTEgMSAtOTQgLTI3IC02MSAtNTQgLTc2IC0xNDggLTgzIC05MSAtNyAtMTIyIC0yMCAtMTgxIC03NwotODEgLTc2IC04NSAtMTAxIC00NiAtMjM5IDMwIC0xMDQgMzggLTEyMSA5OSAtMjE2IDkwIC0xMzkgMTEwIC0yNTEgNTkgLTMyNwotNTEgLTc1IC0xNTAgLTE3OCAtMjU2IC0yNjUgLTE4OCAtMTU2IC0yODggLTMyOSAtMjg4IC01MDAgMCAtOTEgMjggLTIyOSA1NwotMjc5IDM5IC02OSAxMTQgLTEzNSAxNzAgLTE1MSA2OSAtMjAgMTcwIC0xOCAyMTQgNCA0MSAyMCAxMDAgNzIgMTE2IDEwMiAxMQoxOCAxMiAxOCA0MCAtMTEgMzggLTQxIDc3IC02MCAxNTEgLTc0IDc4IC0xNCAxNTEgMyAyNTQgNTcgODEgNDIgMTI4IDkzIDE3MgoxODMgMjkgNjEgMzEgNzEgMjkgMTcwIC0zIDEyNCAtMjMgMTk1IC0xMDkgMzc5IC03MSAxNTQgLTcwIDE2MyAyNyAyNjggNzEgNzcKMTkwIDI0NSAyMzMgMzMxIDEzIDI2IDM4IDg5IDU1IDE0MSA0MSAxMjEgODAgMjA0IDEyMyAyNjQgbDM1IDQ4IDcgLTEwOSBjOAotMTE2IDAgLTE2NCAtMzYgLTIzNSAtMjEgLTQyIC03MiAtMjQxIC04MyAtMzI0IC01IC0zOCAtMSAtNzEgMTUgLTEzMCAyMCAtNjkKMjIgLTk0IDE3IC0yMTMgLTIgLTc0IC0xNSAtMjA1IC0yNyAtMjkyIC0xMyAtODYgLTIwIC0xNzIgLTE2IC0xOTAgMyAtMTkgMTkKLTU1IDM2IC04MSAzNiAtNTggNzUgLTY4IDE2NiAtNDQgNzYgMjEgMTgzIDIyIDIwOSAzIDE3IC0xMiAxNiAtMTQgLTE3IC0yNQotNDcgLTE2IC0xODQgLTMxIC0yODggLTMyIC00NyAwIC05MyAtNCAtMTA0IC04IC0xNyAtNiAtMTUgLTEwIDE1IC0zNiA2MCAtNTAKODcgLTU2IDI2MiAtNTcgMTY2IC0yIDIxMCA0IDIwMSAyNSAtMyA5IC01MiAxMyAtMTgzIDE0IC0xMDcgMSAtMTg3IDUgLTE5OAoxMiAtMTQgOCAtNyAxMCAzNiAxMSA4NCAwIDIzMSAyMCAyNzkgMzcgNDEgMTUgNjMgNDcgNDggNzEgLTI1IDQwIC0xNDggNTQKLTI0OSAyNyAtOTAgLTIzIC0xMTIgLTIwIC0xNDIgMTkgLTM4IDUwIC00MCA4NSAtMTQgMjY3IDMwIDIxNCAzMiA0NDEgNSA1MTEKLTE0IDM3IC0xNyA2MSAtMTIgMTA1IDkgODAgNTggMjY2IDg5IDMzOCAzMyA3NiA0MSAxNDAgMjkgMjM1IC01IDQxIC01IDkwIC0xCjEwOSA1IDIyIDQgMzggLTIgNDIgLTcgNCAtNiAyMSAxIDUxIDE2IDYyIC0xIDExOCAtNTEgMTczIC01MCA1NCAtMTA5IDc5Ci0yNjAgMTEwIC0xNTMgMzEgLTE5MCA0OCAtMjM3IDEwOSAtMzEgNDAgLTMwIDYyIDIgNDEgNDIgLTI4IDE0NiAtMiAxOTQgNDgKNzYgNzkgNjkgMjIwIC0xNSAyOTkgLTUzIDUwIC0yMDQgMTE4IC0yOTUgMTMzIC00NSA4IC0xMDUgMjEgLTEzMiAzMCAtNTggMTgKLTE0MyAxOCAtMjA2IDF6IG0tMzUgLTcyIGMtODEgLTQ5IC0xMTMgLTgwIC0xNDEgLTEzOSAtMjQgLTUwIC0yNCAtNTAgLTI0Ci0xNiAwIDI4IDExIDQ0IDY4IDEwMSA2MCA2MSAxMDEgODUgMTQ3IDg5IDYgMSAtMTcgLTE1IC01MCAtMzV6IG0zNDYgLTE2IGM5MAotNTUgMTIwIC0xMTggMTExIC0yMzcgLTYgLTg0IC0yNCAtOTEgLTI4IC0xMiAtNSAxMDEgLTIzIDE1MCAtNzMgMjAxIC0yNSAyNQotNTkgNTYgLTc2IDY5IC0yOCAyMCAtMjggMjIgLTYgMTUgMTQgLTQgNDYgLTIwIDcyIC0zNnogbS0xMTYgMyBjNzQgLTQzIDEzMgotMTA0IDE0NyAtMTU0IDggLTI4IDEyIC05NCAxMCAtMTk3IC0zIC0xNzcgNSAtMjE3IDYxIC0yOTkgNTggLTg0IDY5IC0xMzcgNzAKLTM0MCAyIC0xNjYgMCAtMTgxIC0yNiAtMjY2IC0zNyAtMTIxIC05MCAtMjI4IC0xNzYgLTM2MCAtNDAgLTYwIC05NyAtMTYwCi0xMjcgLTIyMCAtNTUgLTExMCAtNTYgLTExMiAtNjQgLTIzMCAtMTEgLTE2MiAtNjEgLTMxMyAtMTQzIC00MzUgLTc1IC0xMTAKLTIxOSAtMjYwIC0yNTAgLTI2MCAtNSAwIC03IC05IC00IC0yMCA0IC0xNyAxIC0xOSAtMjEgLTE0IC02OSAxNSAtOTMgMjgKLTEzNSA3MyAtNTggNjIgLTc1IDk2IC05MyAxODggLTQ3IDI0NyAyNiA0MTggMjY3IDYxOSAxMTQgOTUgMjM0IDIyNiAyNjggMjkxCjQ1IDg5IDIxIDIwMSAtNzUgMzUwIC02OSAxMDYgLTEyNCAyNzEgLTExMCAzMjYgMTYgNjcgMTEwIDEzNyAxODMgMTM3IDY0IDEKMTIxIDE1IDE1MiAzOCAzNSAyNiA3MyA5NiA3MyAxMzUgMCAzMiAtNTEgMTQ1IC04MCAxNzkgLTEzIDE1IC0xMiAxOSAyIDMzIDIyCjIyIDIwIDgwIC00IDEzMyAtMTYgMzYgLTIzIDQyIC00OSA0MiAtMzIgMCAtNjEgLTMwIC02MSAtNjQgMCAtMzIgLTEyIC0xMAotMjEgNDAgLTUgMjYgLTE2IDU2IC0yNSA2NiAtMjIgMjQgLTgyIDM0IC0xMDcgMTkgLTE4IC0xMiAtMTkgLTExIC0xMyAxNiAxNwo2OSA4NSAxMzIgMTk2IDE4MiA2MSAyOCA5NiAyNiAxNTUgLTh6IG0zMjMgLTUzIGMxMTMgLTYxIDE0MiAtOTcgMTQyIC0xNzYgMAotOTkgLTQyIC0xNTIgLTEzMiAtMTY2IC0zMCAtNSAtNDYgLTMgLTU2IDggLTE2IDE2IC0xNyAyOCAtMTIgMTY2IDMgOTggLTEyCjE0NSAtNjMgMTk5IGwtMzIgMzQgMzAgLTcgYzE3IC00IDcyIC0zMCAxMjMgLTU4eiBtLTU4OSAtMTc3IGM3IC01IDE3IC0yOSAyMgotNTUgMTIgLTY0IDM1IC05NiA2OSAtOTYgMjMgMCAyNyAtMyAyMyAtMjQgLTQgLTE3IDUgLTM1IDMwIC02MiA1MSAtNTcgNTQKLTkwIDE0IC0xMzUgLTQ2IC01MiAtNzQgLTU4IC0xMDMgLTIzIC0xNCAxNiAtMzMgNDYgLTQ0IDY3IC0xNiAyOCAtMjcgMzcgLTQ2CjM3IC0yMyAwIC0yNSAzIC0yMCAyNiAyMCA3OCAxOSA4NCAtOSAxMTQgLTIyIDIzIC0yOSA0MiAtMzMgODMgLTQgNDggLTIgNTQKMTkgNjQgMjkgMTQgNTkgMTYgNzggNHogbTE2MSAtODcgYzYgLTE0IDEwIC0zOSAxMCAtNTYgMCAtMjMgLTQgLTI5IC0xNiAtMjQKLTkgMyAtMTcgNiAtMTkgNiAtOCAwIC0xNyA3MCAtMTEgODUgOCAyMyAyNSAxOCAzNiAtMTF6IG0zMzYgLTE4MSBjNDEgLTU0CjEwMCAtODEgMjQ5IC0xMTMgMTk5IC00MyAyNTkgLTc4IDI4NiAtMTY4IDE2IC01NCAwIC0xMDMgLTY5IC0yMDggLTY0IC05OAotODcgLTE0NiAtMTQyIC0zMDUgLTI5IC04NCAtNTUgLTEzNCAtMTIyIC0yMzUgLTQ3IC03MSAtMTE1IC0xNjAgLTE1MiAtMTk4Ci0xMDMgLTEwNyAtMTA2IC0xNDUgLTI2IC0zMDYgNzYgLTE1MiAxMDEgLTIzOCAxMDMgLTM2MSAyIC05OCAwIC0xMDcgLTI4Ci0xNjIgLTM5IC03NyAtOTUgLTEzMSAtMTcyIC0xNjcgLTkxIC00MyAtMTUwIC01NCAtMjE3IC00MCAtNjYgMTQgLTExMyA0MwotMTQ0IDkyIC0yOSA0MyAtNTMgNDEgLTcxIC03IC0yMiAtNjIgLTEyNiAtMTMyIC0xODEgLTEyMyAtMTYgMiAtMTAgMTEgMzQgNDUKNjUgNTAgMTYzIDE2NiAyMjcgMjY5IDcxIDExNCAxMjAgMjcxIDEyOSA0MTQgNyAxMTMgOCAxMTcgNjAgMjIwIDI5IDU4IDg3CjE1OSAxMzAgMjI1IDExNiAxODEgMTQ5IDI1NCAxOTAgNDI1IDIwIDg2IDIxIDEwOSAxNSAyNTAgLTggMTc1IC0yNiAyNTEgLTc3CjMyMSAtNDEgNTYgLTU3IDEwMyAtNTYgMTU5IDAgMjUgMyAzNiA1IDI1IDMgLTExIDE2IC0zNSAyOSAtNTJ6IE02MzQwIDkyNSBsMAotODY1IDIzIDAgYzEyIDAgMTQ0IDE2IDI5MiAzNSAzMTggNDEgNDMzIDcxIDU3NCAxNDggMTIxIDY3IDI0MyAxOTIgMjk2IDMwMgo0NyA5OSA3NSAyMTcgNzUgMzEzIDAgMTM3IC03MSAzNDEgLTE1OSA0NjEgLTU2IDc2IC0xNjUgMTgzIC0yMzEgMjI4IC01OSA0MAotMTkyIDEwNiAtMjU1IDEyNiAtNDUgMTUgLTU3MiAxMTcgLTYwMiAxMTcgLTEwIDAgLTEzIC0xODAgLTEzIC04NjV6IE0zMDA1CjE3NDAgYy0zNjIgLTM4IC02NjMgLTI0NyAtNzkwIC01NDkgLTQwIC05NSAtNjkgLTI3MSAtNjEgLTM3MSAxNiAtMTkxIDEzNwotNDMzIDI4OCAtNTc2IDE5MiAtMTgxIDM3NSAtMjQwIDcxOCAtMjMzIGwxNjUgNCAzOSAzMCAzOSAzMCAtNiAxNzAgYy00IDkzCi03IDI3MCAtNyAzOTMgbDAgMjIyIC0yNyAwIC0yNiAwIDYgLTM4NCA2IC0zODQgLTM0IC0xNiBjLTUwIC0yNCAtMzM5IC0yMgotNDYwIDMgLTI0MiA1MCAtNDM5IDIwOSAtNTYwIDQ1MSAtOTAgMTc5IC0xMTEgMzEyIC03NyA0ODYgNjQgMzIyIDI3MyA1MzkKNjE3IDYzOSAxMzYgMzkgMjU3IDUwIDM1OCAzMSAxMDUgLTIwIDEwNCAtMjAgMTEwIDQgNCAxNiAtMiAyMiAtMzEgMjkgLTQ3IDEzCi0xNjIgMzEgLTE4MiAzMCAtOCAtMSAtNDcgLTUgLTg1IC05eiBNMCAxMDEwIGwwIC03MDAgMzYgLTcxIGM0NyAtOTQgMTAyCi0xNTIgMTgyIC0xOTEgNTUgLTI4IDc4IC0zMyAxNTYgLTM2IDc1IC0zIDEwMSAwIDE0OSAxOCA3NCAyOCAxNjMgMTEwIDIwNQoxODggbDMyIDYwIDAgNzE2IDAgNzE2IC0yNSAwIC0yNSAwIDAgLTcxMiAwIC03MTMgLTI5IC01MSBjLTM4IC02NiAtMTE5IC0xMzgKLTE3OCAtMTU4IC0yNiAtOSAtNzcgLTE2IC0xMTQgLTE2IC0xMzIgMCAtMjM1IDYzIC0zMDAgMTgyIGwtMzQgNjMgLTUgNzAwIC01CjcwMCAtMjIgMyAtMjMgMyAwIC03MDF6IE03NzkwIDg3NSBsMCAtODM1IDQ0NiAwIDQ0NSAwIC0zIDIzIC0zIDIyIC00MTcgMwotNDE4IDIgMCAzNjAgMCAzNjAgMjQwIDAgMjQwIDAgMCAyNSAwIDI1IC0yNDAgMCBjLTIwNyAwIC0yNDAgMiAtMjQwIDE1IDAgMTMKMzMgMTUgMjQwIDE1IGwyNDAgMCAwIDI1IDAgMjUgLTI0MCAwIC0yNDAgMCAwIDM2MCAwIDM2MCA0MTggMiBjNDA5IDMgNDE3IDMKNDE3IDIzIDAgMjAgLTggMjAgLTQ0MiAyMyBsLTQ0MyAyIDAgLTgzNXogTTEyNzUgMTY5NCBjLTE2IC0yIC01NCAtNyAtODIgLTEwCmwtNTMgLTUgMCAtODI1IDAgLTgyNCAyNSAwIDI1IDAgMCA4MDQgMCA4MDQgMTE4IDcgYzIyMCAxNCA0MDMgLTExIDUxMyAtNzIKNjYgLTM2IDEyNCAtMTAwIDE2MiAtMTgxIDMwIC02MiAzMiAtNzUgMzIgLTE3MiAwIC05NCAtMyAtMTExIC0yOCAtMTYxIC01MgotMTA3IC0xNTggLTE3OSAtMjkyIC0xOTkgLTM5IC01IC0xNDEgLTEwIC0yMjcgLTEwIGwtMTU4IDAgMCAtNDEwIDAgLTQxMCAyNQowIDI1IDAgMCAzODUgMCAzODUgMTI5IDAgYzI1OSAwIDM4MCAzNyA0NzkgMTQ1IDc1IDgyIDk2IDE0NCA5NyAyODAgMCAxMDYgLTEKMTEzIC0zNyAxODcgLTk0IDE5OCAtMjUzIDI3NyAtNTY4IDI4MyAtODUgMiAtMTY4IDEgLTE4NSAtMXogTTM3NzUgMTY3MSBjLTQ3Ci00IC03MCAtMTAgLTY5IC0xOCAxIC03IDIgLTM3MSAzIC04MDkgbDEgLTc5NSAyMyAzIDIyIDMgMyA3ODIgMiA3ODEgODggOApjMTA4IDkgMzE1IC0yIDQwMyAtMjAgMTgzIC0zOSAyODAgLTE1MCAzMTAgLTM1MCAyNSAtMTY3IC01OCAtMzE2IC0yMDkgLTM3NgotNTEgLTIxIC03OSAtMjQgLTI4MiAtMjkgLTIyNCAtNiAtMjI1IC02IC0yMjggLTI4IC0zIC0yMiAwIC0yMyA2MSAtMjMgbDY0IDAKMjU5IC0zOTAgYzE0MiAtMjE0IDI2MiAtMzkwIDI2NSAtMzkwIDMgMCAxMiA2IDIxIDEzIDE0IDEwIC0xNiA1OSAtMjMzIDM4NwotMTM2IDIwNiAtMjQ0IDM3NyAtMjM4IDM3OCA1IDIgMTYgMiAyMyAtMSA3IC0zIDEyMCAtMTY5IDI1MSAtMzY5IDEzMSAtMTk5CjI0NCAtMzcwIDI1MSAtMzc4IDEyIC0xMiAxNiAtMTIgMzAgMSAxNCAxNSAtNyA1MCAtMjI0IDM4MCBsLTIzOCAzNjQgMzUgMwpjMTYyIDEyIDI3MiA1MyAzNDAgMTI3IDUxIDU1IDc3IDEwOCA5NyAxOTIgMTMgNTcgMTQgODEgNCAxNDggLTI4IDE5NCAtMTE5CjMxMyAtMjg0IDM3MSAtOTkgMzYgLTM0NyA1MSAtNTUxIDM1eiBNMzIwMCA0OTAgbDAgLTQwMCAyNSAwIDI1IDAgMCA0MDAgMAo0MDAgLTI1IDAgLTI1IDAgMCAtNDAweiIvPgo8L2c+Cjwvc3ZnPg==" alt="UPGRADE" /></div>
-      <ul class="footer-links">
-        <li><a href="https://www.instagram.com/upgrade.lpg" target="_blank" rel="noopener">Instagram</a></li>
-        <li><a href="https://t.me/upgrade_lpg_bot" target="_blank" rel="noopener">Telegram</a></li>
-      </ul>
-      <div class="footer-copy">© 2025 UPGRADE. Все права защищены.</div>
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="/" class="footer-logo">
+            <img src="logo/logo2.svg" alt="" />
+            <img src="logo/logo1.svg" alt="" />
+          </a>
+          <p class="footer-tagline">Студия аппаратной эстетики в&nbsp;Чехове</p>
+        </div>
+        <div class="footer-content">
+          <nav class="footer-row footer-nav-row">
+            <a href="/#about">О&nbsp;студии</a>
+            <a href="/#services">Услуги</a>
+            <a href="/#faq">Вопросы</a>
+            <a href="/pricing">Прайс</a>
+          </nav>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-copy">© 2026 UPGRADE. Все права защищены.</span>
+      </div>
     </div>
   </footer>
 
   <script>
-    /* ── Category filter (client-side for static pages) ── */
+    /* ══════════════════════════════════════════
+       Category filter (client-side for static pages)
+       ══════════════════════════════════════════ */
     const filters = document.getElementById('filters');
     const grid = document.getElementById('articlesGrid');
 
@@ -498,28 +405,31 @@
       });
     });
 
-    /* ── Theme ── */
-    const themeToggle = document.getElementById('themeToggle');
-    const stored = localStorage.getItem('theme');
-    if (stored) document.documentElement.dataset.theme = stored;
-    themeToggle.textContent = document.documentElement.dataset.theme === 'dark' ? '🌙' : '☀️';
-    themeToggle.addEventListener('click', () => {
-      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = next;
+    /* ══════════════════════════════════════════
+       SHARED UI (nav, theme, mobile)
+       ══════════════════════════════════════════ */
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggle');
+    const saved = localStorage.getItem('theme');
+    if (saved) html.setAttribute('data-theme', saved);
+
+    themeBtn.addEventListener('click', () => {
+      const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
-      themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
     });
 
-    /* ── Mobile menu ── */
-    document.getElementById('mobileToggle').addEventListener('click', () => {
-      document.getElementById('navLinks').classList.toggle('open');
-    });
-
-    /* ── Nav scroll ── */
-    const nav = document.getElementById('navbar');
+    const nav = document.getElementById('nav');
     window.addEventListener('scroll', () => {
-      nav.classList.toggle('scrolled', window.scrollY > 10);
+      nav.classList.toggle('scrolled', window.scrollY > 40);
     }, { passive: true });
+
+    const burger = document.getElementById('navBurger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const mobileClose = document.getElementById('mobileClose');
+    burger.addEventListener('click', () => mobileMenu.classList.add('active'));
+    mobileClose.addEventListener('click', closeMobile);
+    function closeMobile() { mobileMenu.classList.remove('active'); }
   </script>
 </body>
 </html>

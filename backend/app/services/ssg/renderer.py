@@ -26,7 +26,7 @@ FRONTEND_DIR = Path("frontend")
 BLOG_DIR = FRONTEND_DIR / "blog"
 ARTICLE_TEMPLATE = FRONTEND_DIR / "article.html"
 BLOG_TEMPLATE = FRONTEND_DIR / "blog.html"
-SITE_URL = "https://upgrade-studio.ru"
+SITE_URL = "https://upgradelpg.site"
 ARTICLES_PER_PAGE = 9
 AUTHOR_NAME = "UPGRADE"
 
@@ -70,7 +70,7 @@ def render_article_page(article: dict, related: list[dict], template: str) -> st
     updated_date = (article["updated_at"] or published_date)[:10]
     read_time = calc_read_time(article["body_html"])
 
-    # ── Head section: direct {{placeholder}} replacement ──
+    # ── Direct {{placeholder}} replacement (head + body) ──
     replacements = {
         "{{title}}": escape(article["title"]),
         "{{slug}}": escape(article["slug"]),
@@ -80,60 +80,17 @@ def render_article_page(article: dict, related: list[dict], template: str) -> st
         "{{published_date}}": published_date,
         "{{published_human}}": format_date_human(published_date),
         "{{updated_date}}": updated_date,
-        "{{read_time}}": read_time,
+        "{{read_time}}": f"{read_time} чтения",
         "{{author_name}}": AUTHOR_NAME,
         "{{image_url}}": escape(article["image_url"] or ""),
+        "{{content}}": article["body_html"],
     }
 
     html = template
     for placeholder, value in replacements.items():
         html = html.replace(placeholder, value)
 
-    # ── Body section: replace mock content with real data ──
-
-    # Breadcrumb title: "Mock text<!-- {{title}} -->" → real title
-    html = re.sub(
-        r"<span>[^<]*<!-- \{\{title\}\} --></span>(\s*</nav>)",
-        f"<span>{escape(article['title'])}</span>\\1",
-        html,
-    )
-
-    # Category tag: "Mock<!-- {{category}} -->" → real category
-    html = re.sub(
-        r'<span class="article-category-tag">[^<]*<!-- \{\{category\}\} --></span>',
-        f'<span class="article-category-tag">{escape(article["category_name"] or "")}</span>',
-        html,
-    )
-
-    # H1 title: "Mock title<!-- {{title}} -->" → real title
-    html = re.sub(
-        r"<h1>[^<]*<!-- \{\{title\}\} --></h1>",
-        f"<h1>{escape(article['title'])}</h1>",
-        html,
-    )
-
-    # Author: "UPGRADE<!-- {{author_name}} -->"
-    html = re.sub(
-        r'<span class="author">[^<]*<!-- \{\{author_name\}\} --></span>',
-        f'<span class="author">{AUTHOR_NAME}</span>',
-        html,
-    )
-
-    # Published date: <time ...>Mock<!-- {{published_human}} --></time>
-    html = re.sub(
-        r'<time datetime="[^"]*">[^<]*<!-- \{\{published_human\}\} --></time>',
-        f'<time datetime="{published_date}">{format_date_human(published_date)}</time>',
-        html,
-    )
-
-    # Read time: "7 мин чтения<!-- {{read_time}} -->"
-    html = re.sub(
-        r"<span>[^<]*<!-- \{\{read_time\}\} --></span>",
-        f"<span>{read_time} чтения</span>",
-        html,
-    )
-
-    # Hero image block
+    # ── Hero image: replace commented-out block ──
     if article["image_url"]:
         hero_html = (
             f'<div class="article-hero">\n'
@@ -143,7 +100,6 @@ def render_article_page(article: dict, related: list[dict], template: str) -> st
     else:
         hero_html = ""
 
-    # Replace the commented-out hero image block
     html = re.sub(
         r"<!--\s*\n\s*Hero image.*?-->",
         hero_html,
@@ -151,28 +107,19 @@ def render_article_page(article: dict, related: list[dict], template: str) -> st
         flags=re.DOTALL,
     )
 
-    # Article content: replace the mock article body
+    # ── Related articles: replace <!-- {{related}} ... --> inside related-grid ──
+    related_cards = _render_related_cards(related)
     html = re.sub(
-        r'<!-- \{\{content\}\}[^>]*-->\s*<div class="article-content">.*?</div>\s*<!-- ═══ / Article body ═══ -->',
-        f'<div class="article-content">\n{article["body_html"]}\n    </div>',
+        r"<!--\s*\{\{related\}\}[^>]*-->",
+        related_cards,
         html,
-        flags=re.DOTALL,
-    )
-
-    # Related articles
-    related_html = _render_related(related)
-    html = re.sub(
-        r'<!-- \{\{related\}\}[^>]*-->\s*<section class="related-section">.*?</section>',
-        related_html,
-        html,
-        flags=re.DOTALL,
     )
 
     return html
 
 
-def _render_related(related: list[dict]) -> str:
-    """Render related articles section."""
+def _render_related_cards(related: list[dict]) -> str:
+    """Render related article cards (without section wrapper)."""
     if not related:
         return ""
 
@@ -187,14 +134,7 @@ def _render_related(related: list[dict]) -> str:
             f"        </article>"
         )
 
-    return (
-        '<section class="related-section">\n'
-        '      <h2 class="related-heading">Читайте также</h2>\n'
-        '      <div class="related-grid">\n'
-        + "\n\n".join(cards)
-        + "\n      </div>\n"
-        "    </section>"
-    )
+    return "\n\n".join(cards)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -245,20 +185,18 @@ def render_blog_index(articles: list[dict], template: str, page: int = 1, total_
     # Build pagination
     pagination_html = _render_pagination(page, total_pages)
 
-    # Replace mock articles grid content
+    # Replace <!-- {{articles}} ... --> comment with cards
     html = re.sub(
-        r'(<div class="articles-grid" id="articlesGrid">).*?(</div>\s*<!-- Pagination)',
-        f"\\1\n\n{cards_html}\n\n      \\2",
+        r"<!--\s*\{\{articles\}\}[^>]*-->",
+        cards_html,
         template,
-        flags=re.DOTALL,
     )
 
-    # Replace pagination
+    # Replace <!-- {{pagination}} ... --> comment with pagination nav
     html = re.sub(
-        r'<nav class="pagination"[^>]*>.*?</nav>',
+        r"<!--\s*\{\{pagination\}\}[^>]*-->",
         pagination_html,
         html,
-        flags=re.DOTALL,
     )
 
     return html

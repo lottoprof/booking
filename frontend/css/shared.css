@@ -402,11 +402,10 @@ body {
   gap: 1.25rem;
 }
 
-/* Auto-adapt: 2 cards → 2 columns centered */
+/* Auto-adapt: 2 cards → 2 columns, left-aligned */
 .promos-grid:has(> :last-child:nth-child(2)) {
   grid-template-columns: repeat(2, 1fr);
   max-width: 760px;
-  margin: 0 auto;
 }
 
 /* Auto-adapt: 1 card → single column, left-aligned */

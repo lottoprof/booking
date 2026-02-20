@@ -24,13 +24,13 @@
 
   <title>{{title}} — UPGRADE</title>
   <meta name="description" content="{{description}}">
-  <link rel="canonical" href="https://upgrade-studio.ru/blog/{{slug}}.html">
+  <link rel="canonical" href="https://upgradelpg.site/blog/{{slug}}.html">
 
   <meta property="og:type" content="article">
   <meta property="og:title" content="{{title}}">
   <meta property="og:description" content="{{description}}">
   <meta property="og:image" content="{{image_url}}">
-  <meta property="og:url" content="https://upgrade-studio.ru/blog/{{slug}}.html">
+  <meta property="og:url" content="https://upgradelpg.site/blog/{{slug}}.html">
   <meta property="article:published_time" content="{{published_date}}">
   <meta property="article:section" content="{{category}}">
 
@@ -47,16 +47,16 @@
     "author": {
       "@type": "Organization",
       "name": "UPGRADE",
-      "url": "https://upgrade-studio.ru"
+      "url": "https://upgradelpg.site"
     },
     "publisher": {
       "@type": "Organization",
       "name": "UPGRADE",
-      "url": "https://upgrade-studio.ru"
+      "url": "https://upgradelpg.site"
     },
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": "https://upgrade-studio.ru/blog/{{slug}}.html"
+      "@id": "https://upgradelpg.site/blog/{{slug}}.html"
     }
   }
   </script>
@@ -67,17 +67,19 @@
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Главная", "item": "https://upgrade-studio.ru/" },
-      { "@type": "ListItem", "position": 2, "name": "Блог", "item": "https://upgrade-studio.ru/blog/" },
+      { "@type": "ListItem", "position": 1, "name": "Главная", "item": "https://upgradelpg.site/" },
+      { "@type": "ListItem", "position": 2, "name": "Блог", "item": "https://upgradelpg.site/blog/" },
       { "@type": "ListItem", "position": 3, "name": "{{title}}" }
     ]
   }
   </script>
 
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/shared.css">
+  <link rel="icon" href="/logo/favicon.svg" type="image/svg+xml">
 
   <style>
     body {
@@ -397,7 +399,7 @@
        ═══════════════════════════════════════ */
     @media (max-width: 768px) {
       .article-header h1 { font-size: 1.8rem; }
-      .article-header, .article-content, .article-hero,
+      .article-header, .article-content { padding-left: 1rem; padding-right: 1rem; }
       .article-cta, .related-section, .breadcrumbs { padding-left: 1rem; padding-right: 1rem; }
       .article-meta { gap: 0.75rem; }
       .cta-card { padding: 2rem 1.5rem; }
@@ -408,20 +410,37 @@
 </head>
 <body>
 
-  <!-- ─── NAV ─── -->
-  <nav class="nav" id="navbar">
-    <a href="/" class="nav-logo"><img src="data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKIHdpZHRoPSI4NjgiIGhlaWdodD0iNTk1IiB2aWV3Qm94PSIwIDAgODY4IDU5NSIKIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiPgo8ZyBjbGFzcz0ibG9nby1wYXRocyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCw1OTUpIHNjYWxlKDAuMSwtMC4xKSIKZmlsbD0iIzJCQjVCOCIgc3Ryb2tlPSJub25lIj4KPHBhdGggZD0iTTMwNzcgNTkzOCBjLTIgLTcgLTI2OSAtNjQ5IC01OTIgLTE0MjcgLTMyMyAtNzc3IC01ODMgLTE0MTcgLTU3OAotMTQyMSA0IC00IDc4NiAtMzMwIDE3MzggLTcyNCA5NTIgLTM5NSAxNzM0IC03MjEgMTczOCAtNzI1IDUgLTUgLTEzOCAtMzYxCi0zMTcgLTc5MiAtMzAyIC03MzAgLTMyMyAtNzg1IC0zMDUgLTc5MyAxMiAtNiAyMyAtNiAyOCAwIDQgNSAxMzYgMzE4IDI5Mgo2OTcgMTU2IDM3OCAyODYgNjg3IDI4OSA2ODcgMyAwIDE0NyAtMzI0IDMxOSAtNzIwIDE3MyAtMzk2IDMxNyAtNzIwIDMyMAotNzIwIDQgMCAxNCA2IDIzIDEzIDEzIDEwIC0yNCAxMDIgLTMwOCA3NTIgLTE3OCA0MDcgLTMyNCA3NDUgLTMyNCA3NTIgMCAxMgo0OSAxMzMgNjAgMTQ1IDMgNCAxNTggLTM1NiAzNDUgLTgwMCAxODYgLTQ0NCAzNDEgLTgxMCAzNDUgLTgxNSAzIC00IDE0IC0xCjI1IDYgMTcgMTMgLTMgNjMgLTM0NCA4NzQgbC0zNjEgODYxIDU2MSAxMzUxIGMzMDkgNzQ0IDU1OSAxMzU0IDU1OCAxMzU1IC0zCjMgLTMzODUgMTQwOCAtMzQ5NSAxNDUzIC02IDIgLTE0IC0yIC0xNyAtOXogbTE3NTcgLTc0NCBjOTQwIC0zOTAgMTcxMCAtNzE0CjE3MTIgLTcxOSA1IC0xMyAtMTE1MCAtMjgwMCAtMTE2MCAtMjc5OSAtMzAgNCAtMzQ0NiAxNDMwIC0zNDQ2IDE0MzggMCA2IDI2MAo2MzggNTc4IDE0MDQgNDM5IDEwNjAgNTgxIDEzOTIgNTkyIDEzODkgOCAtMiA3ODQgLTMyMyAxNzI0IC03MTN6IE00MjIwIDUyNDYKYy04NSAtMjQgLTE2NiAtODMgLTIxMiAtMTU1IC0zMSAtNTAgLTM1IC04MyAtMTMgLTEyMSA4IC0xNCAxNCAtNDggMTUgLTc2IDAKLTYwIDE1IC0xMTEgNDIgLTE0MCAxNiAtMTkgMTcgLTI2IDcgLTczIC0xMiAtNTkgLTMgLTgxIDM2IC04MSAxMyAwIDI2IC05IDMyCi0yMiA2IC0xMyAyNyAtNDEgNDYgLTYzIDMyIC0zNyAzOCAtNDAgNzYgLTM3IDM1IDMgNDcgMTEgNzcgNDggMjAgMjQgNDAgNDQKNDQgNDQgMTkgMCAxOSAtNTEgMSAtOTQgLTI3IC02MSAtNTQgLTc2IC0xNDggLTgzIC05MSAtNyAtMTIyIC0yMCAtMTgxIC03NwotODEgLTc2IC04NSAtMTAxIC00NiAtMjM5IDMwIC0xMDQgMzggLTEyMSA5OSAtMjE2IDkwIC0xMzkgMTEwIC0yNTEgNTkgLTMyNwotNTEgLTc1IC0xNTAgLTE3OCAtMjU2IC0yNjUgLTE4OCAtMTU2IC0yODggLTMyOSAtMjg4IC01MDAgMCAtOTEgMjggLTIyOSA1NwotMjc5IDM5IC02OSAxMTQgLTEzNSAxNzAgLTE1MSA2OSAtMjAgMTcwIC0xOCAyMTQgNCA0MSAyMCAxMDAgNzIgMTE2IDEwMiAxMQoxOCAxMiAxOCA0MCAtMTEgMzggLTQxIDc3IC02MCAxNTEgLTc0IDc4IC0xNCAxNTEgMyAyNTQgNTcgODEgNDIgMTI4IDkzIDE3MgoxODMgMjkgNjEgMzEgNzEgMjkgMTcwIC0zIDEyNCAtMjMgMTk1IC0xMDkgMzc5IC03MSAxNTQgLTcwIDE2MyAyNyAyNjggNzEgNzcKMTkwIDI0NSAyMzMgMzMxIDEzIDI2IDM4IDg5IDU1IDE0MSA0MSAxMjEgODAgMjA0IDEyMyAyNjQgbDM1IDQ4IDcgLTEwOSBjOAotMTE2IDAgLTE2NCAtMzYgLTIzNSAtMjEgLTQyIC03MiAtMjQxIC04MyAtMzI0IC01IC0zOCAtMSAtNzEgMTUgLTEzMCAyMCAtNjkKMjIgLTk0IDE3IC0yMTMgLTIgLTc0IC0xNSAtMjA1IC0yNyAtMjkyIC0xMyAtODYgLTIwIC0xNzIgLTE2IC0xOTAgMyAtMTkgMTkKLTU1IDM2IC04MSAzNiAtNTggNzUgLTY4IDE2NiAtNDQgNzYgMjEgMTgzIDIyIDIwOSAzIDE3IC0xMiAxNiAtMTQgLTE3IC0yNQotNDcgLTE2IC0xODQgLTMxIC0yODggLTMyIC00NyAwIC05MyAtNCAtMTA0IC04IC0xNyAtNiAtMTUgLTEwIDE1IC0zNiA2MCAtNTAKODcgLTU2IDI2MiAtNTcgMTY2IC0yIDIxMCA0IDIwMSAyNSAtMyA5IC01MiAxMyAtMTgzIDE0IC0xMDcgMSAtMTg3IDUgLTE5OAoxMiAtMTQgOCAtNyAxMCAzNiAxMSA4NCAwIDIzMSAyMCAyNzkgMzcgNDEgMTUgNjMgNDcgNDggNzEgLTI1IDQwIC0xNDggNTQKLTI0OSAyNyAtOTAgLTIzIC0xMTIgLTIwIC0xNDIgMTkgLTM4IDUwIC00MCA4NSAtMTQgMjY3IDMwIDIxNCAzMiA0NDEgNSA1MTEKLTE0IDM3IC0xNyA2MSAtMTIgMTA1IDkgODAgNTggMjY2IDg5IDMzOCAzMyA3NiA0MSAxNDAgMjkgMjM1IC01IDQxIC01IDkwIC0xCjEwOSA1IDIyIDQgMzggLTIgNDIgLTcgNCAtNiAyMSAxIDUxIDE2IDYyIC0xIDExOCAtNTEgMTczIC01MCA1NCAtMTA5IDc5Ci0yNjAgMTEwIC0xNTMgMzEgLTE5MCA0OCAtMjM3IDEwOSAtMzEgNDAgLTMwIDYyIDIgNDEgNDIgLTI4IDE0NiAtMiAxOTQgNDgKNzYgNzkgNjkgMjIwIC0xNSAyOTkgLTUzIDUwIC0yMDQgMTE4IC0yOTUgMTMzIC00NSA4IC0xMDUgMjEgLTEzMiAzMCAtNTggMTgKLTE0MyAxOCAtMjA2IDF6IG0tMzUgLTcyIGMtODEgLTQ5IC0xMTMgLTgwIC0xNDEgLTEzOSAtMjQgLTUwIC0yNCAtNTAgLTI0Ci0xNiAwIDI4IDExIDQ0IDY4IDEwMSA2MCA2MSAxMDEgODUgMTQ3IDg5IDYgMSAtMTcgLTE1IC01MCAtMzV6IG0zNDYgLTE2IGM5MAotNTUgMTIwIC0xMTggMTExIC0yMzcgLTYgLTg0IC0yNCAtOTEgLTI4IC0xMiAtNSAxMDEgLTIzIDE1MCAtNzMgMjAxIC0yNSAyNQotNTkgNTYgLTc2IDY5IC0yOCAyMCAtMjggMjIgLTYgMTUgMTQgLTQgNDYgLTIwIDcyIC0zNnogbS0xMTYgMyBjNzQgLTQzIDEzMgotMTA0IDE0NyAtMTU0IDggLTI4IDEyIC05NCAxMCAtMTk3IC0zIC0xNzcgNSAtMjE3IDYxIC0yOTkgNTggLTg0IDY5IC0xMzcgNzAKLTM0MCAyIC0xNjYgMCAtMTgxIC0yNiAtMjY2IC0zNyAtMTIxIC05MCAtMjI4IC0xNzYgLTM2MCAtNDAgLTYwIC05NyAtMTYwCi0xMjcgLTIyMCAtNTUgLTExMCAtNTYgLTExMiAtNjQgLTIzMCAtMTEgLTE2MiAtNjEgLTMxMyAtMTQzIC00MzUgLTc1IC0xMTAKLTIxOSAtMjYwIC0yNTAgLTI2MCAtNSAwIC03IC05IC00IC0yMCA0IC0xNyAxIC0xOSAtMjEgLTE0IC02OSAxNSAtOTMgMjgKLTEzNSA3MyAtNTggNjIgLTc1IDk2IC05MyAxODggLTQ3IDI0NyAyNiA0MTggMjY3IDYxOSAxMTQgOTUgMjM0IDIyNiAyNjggMjkxCjQ1IDg5IDIxIDIwMSAtNzUgMzUwIC02OSAxMDYgLTEyNCAyNzEgLTExMCAzMjYgMTYgNjcgMTEwIDEzNyAxODMgMTM3IDY0IDEKMTIxIDE1IDE1MiAzOCAzNSAyNiA3MyA5NiA3MyAxMzUgMCAzMiAtNTEgMTQ1IC04MCAxNzkgLTEzIDE1IC0xMiAxOSAyIDMzIDIyCjIyIDIwIDgwIC00IDEzMyAtMTYgMzYgLTIzIDQyIC00OSA0MiAtMzIgMCAtNjEgLTMwIC02MSAtNjQgMCAtMzIgLTEyIC0xMAotMjEgNDAgLTUgMjYgLTE2IDU2IC0yNSA2NiAtMjIgMjQgLTgyIDM0IC0xMDcgMTkgLTE4IC0xMiAtMTkgLTExIC0xMyAxNiAxNwo2OSA4NSAxMzIgMTk2IDE4MiA2MSAyOCA5NiAyNiAxNTUgLTh6IG0zMjMgLTUzIGMxMTMgLTYxIDE0MiAtOTcgMTQyIC0xNzYgMAotOTkgLTQyIC0xNTIgLTEzMiAtMTY2IC0zMCAtNSAtNDYgLTMgLTU2IDggLTE2IDE2IC0xNyAyOCAtMTIgMTY2IDMgOTggLTEyCjE0NSAtNjMgMTk5IGwtMzIgMzQgMzAgLTcgYzE3IC00IDcyIC0zMCAxMjMgLTU4eiBtLTU4OSAtMTc3IGM3IC01IDE3IC0yOSAyMgotNTUgMTIgLTY0IDM1IC05NiA2OSAtOTYgMjMgMCAyNyAtMyAyMyAtMjQgLTQgLTE3IDUgLTM1IDMwIC02MiA1MSAtNTcgNTQKLTkwIDE0IC0xMzUgLTQ2IC01MiAtNzQgLTU4IC0xMDMgLTIzIC0xNCAxNiAtMzMgNDYgLTQ0IDY3IC0xNiAyOCAtMjcgMzcgLTQ2CjM3IC0yMyAwIC0yNSAzIC0yMCAyNiAyMCA3OCAxOSA4NCAtOSAxMTQgLTIyIDIzIC0yOSA0MiAtMzMgODMgLTQgNDggLTIgNTQKMTkgNjQgMjkgMTQgNTkgMTYgNzggNHogbTE2MSAtODcgYzYgLTE0IDEwIC0zOSAxMCAtNTYgMCAtMjMgLTQgLTI5IC0xNiAtMjQKLTkgMyAtMTcgNiAtMTkgNiAtOCAwIC0xNyA3MCAtMTEgODUgOCAyMyAyNSAxOCAzNiAtMTF6IG0zMzYgLTE4MSBjNDEgLTU0CjEwMCAtODEgMjQ5IC0xMTMgMTk5IC00MyAyNTkgLTc4IDI4NiAtMTY4IDE2IC01NCAwIC0xMDMgLTY5IC0yMDggLTY0IC05OAotODcgLTE0NiAtMTQyIC0zMDUgLTI5IC04NCAtNTUgLTEzNCAtMTIyIC0yMzUgLTQ3IC03MSAtMTE1IC0xNjAgLTE1MiAtMTk4Ci0xMDMgLTEwNyAtMTA2IC0xNDUgLTI2IC0zMDYgNzYgLTE1MiAxMDEgLTIzOCAxMDMgLTM2MSAyIC05OCAwIC0xMDcgLTI4Ci0xNjIgLTM5IC03NyAtOTUgLTEzMSAtMTcyIC0xNjcgLTkxIC00MyAtMTUwIC01NCAtMjE3IC00MCAtNjYgMTQgLTExMyA0MwotMTQ0IDkyIC0yOSA0MyAtNTMgNDEgLTcxIC03IC0yMiAtNjIgLTEyNiAtMTMyIC0xODEgLTEyMyAtMTYgMiAtMTAgMTEgMzQgNDUKNjUgNTAgMTYzIDE2NiAyMjcgMjY5IDcxIDExNCAxMjAgMjcxIDEyOSA0MTQgNyAxMTMgOCAxMTcgNjAgMjIwIDI5IDU4IDg3CjE1OSAxMzAgMjI1IDExNiAxODEgMTQ5IDI1NCAxOTAgNDI1IDIwIDg2IDIxIDEwOSAxNSAyNTAgLTggMTc1IC0yNiAyNTEgLTc3CjMyMSAtNDEgNTYgLTU3IDEwMyAtNTYgMTU5IDAgMjUgMyAzNiA1IDI1IDMgLTExIDE2IC0zNSAyOSAtNTJ6IE02MzQwIDkyNSBsMAotODY1IDIzIDAgYzEyIDAgMTQ0IDE2IDI5MiAzNSAzMTggNDEgNDMzIDcxIDU3NCAxNDggMTIxIDY3IDI0MyAxOTIgMjk2IDMwMgo0NyA5OSA3NSAyMTcgNzUgMzEzIDAgMTM3IC03MSAzNDEgLTE1OSA0NjEgLTU2IDc2IC0xNjUgMTgzIC0yMzEgMjI4IC01OSA0MAotMTkyIDEwNiAtMjU1IDEyNiAtNDUgMTUgLTU3MiAxMTcgLTYwMiAxMTcgLTEwIDAgLTEzIC0xODAgLTEzIC04NjV6IE0zMDA1CjE3NDAgYy0zNjIgLTM4IC02NjMgLTI0NyAtNzkwIC01NDkgLTQwIC05NSAtNjkgLTI3MSAtNjEgLTM3MSAxNiAtMTkxIDEzNwotNDMzIDI4OCAtNTc2IDE5MiAtMTgxIDM3NSAtMjQwIDcxOCAtMjMzIGwxNjUgNCAzOSAzMCAzOSAzMCAtNiAxNzAgYy00IDkzCi03IDI3MCAtNyAzOTMgbDAgMjIyIC0yNyAwIC0yNiAwIDYgLTM4NCA2IC0zODQgLTM0IC0xNiBjLTUwIC0yNCAtMzM5IC0yMgotNDYwIDMgLTI0MiA1MCAtNDM5IDIwOSAtNTYwIDQ1MSAtOTAgMTc5IC0xMTEgMzEyIC03NyA0ODYgNjQgMzIyIDI3MyA1MzkKNjE3IDYzOSAxMzYgMzkgMjU3IDUwIDM1OCAzMSAxMDUgLTIwIDEwNCAtMjAgMTEwIDQgNCAxNiAtMiAyMiAtMzEgMjkgLTQ3IDEzCi0xNjIgMzEgLTE4MiAzMCAtOCAtMSAtNDcgLTUgLTg1IC05eiBNMCAxMDEwIGwwIC03MDAgMzYgLTcxIGM0NyAtOTQgMTAyCi0xNTIgMTgyIC0xOTEgNTUgLTI4IDc4IC0zMyAxNTYgLTM2IDc1IC0zIDEwMSAwIDE0OSAxOCA3NCAyOCAxNjMgMTEwIDIwNQoxODggbDMyIDYwIDAgNzE2IDAgNzE2IC0yNSAwIC0yNSAwIDAgLTcxMiAwIC03MTMgLTI5IC01MSBjLTM4IC02NiAtMTE5IC0xMzgKLTE3OCAtMTU4IC0yNiAtOSAtNzcgLTE2IC0xMTQgLTE2IC0xMzIgMCAtMjM1IDYzIC0zMDAgMTgyIGwtMzQgNjMgLTUgNzAwIC01CjcwMCAtMjIgMyAtMjMgMyAwIC03MDF6IE03NzkwIDg3NSBsMCAtODM1IDQ0NiAwIDQ0NSAwIC0zIDIzIC0zIDIyIC00MTcgMwotNDE4IDIgMCAzNjAgMCAzNjAgMjQwIDAgMjQwIDAgMCAyNSAwIDI1IC0yNDAgMCBjLTIwNyAwIC0yNDAgMiAtMjQwIDE1IDAgMTMKMzMgMTUgMjQwIDE1IGwyNDAgMCAwIDI1IDAgMjUgLTI0MCAwIC0yNDAgMCAwIDM2MCAwIDM2MCA0MTggMiBjNDA5IDMgNDE3IDMKNDE3IDIzIDAgMjAgLTggMjAgLTQ0MiAyMyBsLTQ0MyAyIDAgLTgzNXogTTEyNzUgMTY5NCBjLTE2IC0yIC01NCAtNyAtODIgLTEwCmwtNTMgLTUgMCAtODI1IDAgLTgyNCAyNSAwIDI1IDAgMCA4MDQgMCA4MDQgMTE4IDcgYzIyMCAxNCA0MDMgLTExIDUxMyAtNzIKNjYgLTM2IDEyNCAtMTAwIDE2MiAtMTgxIDMwIC02MiAzMiAtNzUgMzIgLTE3MiAwIC05NCAtMyAtMTExIC0yOCAtMTYxIC01MgotMTA3IC0xNTggLTE3OSAtMjkyIC0xOTkgLTM5IC01IC0xNDEgLTEwIC0yMjcgLTEwIGwtMTU4IDAgMCAtNDEwIDAgLTQxMCAyNQowIDI1IDAgMCAzODUgMCAzODUgMTI5IDAgYzI1OSAwIDM4MCAzNyA0NzkgMTQ1IDc1IDgyIDk2IDE0NCA5NyAyODAgMCAxMDYgLTEKMTEzIC0zNyAxODcgLTk0IDE5OCAtMjUzIDI3NyAtNTY4IDI4MyAtODUgMiAtMTY4IDEgLTE4NSAtMXogTTM3NzUgMTY3MSBjLTQ3Ci00IC03MCAtMTAgLTY5IC0xOCAxIC03IDIgLTM3MSAzIC04MDkgbDEgLTc5NSAyMyAzIDIyIDMgMyA3ODIgMiA3ODEgODggOApjMTA4IDkgMzE1IC0yIDQwMyAtMjAgMTgzIC0zOSAyODAgLTE1MCAzMTAgLTM1MCAyNSAtMTY3IC01OCAtMzE2IC0yMDkgLTM3NgotNTEgLTIxIC03OSAtMjQgLTI4MiAtMjkgLTIyNCAtNiAtMjI1IC02IC0yMjggLTI4IC0zIC0yMiAwIC0yMyA2MSAtMjMgbDY0IDAKMjU5IC0zOTAgYzE0MiAtMjE0IDI2MiAtMzkwIDI2NSAtMzkwIDMgMCAxMiA2IDIxIDEzIDE0IDEwIC0xNiA1OSAtMjMzIDM4NwotMTM2IDIwNiAtMjQ0IDM3NyAtMjM4IDM3OCA1IDIgMTYgMiAyMyAtMSA3IC0zIDEyMCAtMTY5IDI1MSAtMzY5IDEzMSAtMTk5CjI0NCAtMzcwIDI1MSAtMzc4IDEyIC0xMiAxNiAtMTIgMzAgMSAxNCAxNSAtNyA1MCAtMjI0IDM4MCBsLTIzOCAzNjQgMzUgMwpjMTYyIDEyIDI3MiA1MyAzNDAgMTI3IDUxIDU1IDc3IDEwOCA5NyAxOTIgMTMgNTcgMTQgODEgNCAxNDggLTI4IDE5NCAtMTE5CjMxMyAtMjg0IDM3MSAtOTkgMzYgLTM0NyA1MSAtNTUxIDM1eiBNMzIwMCA0OTAgbDAgLTQwMCAyNSAwIDI1IDAgMCA0MDAgMAo0MDAgLTI1IDAgLTI1IDAgMCAtNDAweiIvPgo8L2c+Cjwvc3ZnPg==" alt="UPGRADE — студия эстетики тела" /></a>
-    <ul class="nav-links" id="navLinks">
-      <li><a href="/#about">О студии</a></li>
-      <li><a href="/pricing.html">Услуги</a></li>
-      <li><a href="/blog/">Блог</a></li>
-      <li><a href="/book.html">Записаться</a></li>
-      <li><button class="theme-toggle" id="themeToggle" aria-label="Сменить тему">☀️</button></li>
+  <!-- ═══ NAVIGATION ═══ -->
+  <nav class="nav" id="nav">
+    <a href="/" class="nav-logo"><img src="logo/logo2.svg" class="nav-logo-icon" alt="UPGRADE" /><img src="logo/logo1.svg" class="nav-logo-text" alt="UPGRADE — студия эстетики тела" /></a>
+    <ul class="nav-links">
+      <li><a href="/">Главная</a></li>
+      <li><a href="/#services">Услуги</a></li>
+      <li><a href="/pricing">Прайс</a></li>
+      <li><a href="/#specialists">Специалисты</a></li>
+      <li><a href="/blog">Блог</a></li>
     </ul>
-    <button class="mobile-toggle" id="mobileToggle" aria-label="Меню">
-      <span></span><span></span><span></span>
-    </button>
+    <div class="nav-right">
+      <button class="theme-toggle-slider" id="themeToggle" aria-label="Переключить тему">
+        <span class="theme-toggle-icon sun">☀️</span>
+        <span class="theme-toggle-icon moon">🌙</span>
+      </button>
+      <button class="nav-burger" id="navBurger" aria-label="Меню">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </nav>
+
+  <!-- ═══ MOBILE MENU ═══ -->
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="mobile-close" id="mobileClose">✕</button>
+    <a href="/" onclick="closeMobile()">Главная</a>
+    <a href="/#services" onclick="closeMobile()">Услуги</a>
+    <a href="/pricing" onclick="closeMobile()">Прайс</a>
+    <a href="/#specialists" onclick="closeMobile()">Специалисты</a>
+    <a href="/blog" onclick="closeMobile()">Блог</a>
+    <a href="/book" class="btn btn-primary" onclick="closeMobile()">Записаться</a>
+  </div>
 
   <main class="page">
 
@@ -431,17 +450,17 @@
       <span class="sep">›</span>
       <a href="/blog/">Блог</a>
       <span class="sep">›</span>
-      <span>LPG vs ручной массаж<!-- {{title}} --></span>
+      <span>{{title}}</span>
     </nav>
 
     <!-- Article header -->
     <header class="article-header">
-      <span class="article-category-tag">LPG-массаж<!-- {{category}} --></span>
-      <h1>LPG vs ручной массаж: что эффективнее для борьбы с целлюлитом?<!-- {{title}} --></h1>
+      <span class="article-category-tag">{{category}}</span>
+      <h1>{{title}}</h1>
       <div class="article-meta">
-        <span class="author">UPGRADE<!-- {{author_name}} --></span>
-        <time datetime="2026-02-12">12 февраля 2026<!-- {{published_human}} --></time>
-        <span>7 мин чтения<!-- {{read_time}} --></span>
+        <span class="author">{{author_name}}</span>
+        <time datetime="{{published_date}}">{{published_human}}</time>
+        <span>{{read_time}}</span>
       </div>
     </header>
 
@@ -453,161 +472,81 @@
     -->
 
     <!-- ═══ Article body ═══ -->
-    <!-- {{content}} — рендер-модуль вставляет HTML из БД -->
     <div class="article-content">
-
-      <p>Целлюлит — одна из самых распространённых эстетических проблем, с которой сталкиваются до 90% женщин. На рынке десятки методов борьбы с ним, но два подхода стабильно лидируют: <strong>аппаратный LPG-массаж</strong> и <strong>классический ручной антицеллюлитный массаж</strong>. Разбираемся, чем они отличаются и какой подходит именно вам.</p>
-
-      <h2>Как работает LPG-массаж</h2>
-
-      <p>LPG (Lipomassage) — технология вакуумно-роликового воздействия, разработанная французской компанией LPG Systems. Аппарат создаёт контролируемое отрицательное давление и механически разминает ткани с помощью моторизованных роликов.</p>
-
-      <p>Принцип действия: вакуум захватывает кожную складку, ролики разминают подкожно-жировую клетчатку в определённом ритме. Это стимулирует три процесса одновременно:</p>
-
-      <ul>
-        <li><strong>Липолиз</strong> — расщепление жировых клеток</li>
-        <li><strong>Лимфодренаж</strong> — выведение лишней жидкости и токсинов</li>
-        <li><strong>Стимуляция коллагена</strong> — укрепление соединительной ткани</li>
-      </ul>
-
-      <div class="info-box">
-        <p>💡 <strong>Важно:</strong> LPG воздействует на глубокие слои тканей (до 12 см), куда ручной массаж физически не достаёт. Именно поэтому результаты часто заметнее.</p>
-      </div>
-
-      <h2>Что даёт ручной массаж</h2>
-
-      <p>Ручной антицеллюлитный массаж — это интенсивные техники разминания, растирания и давления руками. Массажист работает непосредственно с проблемными зонами, адаптируя силу и технику под реакцию тканей.</p>
-
-      <p>Основные эффекты: улучшение микроциркуляции, разогрев тканей, частичный лимфодренаж. Преимущество — массажист чувствует ткани и может точечно работать с зонами повышенной плотности.</p>
-
-      <h2>Сравнительная таблица</h2>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Параметр</th>
-            <th>LPG-массаж</th>
-            <th>Ручной массаж</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Глубина воздействия</td>
-            <td>До 12 см</td>
-            <td>2–3 см</td>
-          </tr>
-          <tr>
-            <td>Болезненность</td>
-            <td>Минимальная</td>
-            <td>Средняя–высокая</td>
-          </tr>
-          <tr>
-            <td>Длительность сеанса</td>
-            <td>35–45 мин</td>
-            <td>45–60 мин</td>
-          </tr>
-          <tr>
-            <td>Курс для результата</td>
-            <td>10–15 процедур</td>
-            <td>15–20 процедур</td>
-          </tr>
-          <tr>
-            <td>Синяки после</td>
-            <td>Нет</td>
-            <td>Часто</td>
-          </tr>
-          <tr>
-            <td>Стоимость сеанса</td>
-            <td>2 500–4 000 ₽</td>
-            <td>1 500–3 000 ₽</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h2>Что выбрать?</h2>
-
-      <p>Если цель — максимальная эффективность за меньшее число сеансов и комфорт во время процедуры, LPG-массаж объективно выигрывает. Аппарат обеспечивает стабильное, воспроизводимое воздействие, не зависящее от усталости рук специалиста.</p>
-
-      <p>Ручной массаж остаётся хорошим выбором как поддерживающая процедура между курсами LPG, а также для тех, кто предпочитает тактильный контакт и индивидуальный подход массажиста.</p>
-
-      <blockquote>
-        Идеальная стратегия — комбинация: курс LPG для активного результата, затем ручной массаж раз в 1–2 недели для поддержания эффекта.
-      </blockquote>
-
-      <h3>Резюме</h3>
-
-      <p>Оба метода работают, но по разному. LPG — это про глубину, скорость результата и комфорт. Ручной массаж — про тактильность и гибкость подхода. Для борьбы с выраженным целлюлитом мы рекомендуем начинать с аппаратного курса.</p>
-
+      {{content}}
     </div>
-    <!-- ═══ / Article body ═══ -->
 
     <!-- CTA -->
     <div class="article-cta">
       <div class="cta-card">
-        <h3>Хотите попробовать LPG-массаж?</h3>
+        <h3>Хотите попробовать?</h3>
         <p>Запишитесь на первый сеанс и оцените эффект на себе</p>
-        <a href="/book.html?service=lpg-massage" class="cta-btn">Записаться онлайн →</a>
+        <a href="/book" class="cta-btn">Записаться онлайн →</a>
       </div>
     </div>
 
-    <!-- Related articles -->
-    <!-- {{related}} — рендер-модуль генерирует этот блок -->
+    <!-- Related articles — {{related}} рендер-модуль генерирует этот блок -->
     <section class="related-section">
       <h2 class="related-heading">Читайте также</h2>
       <div class="related-grid">
-
-        <article class="related-card">
-          <div class="related-card-cat">Ответы на вопросы</div>
-          <h3 class="related-card-title"><a href="/blog/skolko-seansov-lpg-nuzhno.html">Сколько сеансов LPG нужно для видимого результата?</a></h3>
-          <p class="related-card-excerpt">Отвечаем на самый частый вопрос — от чего зависит количество процедур и когда ждать первых изменений.</p>
-        </article>
-
-        <article class="related-card">
-          <div class="related-card-cat">LPG-массаж</div>
-          <h3 class="related-card-title"><a href="/blog/lpg-bolno-ili-net.html">Больно ли делать LPG-массаж?</a></h3>
-          <p class="related-card-excerpt">Что чувствуют клиенты во время процедуры, как настраивается интенсивность и почему первый сеанс отличается от пятого.</p>
-        </article>
-
+        <!-- {{related}} — SSG рендер-модуль вставляет карточки связанных статей -->
       </div>
     </section>
 
   </main>
 
-  <!-- ─── FOOTER ─── -->
-  <footer class="footer">
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="site-footer">
     <div class="footer-inner">
-      <div class="footer-logo"><img src="data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKIHdpZHRoPSI4NjgiIGhlaWdodD0iNTk1IiB2aWV3Qm94PSIwIDAgODY4IDU5NSIKIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiPgo8ZyBjbGFzcz0ibG9nby1wYXRocyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCw1OTUpIHNjYWxlKDAuMSwtMC4xKSIKZmlsbD0iIzJCQjVCOCIgc3Ryb2tlPSJub25lIj4KPHBhdGggZD0iTTMwNzcgNTkzOCBjLTIgLTcgLTI2OSAtNjQ5IC01OTIgLTE0MjcgLTMyMyAtNzc3IC01ODMgLTE0MTcgLTU3OAotMTQyMSA0IC00IDc4NiAtMzMwIDE3MzggLTcyNCA5NTIgLTM5NSAxNzM0IC03MjEgMTczOCAtNzI1IDUgLTUgLTEzOCAtMzYxCi0zMTcgLTc5MiAtMzAyIC03MzAgLTMyMyAtNzg1IC0zMDUgLTc5MyAxMiAtNiAyMyAtNiAyOCAwIDQgNSAxMzYgMzE4IDI5Mgo2OTcgMTU2IDM3OCAyODYgNjg3IDI4OSA2ODcgMyAwIDE0NyAtMzI0IDMxOSAtNzIwIDE3MyAtMzk2IDMxNyAtNzIwIDMyMAotNzIwIDQgMCAxNCA2IDIzIDEzIDEzIDEwIC0yNCAxMDIgLTMwOCA3NTIgLTE3OCA0MDcgLTMyNCA3NDUgLTMyNCA3NTIgMCAxMgo0OSAxMzMgNjAgMTQ1IDMgNCAxNTggLTM1NiAzNDUgLTgwMCAxODYgLTQ0NCAzNDEgLTgxMCAzNDUgLTgxNSAzIC00IDE0IC0xCjI1IDYgMTcgMTMgLTMgNjMgLTM0NCA4NzQgbC0zNjEgODYxIDU2MSAxMzUxIGMzMDkgNzQ0IDU1OSAxMzU0IDU1OCAxMzU1IC0zCjMgLTMzODUgMTQwOCAtMzQ5NSAxNDUzIC02IDIgLTE0IC0yIC0xNyAtOXogbTE3NTcgLTc0NCBjOTQwIC0zOTAgMTcxMCAtNzE0CjE3MTIgLTcxOSA1IC0xMyAtMTE1MCAtMjgwMCAtMTE2MCAtMjc5OSAtMzAgNCAtMzQ0NiAxNDMwIC0zNDQ2IDE0MzggMCA2IDI2MAo2MzggNTc4IDE0MDQgNDM5IDEwNjAgNTgxIDEzOTIgNTkyIDEzODkgOCAtMiA3ODQgLTMyMyAxNzI0IC03MTN6IE00MjIwIDUyNDYKYy04NSAtMjQgLTE2NiAtODMgLTIxMiAtMTU1IC0zMSAtNTAgLTM1IC04MyAtMTMgLTEyMSA4IC0xNCAxNCAtNDggMTUgLTc2IDAKLTYwIDE1IC0xMTEgNDIgLTE0MCAxNiAtMTkgMTcgLTI2IDcgLTczIC0xMiAtNTkgLTMgLTgxIDM2IC04MSAxMyAwIDI2IC05IDMyCi0yMiA2IC0xMyAyNyAtNDEgNDYgLTYzIDMyIC0zNyAzOCAtNDAgNzYgLTM3IDM1IDMgNDcgMTEgNzcgNDggMjAgMjQgNDAgNDQKNDQgNDQgMTkgMCAxOSAtNTEgMSAtOTQgLTI3IC02MSAtNTQgLTc2IC0xNDggLTgzIC05MSAtNyAtMTIyIC0yMCAtMTgxIC03NwotODEgLTc2IC04NSAtMTAxIC00NiAtMjM5IDMwIC0xMDQgMzggLTEyMSA5OSAtMjE2IDkwIC0xMzkgMTEwIC0yNTEgNTkgLTMyNwotNTEgLTc1IC0xNTAgLTE3OCAtMjU2IC0yNjUgLTE4OCAtMTU2IC0yODggLTMyOSAtMjg4IC01MDAgMCAtOTEgMjggLTIyOSA1NwotMjc5IDM5IC02OSAxMTQgLTEzNSAxNzAgLTE1MSA2OSAtMjAgMTcwIC0xOCAyMTQgNCA0MSAyMCAxMDAgNzIgMTE2IDEwMiAxMQoxOCAxMiAxOCA0MCAtMTEgMzggLTQxIDc3IC02MCAxNTEgLTc0IDc4IC0xNCAxNTEgMyAyNTQgNTcgODEgNDIgMTI4IDkzIDE3MgoxODMgMjkgNjEgMzEgNzEgMjkgMTcwIC0zIDEyNCAtMjMgMTk1IC0xMDkgMzc5IC03MSAxNTQgLTcwIDE2MyAyNyAyNjggNzEgNzcKMTkwIDI0NSAyMzMgMzMxIDEzIDI2IDM4IDg5IDU1IDE0MSA0MSAxMjEgODAgMjA0IDEyMyAyNjQgbDM1IDQ4IDcgLTEwOSBjOAotMTE2IDAgLTE2NCAtMzYgLTIzNSAtMjEgLTQyIC03MiAtMjQxIC04MyAtMzI0IC01IC0zOCAtMSAtNzEgMTUgLTEzMCAyMCAtNjkKMjIgLTk0IDE3IC0yMTMgLTIgLTc0IC0xNSAtMjA1IC0yNyAtMjkyIC0xMyAtODYgLTIwIC0xNzIgLTE2IC0xOTAgMyAtMTkgMTkKLTU1IDM2IC04MSAzNiAtNTggNzUgLTY4IDE2NiAtNDQgNzYgMjEgMTgzIDIyIDIwOSAzIDE3IC0xMiAxNiAtMTQgLTE3IC0yNQotNDcgLTE2IC0xODQgLTMxIC0yODggLTMyIC00NyAwIC05MyAtNCAtMTA0IC04IC0xNyAtNiAtMTUgLTEwIDE1IC0zNiA2MCAtNTAKODcgLTU2IDI2MiAtNTcgMTY2IC0yIDIxMCA0IDIwMSAyNSAtMyA5IC01MiAxMyAtMTgzIDE0IC0xMDcgMSAtMTg3IDUgLTE5OAoxMiAtMTQgOCAtNyAxMCAzNiAxMSA4NCAwIDIzMSAyMCAyNzkgMzcgNDEgMTUgNjMgNDcgNDggNzEgLTI1IDQwIC0xNDggNTQKLTI0OSAyNyAtOTAgLTIzIC0xMTIgLTIwIC0xNDIgMTkgLTM4IDUwIC00MCA4NSAtMTQgMjY3IDMwIDIxNCAzMiA0NDEgNSA1MTEKLTE0IDM3IC0xNyA2MSAtMTIgMTA1IDkgODAgNTggMjY2IDg5IDMzOCAzMyA3NiA0MSAxNDAgMjkgMjM1IC01IDQxIC01IDkwIC0xCjEwOSA1IDIyIDQgMzggLTIgNDIgLTcgNCAtNiAyMSAxIDUxIDE2IDYyIC0xIDExOCAtNTEgMTczIC01MCA1NCAtMTA5IDc5Ci0yNjAgMTEwIC0xNTMgMzEgLTE5MCA0OCAtMjM3IDEwOSAtMzEgNDAgLTMwIDYyIDIgNDEgNDIgLTI4IDE0NiAtMiAxOTQgNDgKNzYgNzkgNjkgMjIwIC0xNSAyOTkgLTUzIDUwIC0yMDQgMTE4IC0yOTUgMTMzIC00NSA4IC0xMDUgMjEgLTEzMiAzMCAtNTggMTgKLTE0MyAxOCAtMjA2IDF6IG0tMzUgLTcyIGMtODEgLTQ5IC0xMTMgLTgwIC0xNDEgLTEzOSAtMjQgLTUwIC0yNCAtNTAgLTI0Ci0xNiAwIDI4IDExIDQ0IDY4IDEwMSA2MCA2MSAxMDEgODUgMTQ3IDg5IDYgMSAtMTcgLTE1IC01MCAtMzV6IG0zNDYgLTE2IGM5MAotNTUgMTIwIC0xMTggMTExIC0yMzcgLTYgLTg0IC0yNCAtOTEgLTI4IC0xMiAtNSAxMDEgLTIzIDE1MCAtNzMgMjAxIC0yNSAyNQotNTkgNTYgLTc2IDY5IC0yOCAyMCAtMjggMjIgLTYgMTUgMTQgLTQgNDYgLTIwIDcyIC0zNnogbS0xMTYgMyBjNzQgLTQzIDEzMgotMTA0IDE0NyAtMTU0IDggLTI4IDEyIC05NCAxMCAtMTk3IC0zIC0xNzcgNSAtMjE3IDYxIC0yOTkgNTggLTg0IDY5IC0xMzcgNzAKLTM0MCAyIC0xNjYgMCAtMTgxIC0yNiAtMjY2IC0zNyAtMTIxIC05MCAtMjI4IC0xNzYgLTM2MCAtNDAgLTYwIC05NyAtMTYwCi0xMjcgLTIyMCAtNTUgLTExMCAtNTYgLTExMiAtNjQgLTIzMCAtMTEgLTE2MiAtNjEgLTMxMyAtMTQzIC00MzUgLTc1IC0xMTAKLTIxOSAtMjYwIC0yNTAgLTI2MCAtNSAwIC03IC05IC00IC0yMCA0IC0xNyAxIC0xOSAtMjEgLTE0IC02OSAxNSAtOTMgMjgKLTEzNSA3MyAtNTggNjIgLTc1IDk2IC05MyAxODggLTQ3IDI0NyAyNiA0MTggMjY3IDYxOSAxMTQgOTUgMjM0IDIyNiAyNjggMjkxCjQ1IDg5IDIxIDIwMSAtNzUgMzUwIC02OSAxMDYgLTEyNCAyNzEgLTExMCAzMjYgMTYgNjcgMTEwIDEzNyAxODMgMTM3IDY0IDEKMTIxIDE1IDE1MiAzOCAzNSAyNiA3MyA5NiA3MyAxMzUgMCAzMiAtNTEgMTQ1IC04MCAxNzkgLTEzIDE1IC0xMiAxOSAyIDMzIDIyCjIyIDIwIDgwIC00IDEzMyAtMTYgMzYgLTIzIDQyIC00OSA0MiAtMzIgMCAtNjEgLTMwIC02MSAtNjQgMCAtMzIgLTEyIC0xMAotMjEgNDAgLTUgMjYgLTE2IDU2IC0yNSA2NiAtMjIgMjQgLTgyIDM0IC0xMDcgMTkgLTE4IC0xMiAtMTkgLTExIC0xMyAxNiAxNwo2OSA4NSAxMzIgMTk2IDE4MiA2MSAyOCA5NiAyNiAxNTUgLTh6IG0zMjMgLTUzIGMxMTMgLTYxIDE0MiAtOTcgMTQyIC0xNzYgMAotOTkgLTQyIC0xNTIgLTEzMiAtMTY2IC0zMCAtNSAtNDYgLTMgLTU2IDggLTE2IDE2IC0xNyAyOCAtMTIgMTY2IDMgOTggLTEyCjE0NSAtNjMgMTk5IGwtMzIgMzQgMzAgLTcgYzE3IC00IDcyIC0zMCAxMjMgLTU4eiBtLTU4OSAtMTc3IGM3IC01IDE3IC0yOSAyMgotNTUgMTIgLTY0IDM1IC05NiA2OSAtOTYgMjMgMCAyNyAtMyAyMyAtMjQgLTQgLTE3IDUgLTM1IDMwIC02MiA1MSAtNTcgNTQKLTkwIDE0IC0xMzUgLTQ2IC01MiAtNzQgLTU4IC0xMDMgLTIzIC0xNCAxNiAtMzMgNDYgLTQ0IDY3IC0xNiAyOCAtMjcgMzcgLTQ2CjM3IC0yMyAwIC0yNSAzIC0yMCAyNiAyMCA3OCAxOSA4NCAtOSAxMTQgLTIyIDIzIC0yOSA0MiAtMzMgODMgLTQgNDggLTIgNTQKMTkgNjQgMjkgMTQgNTkgMTYgNzggNHogbTE2MSAtODcgYzYgLTE0IDEwIC0zOSAxMCAtNTYgMCAtMjMgLTQgLTI5IC0xNiAtMjQKLTkgMyAtMTcgNiAtMTkgNiAtOCAwIC0xNyA3MCAtMTEgODUgOCAyMyAyNSAxOCAzNiAtMTF6IG0zMzYgLTE4MSBjNDEgLTU0CjEwMCAtODEgMjQ5IC0xMTMgMTk5IC00MyAyNTkgLTc4IDI4NiAtMTY4IDE2IC01NCAwIC0xMDMgLTY5IC0yMDggLTY0IC05OAotODcgLTE0NiAtMTQyIC0zMDUgLTI5IC04NCAtNTUgLTEzNCAtMTIyIC0yMzUgLTQ3IC03MSAtMTE1IC0xNjAgLTE1MiAtMTk4Ci0xMDMgLTEwNyAtMTA2IC0xNDUgLTI2IC0zMDYgNzYgLTE1MiAxMDEgLTIzOCAxMDMgLTM2MSAyIC05OCAwIC0xMDcgLTI4Ci0xNjIgLTM5IC03NyAtOTUgLTEzMSAtMTcyIC0xNjcgLTkxIC00MyAtMTUwIC01NCAtMjE3IC00MCAtNjYgMTQgLTExMyA0MwotMTQ0IDkyIC0yOSA0MyAtNTMgNDEgLTcxIC03IC0yMiAtNjIgLTEyNiAtMTMyIC0xODEgLTEyMyAtMTYgMiAtMTAgMTEgMzQgNDUKNjUgNTAgMTYzIDE2NiAyMjcgMjY5IDcxIDExNCAxMjAgMjcxIDEyOSA0MTQgNyAxMTMgOCAxMTcgNjAgMjIwIDI5IDU4IDg3CjE1OSAxMzAgMjI1IDExNiAxODEgMTQ5IDI1NCAxOTAgNDI1IDIwIDg2IDIxIDEwOSAxNSAyNTAgLTggMTc1IC0yNiAyNTEgLTc3CjMyMSAtNDEgNTYgLTU3IDEwMyAtNTYgMTU5IDAgMjUgMyAzNiA1IDI1IDMgLTExIDE2IC0zNSAyOSAtNTJ6IE02MzQwIDkyNSBsMAotODY1IDIzIDAgYzEyIDAgMTQ0IDE2IDI5MiAzNSAzMTggNDEgNDMzIDcxIDU3NCAxNDggMTIxIDY3IDI0MyAxOTIgMjk2IDMwMgo0NyA5OSA3NSAyMTcgNzUgMzEzIDAgMTM3IC03MSAzNDEgLTE1OSA0NjEgLTU2IDc2IC0xNjUgMTgzIC0yMzEgMjI4IC01OSA0MAotMTkyIDEwNiAtMjU1IDEyNiAtNDUgMTUgLTU3MiAxMTcgLTYwMiAxMTcgLTEwIDAgLTEzIC0xODAgLTEzIC04NjV6IE0zMDA1CjE3NDAgYy0zNjIgLTM4IC02NjMgLTI0NyAtNzkwIC01NDkgLTQwIC05NSAtNjkgLTI3MSAtNjEgLTM3MSAxNiAtMTkxIDEzNwotNDMzIDI4OCAtNTc2IDE5MiAtMTgxIDM3NSAtMjQwIDcxOCAtMjMzIGwxNjUgNCAzOSAzMCAzOSAzMCAtNiAxNzAgYy00IDkzCi03IDI3MCAtNyAzOTMgbDAgMjIyIC0yNyAwIC0yNiAwIDYgLTM4NCA2IC0zODQgLTM0IC0xNiBjLTUwIC0yNCAtMzM5IC0yMgotNDYwIDMgLTI0MiA1MCAtNDM5IDIwOSAtNTYwIDQ1MSAtOTAgMTc5IC0xMTEgMzEyIC03NyA0ODYgNjQgMzIyIDI3MyA1MzkKNjE3IDYzOSAxMzYgMzkgMjU3IDUwIDM1OCAzMSAxMDUgLTIwIDEwNCAtMjAgMTEwIDQgNCAxNiAtMiAyMiAtMzEgMjkgLTQ3IDEzCi0xNjIgMzEgLTE4MiAzMCAtOCAtMSAtNDcgLTUgLTg1IC05eiBNMCAxMDEwIGwwIC03MDAgMzYgLTcxIGM0NyAtOTQgMTAyCi0xNTIgMTgyIC0xOTEgNTUgLTI4IDc4IC0zMyAxNTYgLTM2IDc1IC0zIDEwMSAwIDE0OSAxOCA3NCAyOCAxNjMgMTEwIDIwNQoxODggbDMyIDYwIDAgNzE2IDAgNzE2IC0yNSAwIC0yNSAwIDAgLTcxMiAwIC03MTMgLTI5IC01MSBjLTM4IC02NiAtMTE5IC0xMzgKLTE3OCAtMTU4IC0yNiAtOSAtNzcgLTE2IC0xMTQgLTE2IC0xMzIgMCAtMjM1IDYzIC0zMDAgMTgyIGwtMzQgNjMgLTUgNzAwIC01CjcwMCAtMjIgMyAtMjMgMyAwIC03MDF6IE03NzkwIDg3NSBsMCAtODM1IDQ0NiAwIDQ0NSAwIC0zIDIzIC0zIDIyIC00MTcgMwotNDE4IDIgMCAzNjAgMCAzNjAgMjQwIDAgMjQwIDAgMCAyNSAwIDI1IC0yNDAgMCBjLTIwNyAwIC0yNDAgMiAtMjQwIDE1IDAgMTMKMzMgMTUgMjQwIDE1IGwyNDAgMCAwIDI1IDAgMjUgLTI0MCAwIC0yNDAgMCAwIDM2MCAwIDM2MCA0MTggMiBjNDA5IDMgNDE3IDMKNDE3IDIzIDAgMjAgLTggMjAgLTQ0MiAyMyBsLTQ0MyAyIDAgLTgzNXogTTEyNzUgMTY5NCBjLTE2IC0yIC01NCAtNyAtODIgLTEwCmwtNTMgLTUgMCAtODI1IDAgLTgyNCAyNSAwIDI1IDAgMCA4MDQgMCA4MDQgMTE4IDcgYzIyMCAxNCA0MDMgLTExIDUxMyAtNzIKNjYgLTM2IDEyNCAtMTAwIDE2MiAtMTgxIDMwIC02MiAzMiAtNzUgMzIgLTE3MiAwIC05NCAtMyAtMTExIC0yOCAtMTYxIC01MgotMTA3IC0xNTggLTE3OSAtMjkyIC0xOTkgLTM5IC01IC0xNDEgLTEwIC0yMjcgLTEwIGwtMTU4IDAgMCAtNDEwIDAgLTQxMCAyNQowIDI1IDAgMCAzODUgMCAzODUgMTI5IDAgYzI1OSAwIDM4MCAzNyA0NzkgMTQ1IDc1IDgyIDk2IDE0NCA5NyAyODAgMCAxMDYgLTEKMTEzIC0zNyAxODcgLTk0IDE5OCAtMjUzIDI3NyAtNTY4IDI4MyAtODUgMiAtMTY4IDEgLTE4NSAtMXogTTM3NzUgMTY3MSBjLTQ3Ci00IC03MCAtMTAgLTY5IC0xOCAxIC03IDIgLTM3MSAzIC04MDkgbDEgLTc5NSAyMyAzIDIyIDMgMyA3ODIgMiA3ODEgODggOApjMTA4IDkgMzE1IC0yIDQwMyAtMjAgMTgzIC0zOSAyODAgLTE1MCAzMTAgLTM1MCAyNSAtMTY3IC01OCAtMzE2IC0yMDkgLTM3NgotNTEgLTIxIC03OSAtMjQgLTI4MiAtMjkgLTIyNCAtNiAtMjI1IC02IC0yMjggLTI4IC0zIC0yMiAwIC0yMyA2MSAtMjMgbDY0IDAKMjU5IC0zOTAgYzE0MiAtMjE0IDI2MiAtMzkwIDI2NSAtMzkwIDMgMCAxMiA2IDIxIDEzIDE0IDEwIC0xNiA1OSAtMjMzIDM4NwotMTM2IDIwNiAtMjQ0IDM3NyAtMjM4IDM3OCA1IDIgMTYgMiAyMyAtMSA3IC0zIDEyMCAtMTY5IDI1MSAtMzY5IDEzMSAtMTk5CjI0NCAtMzcwIDI1MSAtMzc4IDEyIC0xMiAxNiAtMTIgMzAgMSAxNCAxNSAtNyA1MCAtMjI0IDM4MCBsLTIzOCAzNjQgMzUgMwpjMTYyIDEyIDI3MiA1MyAzNDAgMTI3IDUxIDU1IDc3IDEwOCA5NyAxOTIgMTMgNTcgMTQgODEgNCAxNDggLTI4IDE5NCAtMTE5CjMxMyAtMjg0IDM3MSAtOTkgMzYgLTM0NyA1MSAtNTUxIDM1eiBNMzIwMCA0OTAgbDAgLTQwMCAyNSAwIDI1IDAgMCA0MDAgMAo0MDAgLTI1IDAgLTI1IDAgMCAtNDAweiIvPgo8L2c+Cjwvc3ZnPg==" alt="UPGRADE" /></div>
-      <ul class="footer-links">
-        <li><a href="https://www.instagram.com/upgrade.lpg" target="_blank" rel="noopener">Instagram</a></li>
-        <li><a href="https://t.me/upgrade_lpg_bot" target="_blank" rel="noopener">Telegram</a></li>
-      </ul>
-      <div class="footer-copy">© 2025 UPGRADE. Все права защищены.</div>
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="/" class="footer-logo">
+            <img src="logo/logo2.svg" alt="" />
+            <img src="logo/logo1.svg" alt="" />
+          </a>
+          <p class="footer-tagline">Студия аппаратной эстетики в&nbsp;Чехове</p>
+        </div>
+        <div class="footer-content">
+          <nav class="footer-row footer-nav-row">
+            <a href="/#about">О&nbsp;студии</a>
+            <a href="/#services">Услуги</a>
+            <a href="/#faq">Вопросы</a>
+            <a href="/pricing">Прайс</a>
+          </nav>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-copy">© 2026 UPGRADE. Все права защищены.</span>
+      </div>
     </div>
   </footer>
 
   <script>
-    /* ── Theme ── */
-    const themeToggle = document.getElementById('themeToggle');
-    const stored = localStorage.getItem('theme');
-    if (stored) document.documentElement.dataset.theme = stored;
-    themeToggle.textContent = document.documentElement.dataset.theme === 'dark' ? '🌙' : '☀️';
-    themeToggle.addEventListener('click', () => {
-      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = next;
+    /* ══════════════════════════════════════════
+       SHARED UI (nav, theme, mobile)
+       ══════════════════════════════════════════ */
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggle');
+    const saved = localStorage.getItem('theme');
+    if (saved) html.setAttribute('data-theme', saved);
+
+    themeBtn.addEventListener('click', () => {
+      const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
-      themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
     });
 
-    /* ── Mobile menu ── */
-    document.getElementById('mobileToggle').addEventListener('click', () => {
-      document.getElementById('navLinks').classList.toggle('open');
-    });
-
-    /* ── Nav scroll ── */
-    const nav = document.getElementById('navbar');
+    const nav = document.getElementById('nav');
     window.addEventListener('scroll', () => {
-      nav.classList.toggle('scrolled', window.scrollY > 10);
+      nav.classList.toggle('scrolled', window.scrollY > 40);
     }, { passive: true });
+
+    const burger = document.getElementById('navBurger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const mobileClose = document.getElementById('mobileClose');
+    burger.addEventListener('click', () => mobileMenu.classList.add('active'));
+    mobileClose.addEventListener('click', closeMobile);
+    function closeMobile() { mobileMenu.classList.remove('active'); }
   </script>
 </body>
 </html>
