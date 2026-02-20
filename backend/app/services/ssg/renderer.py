@@ -16,6 +16,8 @@ from datetime import datetime
 from html import escape
 from pathlib import Path
 
+from PIL import Image
+
 MONTHS_RU = [
     "", "января", "февраля", "марта", "апреля", "мая", "июня",
     "июля", "августа", "сентября", "октября", "ноября", "декабря",
@@ -24,11 +26,16 @@ MONTHS_RU = [
 DB_PATH = os.path.join("data", "sqlite", "booking.db")
 FRONTEND_DIR = Path("frontend")
 BLOG_DIR = FRONTEND_DIR / "blog"
+BLOG_IMAGES_DIR = FRONTEND_DIR / "images" / "blog"
 ARTICLE_TEMPLATE = FRONTEND_DIR / "article.html"
 BLOG_TEMPLATE = FRONTEND_DIR / "blog.html"
+FALLBACK_IMAGE = "/logo/logo.svg"
 SITE_URL = "https://upgradelpg.site"
 ARTICLES_PER_PAGE = 9
 AUTHOR_NAME = "UPGRADE"
+WEBP_QUALITY = 80
+HERO_WIDTH = 1440
+CARD_WIDTH = 640
 
 
 def get_db():
@@ -58,6 +65,46 @@ def get_excerpt(html_body: str, max_len: int = 200) -> str:
     if len(text) > max_len:
         text = text[:max_len].rsplit(" ", 1)[0] + "..."
     return text
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Image processing: JPG/PNG → WebP conversion
+# ──────────────────────────────────────────────────────────────────────────────
+
+def convert_images():
+    """Convert all JPG/PNG in images/blog/ to WebP. Skip if .webp already exists."""
+    if not BLOG_IMAGES_DIR.exists():
+        return
+
+    converted = 0
+    for src in BLOG_IMAGES_DIR.iterdir():
+        if src.suffix.lower() not in (".jpg", ".jpeg", ".png"):
+            continue
+        webp_path = src.with_suffix(".webp")
+        if webp_path.exists() and webp_path.stat().st_mtime >= src.stat().st_mtime:
+            continue
+
+        img = Image.open(src)
+        # Hero size (card will use object-fit: cover)
+        if img.width > HERO_WIDTH:
+            ratio = HERO_WIDTH / img.width
+            img = img.resize((HERO_WIDTH, int(img.height * ratio)), Image.Resampling.LANCZOS)
+        img.save(webp_path, "WEBP", quality=WEBP_QUALITY)
+        converted += 1
+        print(f"  Converted: {src.name} → {webp_path.name} ({webp_path.stat().st_size // 1024} KB)")
+
+    if converted:
+        print(f"  {converted} image(s) converted to WebP")
+
+
+def resolve_image_url(slug: str, db_image_url: str | None) -> str:
+    """Resolve article image: check WebP exists, fallback to logo.svg."""
+    webp_path = BLOG_IMAGES_DIR / f"{slug}.webp"
+    if webp_path.exists():
+        return f"/images/blog/{slug}.webp"
+    if db_image_url:
+        return db_image_url
+    return FALLBACK_IMAGE
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -153,10 +200,8 @@ def render_blog_index(articles: list[dict], template: str, page: int = 1, total_
         cat_slug = escape(a["category_slug"] or "")
         cat_name = escape(a["category_name"] or "")
 
-        if a["image_url"]:
-            image_html = f'<img src="{escape(a["image_url"])}" alt="{escape(a["title"])}" />'
-        else:
-            image_html = '<span class="placeholder-icon">📄</span>'
+        image_url = a["image_url"] or FALLBACK_IMAGE
+        image_html = f'<img src="{escape(image_url)}" alt="{escape(a["title"])}" />'
 
         cards.append(
             f'        <article class="article-card" data-cat="{cat_slug}">\n'
@@ -258,6 +303,9 @@ def render_sitemap(articles: list[dict]) -> str:
 
 def render_all():
     """Main entry point: render all published articles and blog index."""
+    # ── Convert images first ──
+    convert_images()
+
     conn = get_db()
 
     # Fetch all published articles with category info
@@ -281,6 +329,10 @@ def render_all():
         return
 
     print(f"Found {len(articles)} published articles")
+
+    # ── Resolve image URLs (WebP > DB > fallback) ──
+    for article in articles:
+        article["image_url"] = resolve_image_url(article["slug"], article["image_url"])
 
     # Load templates
     article_template = ARTICLE_TEMPLATE.read_text(encoding="utf-8")

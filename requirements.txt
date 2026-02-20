@@ -23,6 +23,9 @@ aiogram==3.23.0
 # ==== Push ====
 pywebpush
 
+# ==== Images ====
+Pillow>=10.0.0
+
 # ==== Google Calendar ====
 google-auth>=2.26.0
 google-auth-oauthlib>=1.2.0
