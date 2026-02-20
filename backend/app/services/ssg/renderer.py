@@ -9,7 +9,6 @@ renders static files into frontend/blog/.
 """
 
 import math
-import os
 import re
 import sqlite3
 from datetime import datetime
@@ -23,8 +22,9 @@ MONTHS_RU = [
     "июля", "августа", "сентября", "октября", "ноября", "декабря",
 ]
 
-DB_PATH = os.path.join("data", "sqlite", "booking.db")
-FRONTEND_DIR = Path("frontend")
+PROJECT_ROOT = Path(__file__).resolve().parents[4]  # backend/app/services/ssg/ → root
+DB_PATH = str(PROJECT_ROOT / "data" / "sqlite" / "booking.db")
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
 BLOG_DIR = FRONTEND_DIR / "blog"
 BLOG_IMAGES_DIR = FRONTEND_DIR / "images" / "blog"
 ARTICLE_TEMPLATE = FRONTEND_DIR / "article.html"

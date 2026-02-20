@@ -10,7 +10,6 @@ Reads active promotions from SQLite, renders 2 SSG marker pairs in index.html:
 """
 
 import json
-import os
 import re
 import sqlite3
 from html import escape
@@ -21,8 +20,9 @@ MONTHS_RU = [
     "июля", "августа", "сентября", "октября", "ноября", "декабря",
 ]
 
-DB_PATH = os.path.join("data", "sqlite", "booking.db")
-FRONTEND_DIR = Path("frontend")
+PROJECT_ROOT = Path(__file__).resolve().parents[4]  # backend/app/services/ssg/ → root
+DB_PATH = str(PROJECT_ROOT / "data" / "sqlite" / "booking.db")
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
 INDEX_HTML = FRONTEND_DIR / "index.html"
 SITE_URL = "https://upgradelpg.site"
 
