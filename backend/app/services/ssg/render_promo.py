@@ -4,10 +4,9 @@ SSG renderer: generates promo sections in index.html from promotions table.
 Usage:
     python -m backend.app.services.ssg.render_promo
 
-Reads active promotions from SQLite, renders 3 SSG marker pairs in index.html:
+Reads active promotions from SQLite, renders 2 SSG marker pairs in index.html:
   1. OFFERS_SCHEMA — JSON-LD Offer structured data
   2. PROMOS_SECTION — promo cards HTML
-  3. PROMO_BAR — top announcement bar
 """
 
 import json
@@ -166,37 +165,6 @@ def render_promos_section(promos: list[dict]) -> str:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Point 3: Promo Bar
-# ──────────────────────────────────────────────────────────────────────────────
-
-def render_promo_bar(promos: list[dict]) -> str:
-    """Render top promo bar from first promo, or '' if 0 promos."""
-    if not promos:
-        return ""
-
-    p = promos[0]
-    text_parts = [escape(p["badge_text"]), escape(p["title"])]
-
-    deadline = format_deadline(p["end_date"])
-    if deadline != "Постоянное предложение":
-        text_parts.append(f"— {deadline}")
-
-    text_html = " ".join(text_parts)
-
-    link = ""
-    if p["cta_url"]:
-        link = f'\n    <a href="{escape(p["cta_url"])}" class="promo-bar-link">Подробнее →</a>'
-
-    return (
-        '  <div class="promo-bar">\n'
-        '    <div class="promo-bar-inner">\n'
-        f'      <span class="promo-bar-text">{text_html}</span>{link}\n'
-        '    </div>\n'
-        '  </div>'
-    )
-
-
-# ──────────────────────────────────────────────────────────────────────────────
 # Marker replacement
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -206,7 +174,6 @@ def render_promos(html: str, promos: list[dict]) -> str:
     markers = [
         ("SSG:OFFERS_SCHEMA_START", "SSG:OFFERS_SCHEMA_END", render_offers_schema(promos)),
         ("SSG:PROMOS_SECTION_START", "SSG:PROMOS_SECTION_END", render_promos_section(promos)),
-        ("SSG:PROMO_BAR_START", "SSG:PROMO_BAR_END", render_promo_bar(promos)),
     ]
 
     for start_marker, end_marker, content in markers:
