@@ -1,14 +1,16 @@
-from fastapi import Request, HTTPException
-from app.utils.client_detect import detect_client_type
-from app.utils.telegram import verify_init_data
-from app.config import TG_BOT_TOKEN
-from app.redis_client import redis_client
 import hashlib
 import json
 import time
 
+from app.config import TG_BOT_TOKEN
+from app.utils.client_detect import detect_client_type
+from app.utils.telegram import verify_init_data
+from fastapi import HTTPException, Request
+
 ANTI_REPLAY_TTL = 60
 INITDATA_TTL = 1800  # 30 минут
+
+_BLOCKED_UA = ("curl/", "python-requests", "wget", "go-http-client", "scrapy")
 
 
 def _initdata_key(init_data: str) -> str:
@@ -28,15 +30,27 @@ async def auth_middleware(request: Request, call_next):
     client_type = detect_client_type(request)
     request.state.client_type = client_type
 
+    # ===== Block scanners / bots on public requests =====
+    if client_type == "public":
+        if path.endswith(".php"):
+            raise HTTPException(403, "Forbidden")
+
+        ua = (request.headers.get("User-Agent") or "").lower()
+        if not ua or any(b in ua for b in _BLOCKED_UA):
+            raise HTTPException(403, "Forbidden")
+
     if client_type == "tg_client":
         init_data = request.headers.get("X-TG-Init-Data")
         if not init_data:
             raise HTTPException(401, "Missing TG initData")
 
+        if not TG_BOT_TOKEN:
+            raise HTTPException(500, "TG_BOT_TOKEN not configured")
+
         try:
             data = verify_init_data(init_data, TG_BOT_TOKEN)
         except ValueError as e:
-            raise HTTPException(401, str(e))
+            raise HTTPException(401, str(e)) from None
 
         # ===== ЖЁСТКАЯ TTL ПРОВЕРКА =====
         auth_date = int(data.get("auth_date", 0))
@@ -53,4 +67,3 @@ async def auth_middleware(request: Request, call_next):
         }
 
     return await call_next(request)
-
