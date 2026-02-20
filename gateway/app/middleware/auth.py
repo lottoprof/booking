@@ -6,11 +6,16 @@ from app.config import TG_BOT_TOKEN
 from app.utils.client_detect import detect_client_type
 from app.utils.telegram import verify_init_data
 from fastapi import HTTPException, Request
+from starlette.responses import JSONResponse
 
 ANTI_REPLAY_TTL = 60
 INITDATA_TTL = 1800  # 30 минут
 
 _BLOCKED_UA = ("curl/", "python-requests", "wget", "go-http-client", "scrapy")
+
+
+def _deny(status: int = 403, detail: str = "Forbidden") -> JSONResponse:
+    return JSONResponse(status_code=status, content={"detail": detail})
 
 
 def _initdata_key(init_data: str) -> str:
@@ -33,11 +38,11 @@ async def auth_middleware(request: Request, call_next):
     # ===== Block scanners / bots on public requests =====
     if client_type == "public":
         if path.endswith(".php"):
-            raise HTTPException(403, "Forbidden")
+            return _deny()
 
         ua = (request.headers.get("User-Agent") or "").lower()
         if not ua or any(b in ua for b in _BLOCKED_UA):
-            raise HTTPException(403, "Forbidden")
+            return _deny()
 
     if client_type == "tg_client":
         init_data = request.headers.get("X-TG-Init-Data")
