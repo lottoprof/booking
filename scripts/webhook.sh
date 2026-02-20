@@ -2,8 +2,10 @@
 set -e
 
 # ===== Load env =====
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 set -a
-source .env
+source "$PROJECT_DIR/.env"
 set +a
 
 # ===== Checks =====
