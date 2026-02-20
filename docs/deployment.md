@@ -200,16 +200,20 @@ Session: upgrade
 
 ### Ручной перезапуск серверов
 
+Gateway запускается из `gateway/`, backend из `backend/`, `PYTHONPATH` указывает на корень проекта.
+
 ```bash
+P=/home/{user}/upgrade
+
 # Gateway
 tmux send-keys -t upgrade:1.1 C-c
 sleep 1
-tmux send-keys -t upgrade:1.1 'find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null; PYTHONPATH=$(pwd) venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8080' Enter
+tmux send-keys -t upgrade:1.1 "find $P -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; cd $P/gateway && PYTHONPATH=$P $P/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8080" Enter
 
 # Backend
 tmux send-keys -t upgrade:1.2 C-c
 sleep 1
-tmux send-keys -t upgrade:1.2 'find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null; PYTHONPATH=$(pwd) venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000' Enter
+tmux send-keys -t upgrade:1.2 "find $P -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; cd $P/backend && PYTHONPATH=$P $P/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000" Enter
 ```
 
 ### Проверка логов

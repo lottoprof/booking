@@ -9,8 +9,10 @@ SESSION="upgrade"
 
 # ── Derived paths ──────────────────────────────────────────
 VENV="$PROJECT_DIR/venv/bin"
-GATEWAY_CMD="PYTHONPATH=$PROJECT_DIR $VENV/uvicorn app.main:app --host 127.0.0.1 --port 8080"
-BACKEND_CMD="PYTHONPATH=$PROJECT_DIR $VENV/uvicorn app.main:app --host 127.0.0.1 --port 8000"
+GATEWAY_DIR="$PROJECT_DIR/gateway"
+BACKEND_DIR="$PROJECT_DIR/backend"
+GATEWAY_CMD="cd $GATEWAY_DIR && PYTHONPATH=$PROJECT_DIR $VENV/uvicorn app.main:app --host 127.0.0.1 --port 8080"
+BACKEND_CMD="cd $BACKEND_DIR && PYTHONPATH=$PROJECT_DIR $VENV/uvicorn app.main:app --host 127.0.0.1 --port 8000"
 
 # ── Functions ──────────────────────────────────────────────
 
@@ -25,11 +27,11 @@ start() {
     tmux new-session -d -s "$SESSION" -n servers -c "$PROJECT_DIR"
 
     # Pane 1: gateway (8080)
-    tmux send-keys -t "$SESSION:1.1" "cd $PROJECT_DIR && $GATEWAY_CMD" Enter
+    tmux send-keys -t "$SESSION:1.1" "$GATEWAY_CMD" Enter
 
     # Pane 2: backend (8000)
     tmux split-window -v -t "$SESSION:1" -c "$PROJECT_DIR"
-    tmux send-keys -t "$SESSION:1.2" "cd $PROJECT_DIR && $BACKEND_CMD" Enter
+    tmux send-keys -t "$SESSION:1.2" "$BACKEND_CMD" Enter
 
     # Window 2: sqlite
     tmux new-window -t "$SESSION" -n db -c "$PROJECT_DIR"
@@ -64,12 +66,12 @@ restart() {
     # Restart gateway
     tmux send-keys -t "$SESSION:1.1" C-c
     sleep 1
-    tmux send-keys -t "$SESSION:1.1" "find $PROJECT_DIR -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null; cd $PROJECT_DIR && $GATEWAY_CMD" Enter
+    tmux send-keys -t "$SESSION:1.1" "find $PROJECT_DIR -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null; $GATEWAY_CMD" Enter
 
     # Restart backend
     tmux send-keys -t "$SESSION:1.2" C-c
     sleep 1
-    tmux send-keys -t "$SESSION:1.2" "find $PROJECT_DIR -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null; cd $PROJECT_DIR && $BACKEND_CMD" Enter
+    tmux send-keys -t "$SESSION:1.2" "find $PROJECT_DIR -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null; $BACKEND_CMD" Enter
 
     echo "[restart] Done. Check logs with: $0 logs"
 }

@@ -4,7 +4,7 @@ After=redis.service booking-backend.service
 
 [Service]
 Type=simple
-WorkingDirectory=/home/backup/upgrade
+WorkingDirectory=/home/backup/upgrade/gateway
 Environment=PYTHONPATH=/home/backup/upgrade
 Environment=PATH=/home/backup/upgrade/venv/bin:/usr/bin
 EnvironmentFile=/home/backup/upgrade/.env
