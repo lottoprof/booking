@@ -1,0 +1,33 @@
+#!/bin/bash
+set -e
+
+# ── Configuration ──────────────────────────────────────────
+# Override via environment or edit defaults below
+REPO_DIR="${REPO_DIR:-/home/backup/upgrade/bare_git/upgrade.git}"
+TARGET_DIR="${TARGET_DIR:-/home/backup/upgrade}"
+WORK_DIR="/tmp/repo_upgrade"
+BRANCH="master"
+
+# ── Lock (prevent concurrent deploys) ─────────────────────
+exec 9>/tmp/upgrade_deploy.lock
+flock -n 9 || { echo "Deploy already in progress"; exit 1; }
+
+# ── Deploy ─────────────────────────────────────────────────
+echo "[deploy] Starting deploy from $REPO_DIR → $TARGET_DIR"
+
+rm -rf "$WORK_DIR"
+mkdir -p "$WORK_DIR"
+
+git --work-tree="$WORK_DIR" --git-dir="$REPO_DIR" checkout -f "$BRANCH"
+
+rsync -a \
+  --exclude='.env' \
+  --exclude='data/' \
+  --exclude='venv/' \
+  --exclude='bare_git/' \
+  --exclude='__pycache__/' \
+  "$WORK_DIR/" "$TARGET_DIR/"
+
+rm -rf "$WORK_DIR"
+
+echo "[deploy] Done. Restart services manually (tmux or systemd)."

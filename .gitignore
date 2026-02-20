@@ -85,3 +85,8 @@ logs/
 *.log
 .claude
 .aider*
+
+# -----------------------------
+# Bare git repo (server-side)
+# -----------------------------
+bare_git/
