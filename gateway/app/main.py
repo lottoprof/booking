@@ -1,36 +1,35 @@
 # gateway/app/main.py
 
-import logging
 import asyncio
-from pathlib import Path
+import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, Request, Header, HTTPException, Query
-from fastapi.responses import Response, HTMLResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
-
-from app.config import TG_WEBHOOK_SECRET, REDIS_URL, DOMAIN_API_URL
-from app.middleware.auth import auth_middleware
-from app.middleware.rate_limit import rate_limit_middleware, check_tg_rate_limit
+from app.config import DOMAIN_API_URL, REDIS_URL, TG_WEBHOOK_SECRET
+from app.events.web_booking_consumer import web_booking_consumer_loop
 from app.middleware.access_policy import access_policy_middleware
 from app.middleware.audit import audit_middleware
+from app.middleware.auth import auth_middleware
+from app.middleware.rate_limit import check_tg_rate_limit, rate_limit_middleware
 from app.proxy import proxy_request
 from app.routers.web_booking import router as web_booking_router
-
 from app.utils.telegram import (
     authenticate_tg_user,
     extract_tg_id,
+)
+from fastapi import FastAPI, Header, HTTPException, Query, Request
+from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
+
+from bot.app.events.consumer import (
+    broadcast_consumer_loop,
+    p2p_consumer_loop,
+    retry_consumer_loop,
 )
 
 # ВАЖНО: импорт на уровне модуля, НЕ внутри handler
 from bot.app.main import process_update
 from bot.app.utils.api import api
-from bot.app.events.consumer import (
-    p2p_consumer_loop,
-    broadcast_consumer_loop,
-    retry_consumer_loop,
-)
-from app.events.web_booking_consumer import web_booking_consumer_loop
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +40,9 @@ async def lifespan(app: FastAPI):
     
     # Warmup: прогреваем Telegram API connection
     try:
-        from bot.app.main import bot
         import time
+
+        from bot.app.main import bot
         start = time.time()
         me = await bot.get_me()
         logger.info(f"Warmup: Telegram API ready in {time.time() - start:.2f}s (@{me.username})")
@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
     # Set default Mini App menu button (for new users before language selection)
     try:
         from bot.app.config import MINIAPP_URL
-        from bot.app.i18n.loader import t, DEFAULT_LANG
+        from bot.app.i18n.loader import DEFAULT_LANG, t
         if MINIAPP_URL:
             from aiogram.types import MenuButtonWebApp, WebAppInfo
             await bot.set_chat_menu_button(
@@ -122,6 +122,14 @@ if (FRONTEND_DIR / "logo").exists():
     app.mount("/logo", StaticFiles(directory=FRONTEND_DIR / "logo"), name="logo")
 if (FRONTEND_DIR / "blog").exists():
     app.mount("/blog", StaticFiles(directory=FRONTEND_DIR / "blog", html=True), name="blog")
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def serve_sitemap():
+    xml_path = FRONTEND_DIR / "sitemap.xml"
+    if xml_path.exists():
+        return FileResponse(xml_path, media_type="application/xml")
+    return Response(status_code=404)
 
 
 # ===== HTML page routes =====
