@@ -277,8 +277,8 @@ def render_sitemap(articles: list[dict]) -> str:
     """Generate sitemap.xml."""
     urls = [
         f"  <url><loc>{SITE_URL}/</loc><priority>1.0</priority></url>",
-        f"  <url><loc>{SITE_URL}/pricing.html</loc><priority>0.8</priority></url>",
-        f"  <url><loc>{SITE_URL}/book.html</loc><priority>0.7</priority></url>",
+        f"  <url><loc>{SITE_URL}/pricing</loc><priority>0.8</priority></url>",
+        f"  <url><loc>{SITE_URL}/book</loc><priority>0.7</priority></url>",
         f"  <url><loc>{SITE_URL}/blog/</loc><priority>0.8</priority></url>",
     ]
 
