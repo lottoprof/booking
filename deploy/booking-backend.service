@@ -1,3 +1,39 @@
+# ============================================================
+# Booking Backend API — systemd user-level unit
+# ============================================================
+#
+# Установка:
+#   mkdir -p ~/.config/systemd/user/
+#   cp deploy/booking-backend.service ~/.config/systemd/user/
+#   cp deploy/booking-gateway.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#
+# Работа без залогиненной сессии (один раз, нужен sudo):
+#   sudo loginctl enable-linger $(whoami)
+#
+# Запуск:
+#   systemctl --user start booking-backend booking-gateway
+#
+# Автозапуск при загрузке:
+#   systemctl --user enable booking-backend booking-gateway
+#
+# Рестарт после деплоя (git push):
+#   systemctl --user restart booking-backend booking-gateway
+#
+# Рестарт только backend:
+#   systemctl --user restart booking-backend
+#
+# Статус:
+#   systemctl --user status booking-backend booking-gateway
+#
+# Логи:
+#   journalctl --user -u booking-backend -f
+#   journalctl --user -u booking-backend --since "1 hour ago"
+#
+# Остановка:
+#   systemctl --user stop booking-gateway booking-backend
+# ============================================================
+
 [Unit]
 Description=Booking Backend API
 After=redis.service

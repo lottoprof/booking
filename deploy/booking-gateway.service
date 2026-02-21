@@ -1,3 +1,16 @@
+# ============================================================
+# Booking Gateway + Bot — systemd user-level unit
+# ============================================================
+#
+# Gateway зависит от backend (After=booking-backend.service).
+# Всегда запускайте оба вместе.
+#
+# Установка и команды — см. booking-backend.service
+#
+# Порядок запуска: redis → backend → gateway
+# Порядок остановки: gateway → backend (обратный)
+# ============================================================
+
 [Unit]
 Description=Booking Gateway + Bot
 After=redis.service booking-backend.service
