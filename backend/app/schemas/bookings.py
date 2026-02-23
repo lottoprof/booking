@@ -42,6 +42,7 @@ class BookingUpdate(BaseModel):
     
     # Update details
     duration_minutes: Optional[int] = None
+    break_minutes: Optional[int] = None
     final_price: Optional[float] = None
     
     # Status management
