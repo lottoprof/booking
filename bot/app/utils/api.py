@@ -540,12 +540,13 @@ class ApiClient:
     async def get_slots_day(
         self,
         location_id: int,
-        service_id: int,
-        date: str
+        service_id: int = None,
+        date: str = "",
+        service_package_id: int = None,
     ) -> Optional[dict]:
         """
-        GET /slots/day — Level 2: гранулярный расчёт для услуги.
-        
+        GET /slots/day — Level 2: гранулярный расчёт для услуги/пакета.
+
         Returns:
             {
                 "location_id": 1,
@@ -556,11 +557,11 @@ class ApiClient:
                 "available_times": [...]
             }
         """
-        params = {
-            "location_id": location_id,
-            "service_id": service_id,
-            "date": date
-        }
+        params: dict = {"location_id": location_id, "date": date}
+        if service_id:
+            params["service_id"] = service_id
+        if service_package_id:
+            params["service_package_id"] = service_package_id
         return await self._request("GET", "/slots/day", params=params)
 
     # ------------------------------------------------------------------
@@ -616,14 +617,15 @@ class ApiClient:
         self,
         company_id: int,
         location_id: int,
-        service_id: int,
         specialist_id: int,
         client_id: int,
         date_start: str,
         date_end: str,
         duration_minutes: int,
         break_minutes: int = 0,
+        service_id: int = None,
         room_id: int = None,
+        service_package_id: int = None,
         notes: str = None,
         initiated_by_user_id: int = None,
         initiated_by_role: str = None,
@@ -635,14 +637,15 @@ class ApiClient:
         Args:
             company_id: Company ID (required)
             location_id: Location ID (required)
-            service_id: Service ID (required)
             specialist_id: Specialist ID (required)
             client_id: Client user ID (required)
             date_start: Start datetime ISO format (required)
             date_end: End datetime ISO format (required)
             duration_minutes: Duration in minutes (required)
             break_minutes: Break after service (default 0)
+            service_id: Service ID (optional if service_package_id given)
             room_id: Room ID (optional)
+            service_package_id: Service package ID (optional)
             notes: Notes (optional)
             initiated_by_user_id: User who initiated the action (optional)
             initiated_by_role: Role of initiator (optional)
@@ -654,7 +657,6 @@ class ApiClient:
         data = {
             "company_id": company_id,
             "location_id": location_id,
-            "service_id": service_id,
             "specialist_id": specialist_id,
             "client_id": client_id,
             "date_start": date_start,
@@ -662,8 +664,12 @@ class ApiClient:
             "duration_minutes": duration_minutes,
             "break_minutes": break_minutes,
         }
+        if service_id:
+            data["service_id"] = service_id
         if room_id:
             data["room_id"] = room_id
+        if service_package_id:
+            data["service_package_id"] = service_package_id
         if notes:
             data["notes"] = notes
 

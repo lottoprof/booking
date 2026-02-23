@@ -53,7 +53,52 @@ async def _enrich_booking(booking: dict) -> dict:
                 specialist.get("display_name") or f"#{specialist['id']}"
             )
 
+    if booking.get("service_package_id"):
+        package = await api.get_package(booking["service_package_id"])
+        if package:
+            enriched["package_name"] = package.get("name", "")
+            enriched["package_duration"] = package.get("total_duration_min", 0)
+            # Resolve individual services in package
+            items = package.get("package_items") or []
+            if isinstance(items, str):
+                import json as _json
+                try:
+                    items = _json.loads(items)
+                except Exception:
+                    items = []
+            svc_details = []
+            for item in items:
+                svc = await api.get_service(item["service_id"])
+                if svc:
+                    svc_details.append({
+                        "name": svc.get("name", ""),
+                        "duration_min": svc.get("duration_min", 0),
+                    })
+            enriched["package_services"] = svc_details
+
     return enriched
+
+
+def _append_service_lines(lines: list[str], b: dict, lang: str, with_duration: bool = True) -> None:
+    """Append service + package lines to notification."""
+    minutes = t("common:minutes", lang)
+    if b.get("package_name"):
+        dur = b.get("package_duration") or b.get("duration_minutes", "")
+        line = f"💇 {b['package_name']}"
+        if with_duration and dur:
+            line += f" · {dur} {minutes}"
+        lines.append(line)
+        for svc in b.get("package_services", []):
+            svc_line = f"    ▸ {svc['name']}"
+            if with_duration and svc.get("duration_min"):
+                svc_line += f" {svc['duration_min']} {minutes}"
+            lines.append(svc_line)
+    elif b.get("service_name"):
+        dur = b.get("service_duration", "")
+        line = f"💇 {b['service_name']}"
+        if with_duration and dur:
+            line += f" · {dur} {minutes}"
+        lines.append(line)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -69,16 +114,13 @@ async def format_booking_created(
     """Format booking_created notification."""
     b = await _enrich_booking(booking)
     booking_id = b.get("id", "?")
-    minutes = t("common:minutes", lang)
 
     if recipient_role == "client":
         title = t("notify:created:title:client", lang)
         lines = [f"<b>{title} #{booking_id}</b>", ""]
         if b.get("location_name"):
             lines.append(f"📍 {b['location_name']}")
-        if b.get("service_name"):
-            dur = b.get("service_duration", "")
-            lines.append(f"💇 {b['service_name']}" + (f" · {dur} {minutes}" if dur else ""))
+        _append_service_lines(lines, b, lang)
         if b.get("date_start"):
             lines.append(f"🕐 {_format_dt(b['date_start'])}")
         if b.get("specialist_name"):
@@ -90,9 +132,7 @@ async def format_booking_created(
             lines.append(f"👤 {b['client_name']}")
         if b.get("client_phone"):
             lines.append(f"📞 {b['client_phone']}")
-        if b.get("service_name"):
-            dur = b.get("service_duration", "")
-            lines.append(f"💇 {b['service_name']}" + (f" · {dur} {minutes}" if dur else ""))
+        _append_service_lines(lines, b, lang)
         if b.get("date_start"):
             lines.append(f"🕐 {_format_dt(b['date_start'])}")
     else:
@@ -105,9 +145,7 @@ async def format_booking_created(
             lines.append(f"📞 {b['client_phone']}")
         if b.get("location_name"):
             lines.append(f"📍 {b['location_name']}")
-        if b.get("service_name"):
-            dur = b.get("service_duration", "")
-            lines.append(f"💇 {b['service_name']}" + (f" · {dur} {minutes}" if dur else ""))
+        _append_service_lines(lines, b, lang)
         if b.get("date_start"):
             lines.append(f"🕐 {_format_dt(b['date_start'])}")
         if b.get("specialist_name"):
@@ -138,8 +176,7 @@ async def format_booking_cancelled(
         lines = [f"<b>{title} #{booking_id}</b>", ""]
         if b.get("location_name"):
             lines.append(f"📍 {b['location_name']}")
-        if b.get("service_name"):
-            lines.append(f"💇 {b['service_name']}")
+        _append_service_lines(lines, b, lang, with_duration=False)
         if b.get("date_start"):
             lines.append(f"🕐 {_format_dt(b['date_start'])}")
         lines.extend(["", t("notify:cancelled:new_booking", lang)])
@@ -148,8 +185,7 @@ async def format_booking_cancelled(
         lines = [f"{title} <b>#{booking_id}</b>", ""]
         if b.get("client_name"):
             lines.append(f"👤 {b['client_name']}")
-        if b.get("service_name"):
-            lines.append(f"💇 {b['service_name']}")
+        _append_service_lines(lines, b, lang, with_duration=False)
         if b.get("date_start"):
             lines.append(f"🕐 {_format_dt(b['date_start'])}")
         if b.get("cancel_reason"):
@@ -162,8 +198,7 @@ async def format_booking_cancelled(
             lines.append(f"👤 {b['client_name']}")
         if b.get("location_name"):
             lines.append(f"📍 {b['location_name']}")
-        if b.get("service_name"):
-            lines.append(f"💇 {b['service_name']}")
+        _append_service_lines(lines, b, lang, with_duration=False)
         if b.get("date_start"):
             lines.append(f"🕐 {_format_dt(b['date_start'])}")
         if b.get("specialist_name"):
@@ -203,8 +238,7 @@ async def format_booking_rescheduled(
         lines = [f"<b>{title} #{booking_id}</b>", ""]
         if b.get("location_name"):
             lines.append(f"📍 {b['location_name']}")
-        if b.get("service_name"):
-            lines.append(f"💇 {b['service_name']}")
+        _append_service_lines(lines, b, lang, with_duration=False)
         lines.append(f"🕐 {was}: {old_dt}")
         lines.append(f"🕐 {now}: {new_dt}")
         lines.extend(["", t("notify:rescheduled:contact_us", lang)])
@@ -213,8 +247,7 @@ async def format_booking_rescheduled(
         lines = [f"{title} <b>#{booking_id}</b>", ""]
         if b.get("client_name"):
             lines.append(f"👤 {b['client_name']}")
-        if b.get("service_name"):
-            lines.append(f"💇 {b['service_name']}")
+        _append_service_lines(lines, b, lang, with_duration=False)
         lines.append(f"🕐 {was}: {old_dt}")
         lines.append(f"🕐 {now}: {new_dt}")
     else:
@@ -225,8 +258,7 @@ async def format_booking_rescheduled(
             lines.append(f"👤 {b['client_name']}")
         if b.get("location_name"):
             lines.append(f"📍 {b['location_name']}")
-        if b.get("service_name"):
-            lines.append(f"💇 {b['service_name']}")
+        _append_service_lines(lines, b, lang, with_duration=False)
         lines.append(f"🕐 {was}: {old_dt}")
         lines.append(f"🕐 {now}: {new_dt}")
         if b.get("specialist_name"):
@@ -252,7 +284,6 @@ async def format_booking_done(
     b = await _enrich_booking(booking)
     booking_id = b.get("id", "?")
 
-    minutes = t("common:minutes", lang)
     lines = [
         f"{t('notify:done:title', lang)} <b>#{booking_id}</b>",
         "",
@@ -264,9 +295,7 @@ async def format_booking_done(
         lines.append(f"📞 {b['client_phone']}")
     if b.get("location_name"):
         lines.append(f"📍 {b['location_name']}")
-    if b.get("service_name"):
-        dur = b.get("service_duration", "")
-        lines.append(f"💇 {b['service_name']}" + (f" · {dur} {minutes}" if dur else ""))
+    _append_service_lines(lines, b, lang)
     if b.get("date_start"):
         lines.append(f"🕐 {_format_dt(b['date_start'])}")
     if b.get("specialist_name"):
@@ -293,16 +322,13 @@ async def format_booking_reminder(
     """Format booking_reminder notification for client."""
     b = await _enrich_booking(booking)
     booking_id = b.get("id", "?")
-    minutes = t("common:minutes", lang)
 
     title = t("notify:reminder:title", lang)
     lines = [f"<b>{title} #{booking_id}</b>", ""]
 
     if b.get("location_name"):
         lines.append(f"📍 {b['location_name']}")
-    if b.get("service_name"):
-        dur = b.get("service_duration", "")
-        lines.append(f"💇 {b['service_name']}" + (f" · {dur} {minutes}" if dur else ""))
+    _append_service_lines(lines, b, lang)
     if b.get("date_start"):
         lines.append(f"🕐 {_format_dt(b['date_start'])}")
     if b.get("specialist_name"):

@@ -12,7 +12,6 @@ Flow:
 
 import logging
 import math
-from datetime import datetime
 from datetime import datetime, timedelta
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ContentType
@@ -52,43 +51,43 @@ class ClientBooking(StatesGroup):
 # Inline Keyboards
 # ==============================================================
 
-def services_list_inline(
-    services: list[dict],
+def packages_list_inline(
+    packages: list[dict],
     page: int,
     lang: str
 ) -> InlineKeyboardMarkup:
-    """Список услуг для выбора (клиент)."""
-    total = len(services)
+    """Список пакетов для выбора (клиент)."""
+    total = len(packages)
     total_pages = max(1, math.ceil(total / PAGE_SIZE))
     page = max(0, min(page, total_pages - 1))
 
     start = page * PAGE_SIZE
     end = start + PAGE_SIZE
-    page_items = services[start:end]
+    page_items = packages[start:end]
 
     buttons = []
 
-    for svc in page_items:
-        duration = svc.get("duration_min", 0)
-        price = svc.get("price", 0)
+    for pkg in page_items:
+        duration = pkg.get("total_duration_min", 0)
+        price = pkg.get("package_price", 0) or 0
         price_str = f"{int(price)}₽" if price == int(price) else f"{price:.0f}₽"
-        
+
         buttons.append([
             InlineKeyboardButton(
-                text=f"🛎 {svc['name']} | {duration} мин | {price_str}",
-                callback_data=f"book:svc:{svc['id']}"
+                text=f"🛎 {pkg['name']} | {duration} мин | {price_str}",
+                callback_data=f"book:pkg:{pkg['id']}"
             )
         ])
 
     if total_pages > 1:
         nav_row = []
         if page > 0:
-            nav_row.append(InlineKeyboardButton(text="◀️", callback_data=f"book:svc_page:{page - 1}"))
+            nav_row.append(InlineKeyboardButton(text=t("common:prev", lang), callback_data=f"book:pkg_page:{page - 1}"))
         else:
             nav_row.append(InlineKeyboardButton(text=" ", callback_data="book:noop"))
         nav_row.append(InlineKeyboardButton(text=f"{page + 1}/{total_pages}", callback_data="book:noop"))
         if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(text="▶️", callback_data=f"book:svc_page:{page + 1}"))
+            nav_row.append(InlineKeyboardButton(text=t("common:next", lang), callback_data=f"book:pkg_page:{page + 1}"))
         else:
             nav_row.append(InlineKeyboardButton(text=" ", callback_data="book:noop"))
         buttons.append(nav_row)
@@ -133,12 +132,12 @@ def days_calendar_inline(days: list[dict], page: int, lang: str, days_per_page: 
     if total_pages > 1:
         nav_row = []
         if page > 0:
-            nav_row.append(InlineKeyboardButton(text="◀️", callback_data=f"book:day_page:{page - 1}"))
+            nav_row.append(InlineKeyboardButton(text=t("common:prev", lang), callback_data=f"book:day_page:{page - 1}"))
         else:
             nav_row.append(InlineKeyboardButton(text=" ", callback_data="book:noop"))
         nav_row.append(InlineKeyboardButton(text=f"{page + 1}/{total_pages}", callback_data="book:noop"))
         if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(text="▶️", callback_data=f"book:day_page:{page + 1}"))
+            nav_row.append(InlineKeyboardButton(text=t("common:next", lang), callback_data=f"book:day_page:{page + 1}"))
         else:
             nav_row.append(InlineKeyboardButton(text=" ", callback_data="book:noop"))
         buttons.append(nav_row)
@@ -178,12 +177,12 @@ def time_slots_inline(slots: list[dict], page: int, lang: str, slots_per_page: i
     if total_pages > 1:
         nav_row = []
         if page > 0:
-            nav_row.append(InlineKeyboardButton(text="◀️", callback_data=f"book:time_page:{page - 1}"))
+            nav_row.append(InlineKeyboardButton(text=t("common:prev", lang), callback_data=f"book:time_page:{page - 1}"))
         else:
             nav_row.append(InlineKeyboardButton(text=" ", callback_data="book:noop"))
         nav_row.append(InlineKeyboardButton(text=f"{page + 1}/{total_pages}", callback_data="book:noop"))
         if page < total_pages - 1:
-            nav_row.append(InlineKeyboardButton(text="▶️", callback_data=f"book:time_page:{page + 1}"))
+            nav_row.append(InlineKeyboardButton(text=t("common:next", lang), callback_data=f"book:time_page:{page + 1}"))
         else:
             nav_row.append(InlineKeyboardButton(text=" ", callback_data="book:noop"))
         buttons.append(nav_row)
@@ -223,59 +222,61 @@ def setup(menu_controller, get_user_context):
     async def start_booking(message: Message, state: FSMContext, lang: str, user_id: int):
         """Точка входа в booking flow."""
         logger.info(f"[BOOKING] Starting for user_id={user_id}")
-        
+
         await state.update_data(user_id=user_id, lang=lang)
-        
-        services = await api.get_services()
-        if not services:
+
+        all_packages = await api.get_packages()
+        packages = [p for p in all_packages if p.get("show_on_booking") and p.get("is_active")]
+        if not packages:
             await message.answer(t("client:booking:no_services", lang))
             await state.clear()
             return
-        
-        await state.update_data(services=services)
+
+        await state.update_data(packages=packages)
         await state.set_state(ClientBooking.service)
-        
-        kb = services_list_inline(services, page=0, lang=lang)
+
+        kb = packages_list_inline(packages, page=0, lang=lang)
         await mc.show_inline_readonly(message, t("client:booking:select_service", lang), kb)
 
     # ==========================================================
     # SERVICE
     # ==========================================================
 
-    @router.callback_query(ClientBooking.service, F.data.startswith("book:svc_page:"))
-    async def handle_service_page(callback: CallbackQuery, state: FSMContext):
+    @router.callback_query(ClientBooking.service, F.data.startswith("book:pkg_page:"))
+    async def handle_package_page(callback: CallbackQuery, state: FSMContext):
         page = int(callback.data.split(":")[-1])
         data = await state.get_data()
-        kb = services_list_inline(data.get("services", []), page, data.get("lang", DEFAULT_LANG))
-        await callback.message.edit_reply_markup(reply_markup=kb)
+        lang = data.get("lang", DEFAULT_LANG)
+        kb = packages_list_inline(data.get("packages", []), page, lang)
+        await mc.edit_inline(callback.message, t("client:booking:select_service", lang), kb)
         await callback.answer()
 
-    @router.callback_query(ClientBooking.service, F.data.startswith("book:svc:"))
-    async def handle_service_select(callback: CallbackQuery, state: FSMContext):
-        service_id = int(callback.data.split(":")[-1])
+    @router.callback_query(ClientBooking.service, F.data.startswith("book:pkg:"))
+    async def handle_package_select(callback: CallbackQuery, state: FSMContext):
+        pkg_id = int(callback.data.split(":")[-1])
         data = await state.get_data()
         lang = data.get("lang", DEFAULT_LANG)
-        services = data.get("services", [])
-        
-        service = next((s for s in services if s["id"] == service_id), None)
-        if not service:
+        packages = data.get("packages", [])
+
+        pkg = next((p for p in packages if p["id"] == pkg_id), None)
+        if not pkg:
             await callback.answer(t("common:error", lang), show_alert=True)
             return
-        
-        logger.info(f"[BOOKING] Service: {service['name']} (id={service_id})")
-        
+
+        logger.info(f"[BOOKING] Package: {pkg['name']} (id={pkg_id})")
+
         await state.update_data(
-            service_id=service_id,
-            service_name=service["name"],
-            service_duration=service.get("duration_min", 0),
-            service_price=service.get("price", 0)
+            service_package_id=pkg_id,
+            service_name=pkg["name"],
+            service_duration=pkg.get("total_duration_min", 0),
+            service_price=pkg.get("package_price", 0) or 0,
         )
-        
+
         locations = await api.get_locations()
         if not locations:
             await callback.answer(t("client:booking:no_locations", lang), show_alert=True)
             return
-        
+
         location_id = locations[0]["id"]
         company_id = locations[0].get("company_id")
         await state.update_data(location_id=location_id, company_id=company_id)
@@ -284,11 +285,11 @@ def setup(menu_controller, get_user_context):
         if not calendar or not calendar.get("days"):
             await callback.answer(t("client:booking:no_calendar", lang), show_alert=True)
             return
-        
+
         days = calendar["days"]
         await state.update_data(calendar_days=days)
         await state.set_state(ClientBooking.day)
-        
+
         kb = days_calendar_inline(days, page=0, lang=lang)
         await callback.message.edit_text(text=t("client:booking:select_day", lang), reply_markup=kb)
         await callback.answer()
@@ -310,7 +311,7 @@ def setup(menu_controller, get_user_context):
         data = await state.get_data()
         lang = data.get("lang", DEFAULT_LANG)
         await state.set_state(ClientBooking.service)
-        kb = services_list_inline(data.get("services", []), 0, lang)
+        kb = packages_list_inline(data.get("packages", []), 0, lang)
         await callback.message.edit_text(text=t("client:booking:select_service", lang), reply_markup=kb)
         await callback.answer()
 
@@ -323,7 +324,11 @@ def setup(menu_controller, get_user_context):
         logger.info(f"[BOOKING] Day: {date_str}")
         await state.update_data(selected_date=date_str)
         
-        slots_data = await api.get_slots_day(data.get("location_id"), data.get("service_id"), date_str)
+        slots_data = await api.get_slots_day(
+            data.get("location_id"),
+            date=date_str,
+            service_package_id=data.get("service_package_id"),
+        )
         if not slots_data:
             await callback.answer(t("client:booking:no_slots", lang), show_alert=True)
             return
@@ -528,12 +533,12 @@ def setup(menu_controller, get_user_context):
         booking = await api.create_booking(
             company_id=data.get("company_id"),
             location_id=data.get("location_id"),
-            service_id=data.get("service_id"),
             specialist_id=data.get("specialist_id"),
             client_id=data.get("user_id"),
             date_start=datetime_str,
             date_end=dt_end.strftime("%Y-%m-%dT%H:%M:%S"),
             duration_minutes=duration,
+            service_package_id=data.get("service_package_id"),
         )
 
         if not booking:

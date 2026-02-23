@@ -208,13 +208,23 @@ def create_booking_from_web(
         )
 
     # Step 5: Create booking
-    duration_min = service.duration_min
-    break_min = service.break_min or 0
+    if service_package_id:
+        from ..services.slots.availability import _resolve_preset_services
+        services_list, _total_min = _resolve_preset_services(db, service_package_id)
+        if services_list:
+            duration_min = sum(s.duration_min for s in services_list)
+            break_min = sum(s.break_min or 0 for s in services_list)
+        else:
+            duration_min = service.duration_min
+            break_min = service.break_min or 0
+    else:
+        duration_min = service.duration_min
+        break_min = service.break_min or 0
 
     # Parse date and time
     date_start_str = f"{data.date} {data.time}:00"
     date_start = datetime.strptime(date_start_str, "%Y-%m-%d %H:%M:%S")
-    date_end = date_start + timedelta(minutes=duration_min)
+    date_end = date_start + timedelta(minutes=duration_min + break_min)
 
     booking = DBBookings(
         company_id=location.company_id,
