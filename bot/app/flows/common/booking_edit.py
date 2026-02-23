@@ -163,7 +163,10 @@ def setup(mc):
         await state.update_data(
             reschedule_booking_id=booking_id,
             reschedule_location_id=booking["location_id"],
-            reschedule_service_id=booking["service_id"],
+            reschedule_service_id=booking.get("service_id"),
+            reschedule_service_package_id=booking.get("service_package_id"),
+            reschedule_duration=booking.get("duration_minutes", 60),
+            reschedule_break=booking.get("break_minutes", 0),
             reschedule_old_datetime=booking["date_start"],
             reschedule_message_id=callback.message.message_id,
         )
@@ -192,12 +195,18 @@ def setup(mc):
         data = await state.get_data()
 
         location_id = data["reschedule_location_id"]
-        service_id = data["reschedule_service_id"]
+        service_id = data.get("reschedule_service_id")
+        service_package_id = data.get("reschedule_service_package_id")
 
         lang = DEFAULT_LANG
 
         # Get available time slots for this date
-        slots = await api.get_slots_day(location_id, service_id, date_str)
+        slots = await api.get_slots_day(
+            location_id,
+            service_id=service_id if not service_package_id else None,
+            date=date_str,
+            service_package_id=service_package_id,
+        )
         if not slots or not slots.get("available_times"):
             await callback.answer(t("bke:no_times", lang), show_alert=True)
             return
@@ -261,12 +270,8 @@ def setup(mc):
         booking_id = data["reschedule_booking_id"]
         date_str = data["reschedule_date"]
         time_str = data["reschedule_time"]
-        service_id = data["reschedule_service_id"]
-
-        # Get service duration for date_end calculation
-        service = await api.get_service(service_id)
-        duration = service.get("duration_min", 60) if service else 60
-        break_min = service.get("break_min", 0) if service else 0
+        duration = data.get("reschedule_duration", 60)
+        break_min = data.get("reschedule_break", 0)
 
         new_start = f"{date_str}T{time_str}"
         try:
