@@ -43,20 +43,20 @@ def _format_price(price: float, lang: str) -> str:
 # Keyboards
 # ==============================================================
 
-def kb_services_list(services: list, page: int, total: int, user_id: int, lang: str) -> InlineKeyboardMarkup:
-    """Список услуг с пагинацией."""
+def kb_packages_list(packages: list, page: int, total: int, user_id: int, lang: str) -> InlineKeyboardMarkup:
+    """Список пакетов с пагинацией."""
     rows = []
-    for svc in services:
-        duration = svc.get("duration_min", 0)
-        price = svc.get("price", 0)
+    for pkg in packages:
+        duration = pkg.get("total_duration_min", 0)
+        price = pkg.get("package_price", 0) or 0
         price_str = f"{int(price)}{t('currency', lang)}" if price == int(price) else f"{price:.0f}{t('currency', lang)}"
         rows.append([InlineKeyboardButton(
-            text=f"🛎 {svc['name']} | {duration} {t('common:min', lang)} | {price_str}",
-            callback_data=f"adminbook:svc:{user_id}:{svc['id']}"
+            text=f"🛎 {pkg['name']} | {duration} {t('common:min', lang)} | {price_str}",
+            callback_data=f"adminbook:pkg:{user_id}:{pkg['id']}"
         )])
 
     total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
-    nav = build_nav_row(page, total_pages, f"adminbook:svc_page:{user_id}:{{p}}", "adminbook:noop", lang)
+    nav = build_nav_row(page, total_pages, f"adminbook:pkg_page:{user_id}:{{p}}", "adminbook:noop", lang)
     if nav:
         rows.append(nav)
 
@@ -184,21 +184,22 @@ def setup(menu_controller, api):
             await callback.answer(t("common:error", lang), show_alert=True)
             return
 
-        services = await api.get_services()
-        if not services:
+        all_packages = await api.get_packages()
+        packages = [p for p in all_packages if p.get("show_on_booking") and p.get("is_active")]
+        if not packages:
             await callback.answer(t("client:booking:no_services", lang), show_alert=True)
             return
 
         await state.update_data(
             adminbook_client_id=user_id,
             adminbook_client_name=_format_name(user),
-            adminbook_services=services,
-            adminbook_svc_page=0,
+            adminbook_packages=packages,
+            adminbook_pkg_page=0,
         )
 
         client_name = _format_name(user)
         text = t("admin:booking:title", lang) % client_name + "\n\n" + t("client:booking:select_service", lang)
-        kb = kb_services_list(services[:PAGE_SIZE], 0, len(services), user_id, lang)
+        kb = kb_packages_list(packages[:PAGE_SIZE], 0, len(packages), user_id, lang)
         await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
 
@@ -206,21 +207,21 @@ def setup(menu_controller, api):
     # Callback: пагинация услуг
     # ----------------------------------------------------------
 
-    @router.callback_query(F.data.startswith("adminbook:svc_page:"))
-    async def paginate_services(callback: CallbackQuery, state: FSMContext):
+    @router.callback_query(F.data.startswith("adminbook:pkg_page:"))
+    async def paginate_packages(callback: CallbackQuery, state: FSMContext):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
         parts = callback.data.split(":")
         user_id = int(parts[2])
         page = int(parts[3])
 
         data = await state.get_data()
-        services = data.get("adminbook_services", [])
+        packages = data.get("adminbook_packages", [])
         client_name = data.get("adminbook_client_name", "")
-        await state.update_data(adminbook_svc_page=page)
+        await state.update_data(adminbook_pkg_page=page)
 
         start = page * PAGE_SIZE
         text = t("admin:booking:title", lang) % client_name + "\n\n" + t("client:booking:select_service", lang)
-        kb = kb_services_list(services[start:start+PAGE_SIZE], page, len(services), user_id, lang)
+        kb = kb_packages_list(packages[start:start+PAGE_SIZE], page, len(packages), user_id, lang)
         await mc.edit_inline(callback.message, text, kb)
         await callback.answer()
 
@@ -232,19 +233,19 @@ def setup(menu_controller, api):
     # Callback: выбор услуги — календарь дней
     # ----------------------------------------------------------
 
-    @router.callback_query(F.data.startswith("adminbook:svc:"))
-    async def select_service(callback: CallbackQuery, state: FSMContext):
+    @router.callback_query(F.data.startswith("adminbook:pkg:"))
+    async def select_package(callback: CallbackQuery, state: FSMContext):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
         parts = callback.data.split(":")
         user_id = int(parts[2])
-        service_id = int(parts[3])
+        pkg_id = int(parts[3])
 
         data = await state.get_data()
-        services = data.get("adminbook_services", [])
+        packages = data.get("adminbook_packages", [])
         client_name = data.get("adminbook_client_name", "")
 
-        service = next((s for s in services if s["id"] == service_id), None)
-        if not service:
+        pkg = next((p for p in packages if p["id"] == pkg_id), None)
+        if not pkg:
             await callback.answer(t("common:error", lang), show_alert=True)
             return
 
@@ -263,10 +264,10 @@ def setup(menu_controller, api):
 
         days = calendar["days"]
         await state.update_data(
-            adminbook_service_id=service_id,
-            adminbook_service_name=service["name"],
-            adminbook_service_duration=service.get("duration_min", 0),
-            adminbook_service_price=service.get("price", 0),
+            adminbook_service_package_id=pkg_id,
+            adminbook_service_name=pkg["name"],
+            adminbook_service_duration=pkg.get("total_duration_min", 0),
+            adminbook_service_price=pkg.get("package_price", 0) or 0,
             adminbook_location_id=location_id,
             adminbook_company_id=company_id,
             adminbook_calendar_days=days,
@@ -315,8 +316,8 @@ def setup(menu_controller, api):
 
         slots_data = await api.get_slots_day(
             data.get("adminbook_location_id"),
-            data.get("adminbook_service_id"),
-            date_str
+            date=date_str,
+            service_package_id=data.get("adminbook_service_package_id"),
         )
         if not slots_data:
             await callback.answer(t("client:booking:no_slots", lang), show_alert=True)
@@ -522,12 +523,12 @@ def setup(menu_controller, api):
         booking = await api.create_booking(
             company_id=data.get("adminbook_company_id"),
             location_id=data.get("adminbook_location_id"),
-            service_id=data.get("adminbook_service_id"),
             specialist_id=data.get("adminbook_specialist_id"),
             client_id=data.get("adminbook_client_id"),
             date_start=datetime_str,
             date_end=dt_end.strftime("%Y-%m-%dT%H:%M:%S"),
             duration_minutes=duration,
+            service_package_id=data.get("adminbook_service_package_id"),
             initiated_by_user_id=callback.from_user.id,
             initiated_by_role="admin",
             initiated_by_channel="tg_bot",
@@ -543,8 +544,8 @@ def setup(menu_controller, api):
         await state.update_data(
             adminbook_client_id=None,
             adminbook_client_name=None,
-            adminbook_services=None,
-            adminbook_service_id=None,
+            adminbook_packages=None,
+            adminbook_service_package_id=None,
             adminbook_service_name=None,
             adminbook_service_duration=None,
             adminbook_service_price=None,
