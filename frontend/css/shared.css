@@ -64,7 +64,7 @@ body {
   color: var(--text-primary);
   background: var(--bg-primary);
   line-height: 1.6;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Theme-switch animation — activated by JS after load to avoid FCP delay */
