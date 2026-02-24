@@ -197,7 +197,7 @@ body.theme-ready {
   .nav-links {
     position: fixed; top: 72px; left: 0; right: 0;
     background: var(--bg-primary); flex-direction: column;
-    padding: 1.5rem; gap: 1.25rem; border-bottom: 1px solid var(--border);
+    padding: 1.5rem; gap: 1.7777777border-bottom: 1px solid var(--border);
     transform: translateY(-120%); transition: transform 0.4s ease;
   }
   .nav-links.open { transform: translateY(0); }
