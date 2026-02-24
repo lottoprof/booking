@@ -125,7 +125,8 @@ def kb_time_slots(slots: list, page: int, user_id: int, lang: str) -> InlineKeyb
     row = []
     for slot in page_items:
         time_str = slot["time"]
-        row.append(InlineKeyboardButton(text=time_str, callback_data=f"adminbook:time:{user_id}:{time_str}"))
+        time_cb = time_str.replace(":", ".")
+        row.append(InlineKeyboardButton(text=time_str, callback_data=f"adminbook:time:{user_id}:{time_cb}"))
         if len(row) == 2:
             buttons.append(row)
             row = []
@@ -146,7 +147,7 @@ def kb_specialists_select(specialists: list, user_id: int, time_str: str, lang: 
     for spec in specialists:
         buttons.append([InlineKeyboardButton(
             text=f"👤 {spec['name']}",
-            callback_data=f"adminbook:spec:{user_id}:{time_str}:{spec['id']}"
+            callback_data=f"adminbook:spec:{user_id}:{time_str.replace(':', '.')}:{spec['id']}"
         )])
     buttons.append([InlineKeyboardButton(text=t("common:back", lang), callback_data=f"adminbook:back_time:{user_id}")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -387,7 +388,7 @@ def setup(menu_controller, api):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
         parts = callback.data.split(":")
         user_id = int(parts[2])
-        time_str = parts[3]
+        time_str = parts[3].replace(".", ":")
 
         data = await state.get_data()
         slots = data.get("adminbook_time_slots", [])
@@ -449,7 +450,7 @@ def setup(menu_controller, api):
         lang = user_lang.get(callback.from_user.id, DEFAULT_LANG)
         parts = callback.data.split(":")
         user_id = int(parts[2])
-        time_str = parts[3]
+        time_str = parts[3].replace(".", ":")
         spec_id = int(parts[4])
 
         data = await state.get_data()
