@@ -645,11 +645,12 @@ def sync_booking_to_calendar(
         package = db.get(ServicePackages, booking.service_package_id)
         if package:
             service_name = package.name
-    if service_name == "Unknown Service" and booking.service_id:
+    if booking.service_id:
         service = db.get(Services, booking.service_id)
         if service:
-            service_name = service.name
             color_code = service.color_code
+            if service_name == "Unknown Service":
+                service_name = service.name
 
     client = db.get(Users, booking.client_id)
     location = db.get(Locations, booking.location_id)
