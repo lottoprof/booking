@@ -83,7 +83,6 @@ body.theme-ready {
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-light);
   transition: all 0.3s ease;
-  overflow: visible;
 }
 .nav.scrolled { height: 60px; box-shadow: var(--shadow-sm); }
 .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; line-height: 1; }
