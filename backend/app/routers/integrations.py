@@ -10,30 +10,31 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models.generated import (
-    SpecialistIntegrations,
     BookingExternalEvents,
-    Specialists,
     Bookings,
-    Services,
-    Users,
     Locations,
+    ServicePackages,
+    Services,
+    SpecialistIntegrations,
+    Specialists,
+    Users,
 )
 from ..schemas.integrations import (
-    IntegrationStatusRead,
+    BookingExternalEventRead,
     IntegrationRead,
+    IntegrationStatusRead,
     IntegrationUpdate,
     OAuthCallbackResponse,
-    BookingExternalEventRead,
-)
-from ..services.google_calendar import (
-    get_oauth_url,
-    exchange_code_for_tokens,
-    refresh_access_token,
-    create_event,
-    update_event,
-    delete_event,
 )
 from ..services.events import emit_event
+from ..services.google_calendar import (
+    create_event,
+    delete_event,
+    exchange_code_for_tokens,
+    get_oauth_url,
+    refresh_access_token,
+    update_event,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -637,7 +638,19 @@ def sync_booking_to_calendar(
         return {"synced": False, "reason": "No active integrations", "results": []}
 
     # Build booking data for calendar
-    service = db.get(Services, booking.service_id)
+    # Use package name if available, fallback to service name
+    service_name = "Unknown Service"
+    color_code = None
+    if booking.service_package_id:
+        package = db.get(ServicePackages, booking.service_package_id)
+        if package:
+            service_name = package.name
+    if service_name == "Unknown Service" and booking.service_id:
+        service = db.get(Services, booking.service_id)
+        if service:
+            service_name = service.name
+            color_code = service.color_code
+
     client = db.get(Users, booking.client_id)
     location = db.get(Locations, booking.location_id)
     specialist = db.get(Specialists, booking.specialist_id)
@@ -646,8 +659,8 @@ def sync_booking_to_calendar(
     booking_data = {
         "date_start": booking.date_start,
         "date_end": booking.date_end,
-        "service_name": service.name if service else "Unknown Service",
-        "color_code": service.color_code if service else None,
+        "service_name": service_name,
+        "color_code": color_code,
         "client_name": client.first_name if client else "Unknown Client",
         "client_phone": client.phone if client else None,
         "location_name": location.name if location else None,
