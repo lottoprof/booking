@@ -24,7 +24,7 @@
   --bg-card:       #FFFFFF;
   --text-primary:  #1A2B2B;
   --text-secondary:#5A7070;
-  --text-muted:    #697A7A;
+  --text-muted:    #8FA5A5;
   --border:        #E0EDED;
   --border-light:  #F0F5F5;
   --shadow-sm:     0 1px 3px rgba(43,181,184,0.06);
@@ -260,7 +260,7 @@ body.theme-ready {
 .site-footer .footer-logo img:last-child { height: 14px; width: auto; }
 .footer-tagline {
   font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-weight: 300;
 }
 .footer-content {
@@ -298,7 +298,7 @@ body.theme-ready {
   font-weight: 500;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 .footer-contacts-row a:hover { color: var(--teal); }
 .site-footer .footer-bottom {
@@ -317,7 +317,7 @@ body.theme-ready {
 }
 .footer-bottom .footer-copy {
   font-size: 0.78rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 /* ═══════════════════════════════════════
@@ -335,7 +335,7 @@ body.theme-ready {
   align-items: center; flex-wrap: wrap; gap: 1rem;
 }
 .footer .footer-copy {
-  font-size: 0.75rem; color: var(--text-muted);
+  font-size: 0.75rem; color: var(--text-secondary);
   width: 100%; text-align: center; margin-top: 0.75rem;
 }
 
