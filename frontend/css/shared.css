@@ -24,7 +24,7 @@
   --bg-card:       #FFFFFF;
   --text-primary:  #1A2B2B;
   --text-secondary:#5A7070;
-  --text-muted:    #8FA5A5;
+  --text-muted:    #697A7A;
   --border:        #E0EDED;
   --border-light:  #F0F5F5;
   --shadow-sm:     0 1px 3px rgba(43,181,184,0.06);
@@ -65,6 +65,10 @@ body {
   background: var(--bg-primary);
   line-height: 1.6;
   overflow-x: hidden;
+}
+
+/* Theme-switch animation — activated by JS after load to avoid FCP delay */
+body.theme-ready {
   transition: background 0.4s ease, color 0.4s ease;
 }
 

@@ -16,6 +16,8 @@
   <meta property="og:image:height" content="630">
   <meta property="og:url" content="https://upgradelpg.site">
   <link rel="canonical" href="https://upgradelpg.site/">
+  <meta name="theme-color" content="#2BB5B8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0F1A1A" media="(prefers-color-scheme: dark)">
 
   <!-- Structured Data: LocalBusiness -->
   <script type="application/ld+json">
@@ -87,10 +89,15 @@
   <!-- SSG:OFFERS_SCHEMA_START -->
   <!-- SSG:OFFERS_SCHEMA_END -->
 
-  <!-- Fonts -->
+  <!-- Fonts (async — non-render-blocking) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600&display=swap"
+        onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+  </noscript>
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="icon" href="logo/favicon.svg" type="image/svg+xml">
 
@@ -635,7 +642,7 @@
 
   <!-- ═══ NAVIGATION ═══ -->
   <nav class="nav" id="nav">
-    <a href="/" class="nav-logo"><img src="logo/logo2.svg" class="nav-logo-icon" alt="UPGRADE" /><img src="logo/logo1.svg" class="nav-logo-text" alt="UPGRADE — студия эстетики тела" /></a>
+    <a href="/" class="nav-logo"><img src="logo/logo2.svg" class="nav-logo-icon" alt="UPGRADE" width="44" height="44" /><img src="logo/logo1.svg" class="nav-logo-text" alt="UPGRADE — студия эстетики тела" width="120" height="13" /></a>
 
     <ul class="nav-links">
       <li><a href="#about">О студии</a></li>
@@ -659,7 +666,7 @@
 
   <!-- ═══ MOBILE MENU ═══ -->
   <div class="mobile-menu" id="mobileMenu">
-    <button class="mobile-close" id="mobileClose">✕</button>
+    <button class="mobile-close" id="mobileClose" aria-label="Закрыть меню">✕</button>
     <a href="#about" onclick="closeMobile()">О студии</a>
     <a href="#specialists" onclick="closeMobile()">Специалисты</a>
     <a href="#services" onclick="closeMobile()">Услуги</a>
@@ -736,8 +743,8 @@
       <h2 class="section-title reveal">Аппаратная эстетика тела</h2>
       <div class="seo-text-content reveal">
         <p>
-          Студия UPGRADE работает на сертифицированном оборудовании.<br>
-          В&nbsp;арсенале — LPG, прессотерапия, обёртывания и&nbsp; Indiba.<br>
+           Студия UPGRADE (Апгрейд) работает на сертифицированном оборудовании.<br>
+          В&nbsp;арсенале — LPG (ЛПГ), прессотерапия, обёртывания и&nbsp; Indiba.<br>
           Каждая программа подбирается индивидуально: учитываются особенности тела, пожелания и&nbsp;цели клиента.<br>
           Запишитесь онлайн или через Telegram-бот — подберём удобное время.
         </p>
@@ -759,7 +766,7 @@
 
       <div class="services-grid stagger reveal">
         <article class="service-card">
-          <div class="service-icon">✦</div>
+          <div class="service-icon" aria-hidden="true">✦</div>
           <h3>LPG</h3>
           <p>Уменьшает объёмы, помогает убрать целлюлит и подтянуть кожу — без диет и&nbsp;нагрузок. Подходит для коррекции фигуры.</p>
           <div class="service-meta">
@@ -769,7 +776,7 @@
         </article>
 
         <article class="service-card">
-          <div class="service-icon">◎</div>
+          <div class="service-icon" aria-hidden="true">◎</div>
           <h3>«Сфера»</h3>
           <p>Роликовая методика — убирает отёки и тяжесть в ногах, делает кожу более гладкой и&nbsp;упругой. Идеален при склонности к&nbsp;задержке жидкости.</p>
           <div class="service-meta">
@@ -779,7 +786,7 @@
         </article>
 
         <article class="service-card">
-          <div class="service-icon">≋</div>
+          <div class="service-icon" aria-hidden="true">≋</div>
           <h3>Indiba</h3>
           <p>Мягкий прогрев тканей — воздействует на глубокие слои для формирования контуров. Подтягивает кожу после похудения или родов, помогает убрать целлюлит.</p>
           <div class="service-meta">
@@ -789,7 +796,7 @@
         </article>
  
         <article class="service-card">
-          <div class="service-icon">◇</div>
+          <div class="service-icon" aria-hidden="true">◇</div>
           <h3>Прессотерапия</h3>
           <p>Выводит лишнюю жидкость, снимает отёки и помогает уменьшить объёмы — мягко и&nbsp;без нагрузки.</p>
           <div class="service-meta">
@@ -799,7 +806,7 @@
         </article>
 
        <article class="service-card">
-          <div class="service-icon">❋</div>
+          <div class="service-icon" aria-hidden="true">❋</div>
           <h3>Обёртывание</h3>
           <p>Уменьшает объёмы и делает кожу более гладкой — усиливает эффект от аппаратных процедур.</p>
           <div class="service-meta">
@@ -826,7 +833,7 @@
 
       <div class="specialists-two-col stagger reveal">
         <div class="specialist-card">
-          <div class="specialist-avatar"><img src="logo/logo.svg" alt="UPGRADE" style="width:48px;height:auto" /></div>
+          <div class="specialist-avatar"><img src="logo/logo.svg" alt="UPGRADE" style="width:48px;height:auto" width="48" height="48" /></div>
           <h3>Команда UPGRADE</h3>
           <div class="specialist-role">Студия аппаратной эстетики</div>
         </div>
@@ -850,7 +857,7 @@
 
       <div class="faq-list stagger reveal">
         <div class="faq-item">
-          <button class="faq-question" aria-expanded="false">
+          <button class="faq-question" aria-expanded="false" aria-controls="faq-1">
             Что такое LPG?
             <span class="faq-icon">
               <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round">
@@ -858,7 +865,7 @@
               </svg>
             </span>
           </button>
-          <div class="faq-answer">
+          <div class="faq-answer" id="faq-1" role="region">
             <div class="faq-answer-inner">
               LPG — аппаратная процедура с&nbsp;использованием вакуумно-роликовой технологии.
               Воздействует на подкожно-жировую клетчатку, улучшает лимфоотток и&nbsp;кровообращение,
@@ -868,7 +875,7 @@
         </div>
 
         <div class="faq-item">
-          <button class="faq-question" aria-expanded="false">
+          <button class="faq-question" aria-expanded="false" aria-controls="faq-2">
             Сколько сеансов нужно для результата?
             <span class="faq-icon">
               <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round">
@@ -876,7 +883,7 @@
               </svg>
             </span>
           </button>
-          <div class="faq-answer">
+          <div class="faq-answer" id="faq-2" role="region">
             <div class="faq-answer-inner">
               Первые результаты заметны после 3–4 сеансов. Рекомендуемый курс — 10–15 процедур
               с&nbsp;частотой 2–3 раза в&nbsp;неделю для достижения устойчивого эффекта.
@@ -886,7 +893,7 @@
         </div>
 
         <div class="faq-item">
-          <button class="faq-question" aria-expanded="false">
+          <button class="faq-question" aria-expanded="false" aria-controls="faq-3">
             Есть ли противопоказания?
             <span class="faq-icon">
               <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round">
@@ -894,7 +901,7 @@
               </svg>
             </span>
           </button>
-          <div class="faq-answer">
+          <div class="faq-answer" id="faq-3" role="region">
             <div class="faq-answer-inner">
               Да, как у&nbsp;любой аппаратной процедуры. Основные: онкология, тромбофлебит,
               острые воспалительные процессы, беременность. Полный список обсудим
@@ -904,7 +911,7 @@
         </div>
 
         <div class="faq-item">
-          <button class="faq-question" aria-expanded="false">
+          <button class="faq-question" aria-expanded="false" aria-controls="faq-4">
             Больно ли делать LPG?
             <span class="faq-icon">
               <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round">
@@ -912,7 +919,7 @@
               </svg>
             </span>
           </button>
-          <div class="faq-answer">
+          <div class="faq-answer" id="faq-4" role="region">
             <div class="faq-answer-inner">
               Процедура комфортна, но возможны индивидуальные ощущения. 
               Вы почувствуете интенсивное воздействие — как при глубокой проработке тканей. 
@@ -924,7 +931,7 @@
         </div>
 
         <div class="faq-item">
-          <button class="faq-question" aria-expanded="false">
+          <button class="faq-question" aria-expanded="false" aria-controls="faq-5">
             Нужен ли специальный костюм для LPG?
             <span class="faq-icon">
               <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round">
@@ -932,7 +939,7 @@
               </svg>
             </span>
           </button>
-          <div class="faq-answer">
+          <div class="faq-answer" id="faq-5" role="region">
             <div class="faq-answer-inner">
               Да, процедура проводится в&nbsp;специальном эластичном костюме. Мы предоставляем
               индивидуальный костюм каждому клиенту — он обеспечивает гигиеничность
@@ -961,8 +968,8 @@
       <div class="footer-top">
         <div class="footer-brand">
           <a href="/" class="footer-logo">
-            <img src="logo/logo2.svg" alt="UPGRADE" />
-            <img src="logo/logo1.svg" alt="" />
+            <img src="logo/logo2.svg" alt="UPGRADE" width="32" height="32" />
+            <img src="logo/logo1.svg" alt="" width="100" height="14" />
           </a>
           <p class="footer-tagline">Студия аппаратной эстетики в&nbsp;Чехове</p>
         </div>
@@ -1000,6 +1007,7 @@
       html.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
     });
+    document.body.classList.add('theme-ready');
 
     /* ── Nav scroll ── */
     const nav = document.getElementById('nav');
