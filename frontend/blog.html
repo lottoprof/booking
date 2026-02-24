@@ -297,7 +297,7 @@
 
   <!-- ═══ NAVIGATION ═══ -->
   <nav class="nav" id="nav">
-    <a href="/" class="nav-logo"><img src="/logo/logo2.svg" class="nav-logo-icon" alt="UPGRADE" width="44" height="44" /><img src="/logo/logo1.svg" class="nav-logo-text" alt="UPGRADE — студия эстетики тела" width="120" height="13" /></a>
+    <a href="/" class="nav-logo"><img src="/logo/logo2.svg" class="nav-logo-icon" alt="UPGRADE" width="44" height="44" fetchpriority="high" /><img src="/logo/logo1.svg" class="nav-logo-text" alt="UPGRADE — студия эстетики тела" width="120" height="19" /></a>
     <ul class="nav-links">
       <li><a href="/">Главная</a></li>
       <li><a href="/#services">Услуги</a></li>
@@ -431,6 +431,7 @@
     window.addEventListener('scroll', () => {
       nav.classList.toggle('scrolled', window.scrollY > 40);
     }, { passive: true });
+    nav.classList.toggle('scrolled', window.scrollY > 40); /* initial check */
 
     const burger = document.getElementById('navBurger');
     const mobileMenu = document.getElementById('mobileMenu');
