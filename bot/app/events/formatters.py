@@ -8,9 +8,10 @@ HTML parse_mode for Telegram.
 import logging
 from datetime import datetime
 from typing import Optional
+from urllib.parse import quote
 
+from bot.app.i18n.loader import DEFAULT_LANG, t
 from bot.app.utils.api import api
-from bot.app.i18n.loader import t, DEFAULT_LANG
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,9 @@ async def _enrich_booking(booking: dict) -> dict:
         location = await api.get_location(booking["location_id"])
         if location:
             enriched["location_name"] = location.get("name", "")
+            enriched["location_city"] = location.get("city", "")
+            enriched["location_street"] = location.get("street", "")
+            enriched["location_house"] = location.get("house", "")
 
     if booking.get("service_id"):
         service = await api.get_service(booking["service_id"])
@@ -101,6 +105,34 @@ def _append_service_lines(lines: list[str], b: dict, lang: str, with_duration: b
         lines.append(line)
 
 
+def build_address_text(b: dict) -> str:
+    """Build address string from location fields: 'г. Чехов, Церковная горка, 1'."""
+    parts = []
+    city = b.get("location_city", "")
+    if city:
+        parts.append(f"г. {city}")
+    street = b.get("location_street", "")
+    house = b.get("location_house", "")
+    if street and house:
+        parts.append(f"{street}, {house}")
+    elif street:
+        parts.append(street)
+    return ", ".join(parts)
+
+
+def build_maps_url(address: str) -> str:
+    """Build Yandex Maps search URL from address string."""
+    return f"https://yandex.ru/maps/?text={quote(address)}"
+
+
+def _append_address_line(lines: list[str], b: dict) -> None:
+    """Append address with Yandex Maps link as the last line."""
+    address = build_address_text(b)
+    if address:
+        url = build_maps_url(address)
+        lines.append(f'📌 <a href="{url}">{address}</a>')
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # booking_created
 # ─────────────────────────────────────────────────────────────────────────────
@@ -125,6 +157,7 @@ async def format_booking_created(
             lines.append(f"🕐 {_format_dt(b['date_start'])}")
         if b.get("specialist_name"):
             lines.append(f"👨‍💼 {b['specialist_name']}")
+        _append_address_line(lines, b)
     elif recipient_role == "specialist":
         title = t("notify:created:title", lang)
         lines = [f"{title} <b>#{booking_id}</b>", ""]
@@ -179,6 +212,7 @@ async def format_booking_cancelled(
         _append_service_lines(lines, b, lang, with_duration=False)
         if b.get("date_start"):
             lines.append(f"🕐 {_format_dt(b['date_start'])}")
+        _append_address_line(lines, b)
         lines.extend(["", t("notify:cancelled:new_booking", lang)])
     elif recipient_role == "specialist":
         title = t("notify:cancelled:title", lang)
@@ -241,6 +275,7 @@ async def format_booking_rescheduled(
         _append_service_lines(lines, b, lang, with_duration=False)
         lines.append(f"🕐 {was}: {old_dt}")
         lines.append(f"🕐 {now}: {new_dt}")
+        _append_address_line(lines, b)
         lines.extend(["", t("notify:rescheduled:contact_us", lang)])
     elif recipient_role == "specialist":
         title = t("notify:rescheduled:title", lang)
@@ -333,6 +368,7 @@ async def format_booking_reminder(
         lines.append(f"🕐 {_format_dt(b['date_start'])}")
     if b.get("specialist_name"):
         lines.append(f"👨‍💼 {b['specialist_name']}")
+    _append_address_line(lines, b)
 
     if ad_text:
         lines.extend(["", "---", ad_text])

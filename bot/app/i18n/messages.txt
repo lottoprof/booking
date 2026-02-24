@@ -939,6 +939,8 @@ ru:client:bookings:empty       | "📭 Нет активных записей"
 en:client:bookings:empty       | "📭 No active bookings"
 ru:common:hide                 | "🙈 Скрыть"
 en:common:hide                 | "🙈 Hide"
+ru:common:show_on_map          | "📌 Показать на карте"
+en:common:show_on_map          | "📌 Show on map"
 
 # --- notify: booking done (completion confirmation) ---
 ru:notify:done:title | "⏰ Время записи истекло"
