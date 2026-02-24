@@ -38,6 +38,7 @@ class BookingUpdate(BaseModel):
     # Change assignment
     specialist_id: Optional[int] = None
     service_id: Optional[int] = None
+    service_package_id: Optional[int] = None
     room_id: Optional[int] = None
     
     # Update details
