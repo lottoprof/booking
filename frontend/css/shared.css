@@ -64,7 +64,7 @@ body {
   color: var(--text-primary);
   background: var(--bg-primary);
   line-height: 1.6;
-  overflow-x: clip;
+  overflow-x: hidden;
 }
 
 /* Theme-switch animation — activated by JS after load to avoid FCP delay */
@@ -198,9 +198,10 @@ body.theme-ready {
     position: fixed; top: 72px; left: 0; right: 0;
     background: var(--bg-primary); flex-direction: column;
     padding: 1.5rem; gap: 1.25rem; border-bottom: 1px solid var(--border);
-    transform: translateY(-120%); transition: transform 0.4s ease;
+    transform: translateY(calc(-100% - 72px)); visibility: hidden;
+    transition: transform 0.4s ease, visibility 0.4s;
   }
-  .nav-links.open { transform: translateY(0); }
+  .nav-links.open { transform: translateY(0); visibility: visible; }
 }
 
 /* ═══════════════════════════════════════
