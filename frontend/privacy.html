@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Политика конфиденциальности — UPGRADE</title>
+  <meta name="description" content="Политика конфиденциальности студии UPGRADE. Узнайте, как мы обрабатываем и защищаем ваши персональные данные.">
+  <link rel="canonical" href="https://upgradelpg.site/privacy">
+  <link rel="icon" href="logo/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#E8F7F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0F1A1A" media="(prefers-color-scheme: dark)">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/shared.css">
+
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ═══════════════════════════════════════
+       PAGE LAYOUT
+       ═══════════════════════════════════════ */
+    .page { flex: 1; padding-top: 72px; }
+
+    /* ═══════════════════════════════════════
+       PRIVACY HEADER
+       ═══════════════════════════════════════ */
+    .privacy-header {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 0;
+    }
+
+    .privacy-header h1 {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 500;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .privacy-header .effective-date {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    /* ═══════════════════════════════════════
+       PRIVACY CONTENT (prose)
+       ═══════════════════════════════════════ */
+    .privacy-content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 3rem;
+    }
+
+    .privacy-content .lead {
+      font-size: 1.05rem;
+      line-height: 1.75;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+
+    .privacy-content h2 {
+      font-family: var(--font-display);
+      font-size: 1.55rem;
+      font-weight: 500;
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+      color: var(--text-primary);
+    }
+
+    .privacy-content p {
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.75;
+      color: var(--text-secondary);
+    }
+
+    .privacy-content ul {
+      margin-bottom: 1.25rem;
+      padding-left: 1.5rem;
+      color: var(--text-secondary);
+    }
+
+    .privacy-content li {
+      margin-bottom: 0.4rem;
+      line-height: 1.7;
+      font-size: 0.95rem;
+    }
+
+    .privacy-content strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .privacy-content a {
+      color: var(--teal);
+      text-decoration: underline;
+      text-decoration-color: rgba(43,181,184,0.3);
+      text-underline-offset: 2px;
+      transition: text-decoration-color 0.2s ease;
+    }
+    .privacy-content a:hover {
+      text-decoration-color: var(--teal);
+    }
+
+    /* Cookie notice — highlighted */
+    .privacy-content .no-cookies {
+      margin: 1.25rem 0;
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      background: var(--badge-bg);
+      border: 1px solid var(--badge-border);
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+    }
+
+    /* ═══════════════════════════════════════
+       SIMPLE FOOTER
+       ═══════════════════════════════════════ */
+    .privacy-footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-light);
+      padding: 1.5rem 2rem;
+      margin-top: auto;
+    }
+    .privacy-footer-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .privacy-footer-contacts {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .privacy-footer-contacts a {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .privacy-footer-contacts a:hover { color: var(--teal); }
+    .privacy-footer-copy {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* ═══════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .privacy-header h1 { font-size: 2rem; }
+      .privacy-header { padding: 1.5rem 1rem 0; }
+      .privacy-content { padding: 1.5rem 1rem 2.5rem; }
+      .privacy-footer { padding: 1.25rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── NAV (minimal) ─── -->
+  <nav class="nav" id="navbar">
+    <a href="/" class="nav-logo">
+      <img src="logo/logo2.svg" class="nav-logo-icon" alt="UPGRADE" width="44" height="44" />
+      <img src="logo/logo1.svg" class="nav-logo-text" alt="UPGRADE — студия эстетики тела" width="120" height="19" />
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="/">Главная</a></li>
+      <li><button class="theme-toggle" id="themeToggle" aria-label="Сменить тему">☀️</button></li>
+    </ul>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Меню">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- ─── MAIN ─── -->
+  <main class="page">
+
+    <header class="privacy-header">
+      <h1>Политика конфиденциальности</h1>
+      <div class="effective-date">Дата вступления в силу: 25 февраля 2026 г.</div>
+    </header>
+
+    <div class="privacy-content">
+
+      <p class="lead">Мы уважаем вашу приватность и обрабатываем только те данные, которые необходимы для работы сервиса записи и выдачи цифровых сертификатов.</p>
+
+      <!-- 1 -->
+      <h2>1. Какие данные мы обрабатываем</h2>
+      <p>В зависимости от сценария использования бота и мини-приложения, мы можем обрабатывать:</p>
+      <ul>
+        <li>идентификатор Telegram (tg_id), имя пользователя, имя/фамилию (если доступны в Telegram);</li>
+        <li>данные, которые вы сами вводите в сервис (например: имя, телефон, комментарий к записи);</li>
+        <li>информацию о записях (услуга, специалист, дата и время визита, статус);</li>
+        <li>данные по сертификатам/подаркам (тип, номинал/состав, статус, дата оформления);</li>
+        <li>технические данные для безопасности и стабильной работы (время запросов, ошибки, служебные логи).</li>
+      </ul>
+      <p>Мы не запрашиваем и не храним ваши пароли Telegram.</p>
+      <div class="no-cookies">Наш сайт не использует файлы cookie, сторонние системы аналитики или трекинга.</div>
+
+      <!-- 2 -->
+      <h2>2. Для чего мы используем данные</h2>
+      <p>Данные используются только для:</p>
+      <ul>
+        <li>создания и управления записью (подтверждение, перенос, отмена);</li>
+        <li>отправки напоминаний о визите и служебных уведомлений;</li>
+        <li>оформления и выдачи сертификатов/подарков;</li>
+        <li>улучшения качества сервиса, диагностики ошибок и защиты от злоупотреблений.</li>
+      </ul>
+
+      <!-- 3 -->
+      <h2>3. Правовые основания обработки</h2>
+      <p>Мы обрабатываем данные:</p>
+      <ul>
+        <li>для исполнения ваших запросов (оказание сервиса записи/сертификатов);</li>
+        <li>на основании вашего согласия, когда вы добровольно предоставляете данные (например, номер телефона).</li>
+      </ul>
+
+      <!-- 4 -->
+      <h2>4. Передача данных третьим лицам</h2>
+      <p>Мы не продаём и не передаём ваши персональные данные третьим лицам.</p>
+      <p>Telegram выступает отдельным сервисом, через который вы взаимодействуете с ботом. Обработка данных Telegram регулируется <a href="https://telegram.org/privacy" target="_blank" rel="noopener">политикой Telegram</a>.</p>
+
+      <!-- 5 -->
+      <h2>5. Хранение и защита данных</h2>
+      <p>Мы применяем организационные и технические меры защиты:</p>
+      <ul>
+        <li>ограничение доступа к данным;</li>
+        <li>журналирование критичных действий и событий безопасности;</li>
+        <li>защита каналов связи и серверной инфраструктуры.</li>
+      </ul>
+      <p>Срок хранения данных:</p>
+      <ul>
+        <li>данные о записях и сертификатах хранятся на время их действия;</li>
+        <li>технические логи могут храниться ограниченное время для диагностики и безопасности в обезличенном виде.</li>
+      </ul>
+
+      <!-- 6 -->
+      <h2>6. Контактная информация</h2>
+      <p>По вопросам конфиденциальности и удаления данных свяжитесь с нами — контакты указаны внизу страницы.</p>
+
+      <!-- 7 -->
+      <h2>7. Изменения политики</h2>
+      <p>Мы можем обновлять эту Политику. Актуальная версия всегда доступна по ссылке, указанной в профиле бота и на сайте студии.</p>
+
+    </div>
+  </main>
+
+  <!-- ─── FOOTER (simple) ─── -->
+  <footer class="privacy-footer">
+    <div class="privacy-footer-inner">
+      <div class="privacy-footer-contacts">
+        <a href="tel:+79309808207">+7 930 980-82-07</a>
+        <a href="https://t.me/upgradelpgbot" target="_blank" rel="noopener">Telegram</a>
+      </div>
+      <div class="privacy-footer-copy">© 2026 UPGRADE. Все права защищены.</div>
+    </div>
+  </footer>
+
+  <!-- ═══ JAVASCRIPT ═══ -->
+  <script>
+    /* ── Theme ── */
+    const saved = localStorage.getItem('theme');
+    if (saved) document.documentElement.dataset.theme = saved;
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.textContent = document.documentElement.dataset.theme === 'dark' ? '🌙' : '☀️';
+    themeToggle.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem('theme', next);
+      themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
+    });
+
+    /* ── Deferred theme transition ── */
+    requestAnimationFrame(() => document.body.classList.add('theme-ready'));
+
+    /* ── Mobile menu ── */
+    document.getElementById('mobileToggle').addEventListener('click', () => {
+      document.getElementById('navLinks').classList.toggle('open');
+    });
+
+    /* ── Nav scroll ── */
+    const nav = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 10);
+    }, { passive: true });
+  </script>
+
+</body>
+</html>
