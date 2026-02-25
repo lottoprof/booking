@@ -166,6 +166,20 @@ slots_needed = ceil(total_time / 15)
 Список пресетов (show_on_booking) → выбрал → дата → время → специалист
 ```
 
+### Реализация (все каналы)
+
+Все три канала записи используют **package-first** подход:
+
+| Канал | Flow | Файл |
+|-------|------|------|
+| Bot (клиент) | `book:pkg:{id}` → FSM | `bot/app/flows/client/booking.py` |
+| Bot (админ) | `adminbook:pkg:{id}` → FSM | `bot/app/flows/admin/clients_booking.py` |
+| Web | `/web/services` → `/web/slots/*` → `/web/booking` | `backend/app/routers/internal.py` |
+
+**Принцип:** UI передаёт `service_package_id`. Backend резолвит пресет → список услуг через `_resolve_preset_services()` → суммирует `duration_min` + `break_min` → фиксирует в `bookings.duration_minutes`, `bookings.break_minutes`. Эти значения **иммутабельны** — не пересчитываются при перезаписи.
+
+**`service_id` в записи** — первая услуга пресета, для обратной совместимости. Не используется для расчётов.
+
 ---
 
 ## 5. Ценообразование и скидки

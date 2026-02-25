@@ -41,6 +41,7 @@ Telegram → NGINX → /tg/webhook → gateway → asyncio.create_task(process_u
 * Выполняет:
 
   * расчёт слотов (`app/services/slots/`)
+  * резолв пресетов в услуги (`_resolve_preset_services()`) — суммирование duration + break
   * CRUD для всех сущностей (23 роутера в `app/routers/`)
   * валидацию данных (Pydantic)
   * emit событий в Redis (`app/services/events.py`)
@@ -138,6 +139,21 @@ Consumer loops в gateway process (asyncio tasks в lifespan)
   * `fsm:*` — FSM состояния
 * Работает только через backend API
 * Не имеет доступа к SQLite
+
+#### Запись (package-first)
+
+Все flow записи (client, admin, web) работают **через пресеты** (`service_packages` с `show_on_booking=True`), а не через сырые услуги:
+
+```
+Клиент/Админ: выбор пресета → дата → время → специалист → подтверждение
+Web:          выбор пресета → дата → время → подтверждение
+```
+
+* Bot запрашивает `GET /service-packages` и показывает пресеты (название, общая длительность, цена)
+* Слоты запрашиваются по `service_package_id` — backend резолвит пресет в список услуг (`_resolve_preset_services()`), суммирует `duration_min` + `break_min`, фильтрует специалистов по пересечению всех услуг
+* При создании записи bot передаёт `service_package_id` (без `service_id`) — backend сам резолвит и фиксирует `duration_minutes`, `break_minutes` в записи
+* При перезаписи (reschedule) используются сохранённые `duration_minutes`/`break_minutes` из записи, не пересчитываются из пакета
+* Уведомления (`bot/app/events/formatters.py`) обогащают запись: название пакета + расшифровка по услугам
 
 ### 3.4. Redis
 
