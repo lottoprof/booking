@@ -175,32 +175,21 @@
       <img src="logo/logo2.svg" class="nav-logo-icon" alt="UPGRADE" width="44" height="44" />
       <img src="logo/logo1.svg" class="nav-logo-text" alt="UPGRADE — студия эстетики тела" width="120" height="19" />
     </a>
-    <ul class="nav-links">
-      <li><a href="/">Главная</a></li>
-    </ul>
     <div class="nav-right">
       <button class="theme-toggle-slider" id="themeToggle" aria-label="Переключить тему">
         <span class="theme-toggle-icon sun">☀️</span>
         <span class="theme-toggle-icon moon">🌙</span>
       </button>
-      <button class="nav-burger" id="navBurger" aria-label="Меню">
-        <span></span><span></span><span></span>
-      </button>
+      <a href="/" class="btn btn-outline btn-sm">← Назад</a>
     </div>
   </nav>
-
-  <!-- ═══ MOBILE MENU ═══ -->
-  <div class="mobile-menu" id="mobileMenu">
-    <button class="mobile-close" id="mobileClose" aria-label="Закрыть меню">✕</button>
-    <a href="/" onclick="closeMobile()">Главная</a>
-  </div>
 
   <!-- ─── MAIN ─── -->
   <main class="page">
 
     <header class="privacy-header">
       <h1>Политика конфиденциальности</h1>
-      <div class="effective-date">Дата вступления в силу: 25 февраля 2026 г.</div>
+      <div class="effective-date"> 18 февраля 2025 г.</div>
     </header>
 
     <div class="privacy-content">
@@ -300,15 +289,6 @@
       nav.classList.toggle('scrolled', window.scrollY > 40);
     }, { passive: true });
     nav.classList.toggle('scrolled', window.scrollY > 40);
-
-    /* ── Mobile menu ── */
-    const burger = document.getElementById('navBurger');
-    const mobileMenu = document.getElementById('mobileMenu');
-    const mobileClose = document.getElementById('mobileClose');
-
-    burger.addEventListener('click', () => mobileMenu.classList.add('active'));
-    mobileClose.addEventListener('click', closeMobile);
-    function closeMobile() { mobileMenu.classList.remove('active'); }
   </script>
 
 </body>
