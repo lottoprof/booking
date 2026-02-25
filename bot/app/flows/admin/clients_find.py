@@ -141,7 +141,7 @@ def setup(menu_controller, api):
         await state.update_data(search_results=[], search_page=0)
         
         text = f"{t('admin:clients:search_title', lang)}\n\n{t('admin:clients:search_hint', lang)}"
-        await mc.show_inline_input(message, text, kb_search_input(lang))
+        await mc.show_inline_readonly(message, text, kb_search_input(lang))
     
     router.start_search = start_search
 
@@ -200,7 +200,7 @@ def setup(menu_controller, api):
         await state.set_state(ClientSearch.query)
         await state.update_data(search_results=[], search_page=0)
         text = f"{t('admin:clients:search_title', lang)}\n\n{t('admin:clients:search_hint', lang)}"
-        await mc.edit_inline_input(callback.message, text, kb_search_input(lang))
+        await mc.edit_inline(callback.message, text, kb_search_input(lang))
         await callback.answer()
 
     @router.callback_query(F.data.startswith("client:page:"))
