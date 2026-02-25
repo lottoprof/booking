@@ -4,10 +4,11 @@
 # wildcard (*) поддержан
 # готов к hot-reload (policy.reload())
 
-import json
 import fnmatch
+import json
 from pathlib import Path
-from fastapi import Request, HTTPException
+
+from fastapi import HTTPException, Request
 
 POLICY_PATH = Path(__file__).resolve().parent.parent / "policy" / "policy.json"
 
@@ -16,7 +17,7 @@ class AccessPolicy:
         self._load_policy()
 
     def _load_policy(self):
-        with open(POLICY_PATH, "r", encoding="utf-8") as f:
+        with open(POLICY_PATH, encoding="utf-8") as f:
             self.policy = json.load(f)
 
         self.rules = self.policy.get("access_rules", [])
@@ -45,7 +46,7 @@ async def access_policy_middleware(request: Request, call_next):
     # Инфраструктурные и frontend endpoints — без policy check
     if path in ("/tg/webhook", "/oauth/google/callback"):
         return await call_next(request)
-    if path in ("/", "/book", "/pricing", "/miniapp", "/logo.svg", "/sitemap.xml") or path.startswith(("/blog", "/css/", "/logo/", "/images/")):
+    if path in ("/", "/book", "/pricing", "/miniapp", "/privacy", "/logo.svg", "/sitemap.xml") or path.startswith(("/blog", "/css/", "/logo/", "/images/")):
         return await call_next(request)
 
     client_type = request.state.client_type

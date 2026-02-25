@@ -160,6 +160,15 @@ async def serve_pricing():
     return HTMLResponse("<h1>Pricing - Coming Soon</h1>", status_code=200)
 
 
+@app.get("/privacy", include_in_schema=False)
+async def serve_privacy():
+    """Serve privacy policy page."""
+    html_path = FRONTEND_DIR / "privacy.html"
+    if html_path.exists():
+        return FileResponse(html_path, media_type="text/html")
+    return HTMLResponse("<h1>Privacy Policy</h1>", status_code=200)
+
+
 @app.get("/miniapp", include_in_schema=False)
 async def serve_miniapp():
     """Serve Telegram Mini App page."""
