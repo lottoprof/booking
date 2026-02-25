@@ -7,7 +7,6 @@ HTML parse_mode for Telegram.
 
 import logging
 from datetime import datetime
-from typing import Optional
 from urllib.parse import quote
 
 from bot.app.i18n.loader import DEFAULT_LANG, t
@@ -140,7 +139,7 @@ def _append_address_line(lines: list[str], b: dict) -> None:
 async def format_booking_created(
     booking: dict,
     recipient_role: str,
-    ad_text: Optional[str] = None,
+    ad_text: str | None = None,
     lang: str = DEFAULT_LANG,
 ) -> str:
     """Format booking_created notification."""
@@ -197,7 +196,7 @@ async def format_booking_created(
 async def format_booking_cancelled(
     booking: dict,
     recipient_role: str,
-    ad_text: Optional[str] = None,
+    ad_text: str | None = None,
     lang: str = DEFAULT_LANG,
 ) -> str:
     """Format booking_cancelled notification."""
@@ -253,9 +252,9 @@ async def format_booking_cancelled(
 async def format_booking_rescheduled(
     booking: dict,
     recipient_role: str,
-    old_datetime: Optional[str] = None,
-    new_datetime: Optional[str] = None,
-    ad_text: Optional[str] = None,
+    old_datetime: str | None = None,
+    new_datetime: str | None = None,
+    ad_text: str | None = None,
     lang: str = DEFAULT_LANG,
 ) -> str:
     """Format booking_rescheduled notification."""
@@ -312,7 +311,7 @@ async def format_booking_rescheduled(
 async def format_booking_done(
     booking: dict,
     recipient_role: str,
-    ad_text: Optional[str] = None,
+    ad_text: str | None = None,
     lang: str = DEFAULT_LANG,
 ) -> str:
     """Format booking_done notification — card + confirmation question."""
@@ -351,7 +350,7 @@ async def format_booking_done(
 async def format_booking_reminder(
     booking: dict,
     recipient_role: str,
-    ad_text: Optional[str] = None,
+    ad_text: str | None = None,
     lang: str = DEFAULT_LANG,
 ) -> str:
     """Format booking_reminder notification for client."""
@@ -368,7 +367,8 @@ async def format_booking_reminder(
         lines.append(f"🕐 {_format_dt(b['date_start'])}")
     if b.get("specialist_name"):
         lines.append(f"👨‍💼 {b['specialist_name']}")
-    _append_address_line(lines, b)
+    if recipient_role == "client":
+        _append_address_line(lines, b)
 
     if ad_text:
         lines.extend(["", "---", ad_text])
@@ -393,7 +393,7 @@ async def format_event(
     event_type: str,
     booking: dict,
     recipient_role: str,
-    ad_text: Optional[str] = None,
+    ad_text: str | None = None,
     lang: str = DEFAULT_LANG,
     **kwargs,
 ) -> str:
