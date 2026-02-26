@@ -6,18 +6,18 @@ from datetime import date, datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models.generated import Bookings as DBBookings
 from ..schemas.bookings import (
     BookingCreate,
-    BookingUpdate,
     BookingRead,
+    BookingUpdate,
 )
-from ..services.events import emit_event
 from ..services.booking_payment import process_booking_payment
+from ..services.events import emit_event
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +177,7 @@ def update_booking(
     # Capture old values for event emission
     old_date_start = obj.date_start
     old_status = obj.status
+    old_package_id = obj.service_package_id
 
     for field, value in changes.items():
         setattr(obj, field, value)
@@ -198,6 +199,7 @@ def update_booking(
 
     new_status = changes.get("status")
     new_date_start = changes.get("date_start")
+    new_package_id = changes.get("service_package_id")
 
     if new_status == "cancelled" and old_status != "cancelled":
         emit_event("booking_cancelled", {
@@ -209,6 +211,13 @@ def update_booking(
             "booking_id": obj.id,
             "old_datetime": str(old_date_start),
             "new_datetime": str(new_date_start),
+            "initiated_by": initiated_by,
+        })
+    elif new_package_id is not None and new_package_id != old_package_id:
+        emit_event("booking_rescheduled", {
+            "booking_id": obj.id,
+            "old_datetime": str(old_date_start),
+            "new_datetime": str(old_date_start),
             "initiated_by": initiated_by,
         })
 
