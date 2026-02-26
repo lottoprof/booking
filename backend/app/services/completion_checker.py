@@ -51,7 +51,7 @@ async def completion_checker_loop() -> None:
 
 def _check_completed_bookings() -> None:
     """Check for bookings that need completion confirmation (synchronous)."""
-    now = datetime.utcnow()
+    now = datetime.now()
 
     db = SessionLocal()
     try:

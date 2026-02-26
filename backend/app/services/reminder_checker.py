@@ -54,7 +54,7 @@ async def reminder_checker_loop() -> None:
 
 def _check_upcoming_bookings() -> None:
     """Check for bookings that need a reminder (synchronous)."""
-    now = datetime.utcnow()
+    now = datetime.now()
 
     db = SessionLocal()
     try:
