@@ -530,6 +530,7 @@ def setup(menu_controller, api):
             date_end=dt_end.strftime("%Y-%m-%dT%H:%M:%S"),
             duration_minutes=duration,
             service_package_id=data.get("adminbook_service_package_id"),
+            notes="Admin booking",
             initiated_by_user_id=callback.from_user.id,
             initiated_by_role="admin",
             initiated_by_channel="tg_bot",

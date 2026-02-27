@@ -13,20 +13,21 @@ Flow:
 import logging
 import math
 from datetime import datetime, timedelta
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, ContentType
+
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import CallbackQuery, ContentType, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from bot.app.i18n.loader import t, DEFAULT_LANG
-from bot.app.utils.state import user_lang
+from bot.app.i18n.loader import DEFAULT_LANG, t
+from bot.app.keyboards.common import request_phone_keyboard
 from bot.app.utils.api import api
 from bot.app.utils.phone_utils import (
     phone_required,
-    validate_contact,
     save_user_phone,
+    validate_contact,
 )
-from bot.app.keyboards.common import request_phone_keyboard
+from bot.app.utils.state import user_lang
 
 logger = logging.getLogger(__name__)
 
@@ -539,6 +540,7 @@ def setup(menu_controller, get_user_context):
             date_end=dt_end.strftime("%Y-%m-%dT%H:%M:%S"),
             duration_minutes=duration,
             service_package_id=data.get("service_package_id"),
+            notes="Telegram booking",
         )
 
         if not booking:

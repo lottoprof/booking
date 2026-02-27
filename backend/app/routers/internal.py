@@ -12,22 +12,33 @@ import json
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models.generated import (
-    Users as DBUsers,
     Bookings as DBBookings,
-    Services as DBServices,
-    ServicePackages as DBServicePackages,
+)
+from ..models.generated import (
     Locations as DBLocations,
+)
+from ..models.generated import (
+    ServicePackages as DBServicePackages,
+)
+from ..models.generated import (
+    Services as DBServices,
+)
+from ..models.generated import (
     Specialists as DBSpecialists,
+)
+from ..models.generated import (
     UserRoles as DBUserRoles,
+)
+from ..models.generated import (
+    Users as DBUsers,
 )
 from ..services.events import emit_event
 from ..services.slots.availability import calculate_service_availability
@@ -48,13 +59,13 @@ CLIENT_ROLE_ID = 4
 class WebBookingCreate(BaseModel):
     """Request body for creating booking from web."""
     location_id: int
-    service_id: Optional[int] = None
-    service_package_id: Optional[int] = None
-    specialist_id: Optional[int] = None
+    service_id: int | None = None
+    service_package_id: int | None = None
+    specialist_id: int | None = None
     date: str = Field(description="Date in YYYY-MM-DD format")
     time: str = Field(description="Time in HH:MM format")
     phone: str = Field(description="Client phone number")
-    name: Optional[str] = Field(None, description="Client name")
+    name: str | None = Field(None, description="Client name")
 
     @field_validator("phone")
     @classmethod
@@ -77,8 +88,8 @@ class WebBookingCreate(BaseModel):
         """Validate date format."""
         try:
             datetime.strptime(v, "%Y-%m-%d")
-        except ValueError:
-            raise ValueError("Date must be in YYYY-MM-DD format")
+        except ValueError as e:
+            raise ValueError("Date must be in YYYY-MM-DD format") from e
         return v
 
     @field_validator("time")
@@ -105,7 +116,7 @@ class WebBookingResponse(BaseModel):
 def create_booking_from_web(
     data: WebBookingCreate,
     request: Request,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """
     Create a booking from web form.
@@ -238,7 +249,7 @@ def create_booking_from_web(
         duration_minutes=duration_min,
         break_minutes=break_min,
         status="pending",
-        notes=f"Web booking | Phone: {data.phone}",
+        notes="Web booking",
     )
 
     db.add(booking)
@@ -275,7 +286,7 @@ def create_booking_from_web(
 def _find_or_create_user(
     db: Session,
     phone: str,
-    name: Optional[str],
+    name: str | None,
     company_id: int,
 ) -> DBUsers:
     """Find user by phone or create new one."""
@@ -320,7 +331,7 @@ def _find_available_specialist(
     service_id: int,
     date_str: str,
     time_str: str,
-) -> Optional[int]:
+) -> int | None:
     """Find first available specialist for the time slot."""
     from datetime import date as date_type
 
