@@ -101,6 +101,10 @@ def kb_booking_detail(booking_id: int, lang: str) -> InlineKeyboardMarkup:
     """Клавиатура карточки записи."""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
+            text=t("common:edit", lang),
+            callback_data=f"bke:menu:{booking_id}:schbook:back_list"
+        )],
+        [InlineKeyboardButton(
             text=t("common:back", lang),
             callback_data="schbook:back_list"
         )]

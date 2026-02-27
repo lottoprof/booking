@@ -52,7 +52,7 @@ def setup(mc):
         """Show edit menu for a booking."""
         parts = callback.data.split(":")
         booking_id = int(parts[2])
-        return_to = parts[3] if len(parts) > 3 else "hide"
+        return_to = ":".join(parts[3:]) if len(parts) > 3 else "hide"
 
         lang = DEFAULT_LANG
         booking = await api.get_booking(booking_id)
