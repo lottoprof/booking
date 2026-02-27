@@ -124,6 +124,14 @@ if (FRONTEND_DIR / "blog").exists():
     app.mount("/blog", StaticFiles(directory=FRONTEND_DIR / "blog", html=True), name="blog")
 
 
+@app.get("/robots.txt", include_in_schema=False)
+async def serve_robots():
+    path = FRONTEND_DIR / "robots.txt"
+    if path.exists():
+        return FileResponse(path, media_type="text/plain")
+    return Response(status_code=404)
+
+
 @app.get("/sitemap.xml", include_in_schema=False)
 async def serve_sitemap():
     xml_path = FRONTEND_DIR / "sitemap.xml"

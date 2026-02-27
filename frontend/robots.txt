@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /booking/
+Disallow: /api/
+Disallow: /web/
+Disallow: /miniapp
+Disallow: /tg/
+
+Sitemap: https://upgradelpg.site/sitemap.xml
