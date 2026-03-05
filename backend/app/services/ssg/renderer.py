@@ -85,6 +85,7 @@ def convert_images():
             continue
 
         img = Image.open(src)
+        img.info.pop("exif", None)
         # Hero size (card will use object-fit: cover)
         if img.width > HERO_WIDTH:
             ratio = HERO_WIDTH / img.width
