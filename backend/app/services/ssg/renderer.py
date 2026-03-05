@@ -189,7 +189,7 @@ def _render_related_cards(related: list[dict]) -> str:
 # Blog index page rendering
 # ──────────────────────────────────────────────────────────────────────────────
 
-def render_blog_index(articles: list[dict], template: str, page: int = 1, total_pages: int = 1) -> str:
+def render_blog_index(articles: list[dict], template: str, page: int = 1, total_pages: int = 1, categories: list[dict] | None = None) -> str:
     """Render blog index page with article cards."""
 
     # Build article cards HTML
@@ -231,11 +231,19 @@ def render_blog_index(articles: list[dict], template: str, page: int = 1, total_
     # Build pagination
     pagination_html = _render_pagination(page, total_pages)
 
+    # Replace <!-- {{filters}} ... --> comment with category buttons
+    filters_html = _render_category_filters(categories or [])
+    html = re.sub(
+        r"<!--\s*\{\{filters\}\}[^>]*-->",
+        filters_html,
+        template,
+    )
+
     # Replace <!-- {{articles}} ... --> comment with cards
     html = re.sub(
         r"<!--\s*\{\{articles\}\}[^>]*-->",
         cards_html,
-        template,
+        html,
     )
 
     # Replace <!-- {{pagination}} ... --> comment with pagination nav
@@ -246,6 +254,17 @@ def render_blog_index(articles: list[dict], template: str, page: int = 1, total_
     )
 
     return html
+
+
+def _render_category_filters(categories: list[dict]) -> str:
+    """Render category filter buttons from DB."""
+    buttons = []
+    for c in categories:
+        buttons.append(
+            f'        <button class="filter-btn" data-cat="{escape(c["slug"])}">'
+            f'{escape(c["name"])}</button>'
+        )
+    return "\n".join(buttons)
 
 
 def _render_pagination(page: int, total_pages: int) -> str:
@@ -324,6 +343,15 @@ def render_all():
 
     articles = [dict(a) for a in articles]
 
+    # Fetch categories that have published articles
+    categories = conn.execute("""
+        SELECT DISTINCT c.slug, c.name
+        FROM categories c
+        JOIN articles a ON a.category_id = c.id AND a.is_published = 1
+        ORDER BY c.id
+    """).fetchall()
+    categories = [dict(c) for c in categories]
+
     if not articles:
         print("No published articles found. Skipping render.")
         conn.close()
@@ -366,7 +394,7 @@ def render_all():
         start = (page - 1) * ARTICLES_PER_PAGE
         page_articles = articles[start:start + ARTICLES_PER_PAGE]
 
-        html = render_blog_index(page_articles, blog_template, page, total_pages)
+        html = render_blog_index(page_articles, blog_template, page, total_pages, categories)
 
         if page == 1:
             out_path = BLOG_DIR / "index.html"
