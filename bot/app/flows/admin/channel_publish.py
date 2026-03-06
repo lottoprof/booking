@@ -12,7 +12,7 @@ FSM states:
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
@@ -571,20 +571,24 @@ def setup(menu_controller, get_user_role):
         lang = user_lang.get(message.from_user.id, DEFAULT_LANG)
         text = (message.text or "").strip()
 
-        # Parse DD.MM.YYYY HH:MM
+        # Parse DD.MM.YYYY HH:MM (Moscow time)
+        MSK = timezone(timedelta(hours=3))
         try:
-            dt = datetime.strptime(text, "%d.%m.%Y %H:%M")
+            dt_msk = datetime.strptime(text, "%d.%m.%Y %H:%M").replace(tzinfo=MSK)
         except ValueError:
             await message.answer(t("admin:channel:invalid_datetime", lang))
             return
 
-        if dt <= datetime.utcnow():
+        now_msk = datetime.now(MSK)
+        if dt_msk <= now_msk:
             await message.answer(t("admin:channel:past_datetime", lang))
             return
 
+        # Convert to UTC for storage
+        dt_utc = dt_msk.astimezone(datetime.UTC)
         data = await state.get_data()
         post_id = data["post_id"]
-        scheduled_at = dt.strftime("%Y-%m-%d %H:%M:%S")
+        scheduled_at = dt_utc.strftime("%Y-%m-%d %H:%M:%S")
 
         # Save CTA buttons and hashtags to the post
         update_payload: dict = {
@@ -602,7 +606,7 @@ def setup(menu_controller, get_user_role):
 
         await api._request("PATCH", f"/channel-posts/{post_id}", json=update_payload)
 
-        display_dt = dt.strftime("%d.%m.%Y %H:%M")
+        display_dt = dt_msk.strftime("%d.%m.%Y %H:%M")
         await message.answer(t("admin:channel:scheduled", lang, display_dt))
 
         await state.clear()
