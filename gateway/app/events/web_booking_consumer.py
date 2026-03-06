@@ -121,8 +121,6 @@ async def _process_single_booking(
             "name": data.get("name"),
             "specialist_id": data.get("specialist_id"),
         }
-        if data.get("service_id"):
-            body["service_id"] = data["service_id"]
         if data.get("service_package_id"):
             body["service_package_id"] = data["service_package_id"]
 

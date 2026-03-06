@@ -18,7 +18,6 @@ from ..models.generated import (
     ClientPackages as DBClientPackage,
     ClientWallets as DBWallet,
     ServicePackages as DBServicePackage,
-    Services as DBService,
     WalletTransactions as DBTransaction,
 )
 
@@ -74,10 +73,10 @@ def _calculate_unit_price(purchase_price: float, package_items: str) -> float:
 def _find_active_package(
     db: Session,
     user_id: int,
-    service_id: int,
+    package_id: int,
 ) -> Optional[tuple[DBClientPackage, DBServicePackage]]:
     """
-    Find an active client package containing the service with remaining quantity.
+    Find an active client package for the given service_package_id with remaining quantity.
 
     Returns the package expiring soonest (ORDER BY valid_to ASC).
     Packages with valid_to IS NULL are considered active indefinitely
@@ -85,10 +84,11 @@ def _find_active_package(
     """
     today = datetime.utcnow().strftime("%Y-%m-%d")
 
-    # Get all non-closed packages for this user
+    # Get non-closed client packages matching this service package
     client_packages = (
         db.query(DBClientPackage)
         .filter(DBClientPackage.user_id == user_id)
+        .filter(DBClientPackage.package_id == package_id)
         .filter(DBClientPackage.is_closed == 0)
         .all()
     )
@@ -102,26 +102,20 @@ def _find_active_package(
             if valid_to_date < today:
                 continue
 
-        # Get service package
         sp = db.get(DBServicePackage, cp.package_id)
         if not sp:
             continue
 
-        # Check if this package contains the service
+        # Check remaining quantity: total items qty - total used
         items = json.loads(sp.package_items) if sp.package_items else []
         used = json.loads(cp.used_items) if cp.used_items else {}
+        total_qty = sum(item["quantity"] for item in items)
+        total_used = sum(used.values())
+        remaining = total_qty - total_used
 
-        for item in items:
-            if item["service_id"] == service_id:
-                quantity = item["quantity"]
-                used_count = used.get(str(service_id), 0)
-                remaining = quantity - used_count
-
-                if remaining > 0:
-                    # Sort key: valid_to ASC, NULL last
-                    sort_key = cp.valid_to if cp.valid_to else "9999-99-99"
-                    candidates.append((sort_key, cp, sp))
-                break
+        if remaining > 0:
+            sort_key = cp.valid_to if cp.valid_to else "9999-99-99"
+            candidates.append((sort_key, cp, sp))
 
     if not candidates:
         return None
@@ -140,15 +134,15 @@ def process_booking_payment(
     Process payment when booking status is set to done.
 
     Algorithm:
-    1. Get booking (service_id, client_id)
-    2. Find active package with this service and remaining quantity
+    1. Get booking (service_package_id, client_id)
+    2. Find active client package for service_package_id with remaining quantity
     3. If package found:
        - Calculate unit_price = package_price / total_quantity
-       - Increment used_items[service_id]
+       - Increment used_items for all services in package
        - Create withdraw transaction
        - Link booking to package
     4. If no package:
-       - Get service price
+       - Use package base price
        - Create deposit + withdraw transactions
        - booking.client_package_id = NULL
 
@@ -172,7 +166,10 @@ def process_booking_payment(
         raise ValueError(f"Booking {booking_id} not found")
 
     client_id = booking.client_id
-    service_id = booking.service_id
+    service_package_id = booking.service_package_id
+
+    if not service_package_id:
+        raise ValueError(f"Booking {booking_id} has no service_package_id")
 
     # Get or create wallet
     wallet = _get_or_create_wallet(client_id, db)
@@ -188,35 +185,34 @@ def process_booking_payment(
             "reason": "wallet_blocked",
         }
 
-    # Get service for name and price
-    service = db.get(DBService, service_id)
-    if not service:
-        raise ValueError(f"Service {service_id} not found")
+    # Get service package for name
+    service_package = db.get(DBServicePackage, service_package_id)
+    if not service_package:
+        raise ValueError(f"ServicePackage {service_package_id} not found")
 
     transactions = []
 
-    # Try to find active package
-    package_result = _find_active_package(db, client_id, service_id)
+    # Try to find active client package
+    package_result = _find_active_package(db, client_id, service_package_id)
 
     if package_result:
         # Use package
-        client_package, service_package = package_result
+        client_package, sp = package_result
 
         # Use snapshot purchase_price; fall back to dynamic calc
         pp = client_package.purchase_price
         if pp is None:
             from .package_pricing import enrich_package_price
-            pp = enrich_package_price(service_package, db) or 0
+            pp = enrich_package_price(sp, db) or 0
 
-        unit_price = _calculate_unit_price(
-            pp,
-            service_package.package_items,
-        )
+        unit_price = _calculate_unit_price(pp, sp.package_items)
 
-        # Update used_items
+        # Increment used_items for all services in the package
         used = json.loads(client_package.used_items) if client_package.used_items else {}
-        service_key = str(service_id)
-        used[service_key] = used.get(service_key, 0) + 1
+        items = json.loads(sp.package_items) if sp.package_items else []
+        for item in items:
+            svc_key = str(item["service_id"])
+            used[svc_key] = used.get(svc_key, 0) + 1
         client_package.used_items = json.dumps(used)
 
         # Also update legacy used_quantity for compatibility
@@ -229,7 +225,7 @@ def process_booking_payment(
             amount=-unit_price,
             tx_type="withdraw",
             booking_id=booking_id,
-            description=f"Пакет «{service_package.name}»: {service.name}",
+            description=f"Пакет «{sp.name}»",
             created_by=created_by,
         )
         transactions.append(tx)
@@ -248,14 +244,15 @@ def process_booking_payment(
         return {
             "source": "package",
             "amount": unit_price,
-            "package_id": service_package.id,
+            "package_id": sp.id,
             "client_package_id": client_package.id,
             "transactions": [tx.id for tx in transactions],
         }
 
     else:
-        # Single service - deposit and withdraw, apply best discount
-        price = service.price
+        # No active client package — use package base price with discount
+        from .package_pricing import enrich_package_price
+        price = enrich_package_price(service_package, db) or 0
 
         from .discount_resolver import find_best_discount
         discount_pct = find_best_discount(db, client_id, booking_id)
@@ -269,7 +266,7 @@ def process_booking_payment(
             amount=price,
             tx_type="deposit",
             booking_id=booking_id,
-            description=service.name,
+            description=service_package.name,
             created_by=created_by,
         )
         transactions.append(tx_deposit)
@@ -282,7 +279,7 @@ def process_booking_payment(
             amount=-price,
             tx_type="withdraw",
             booking_id=booking_id,
-            description=service.name,
+            description=service_package.name,
             created_by=created_by,
         )
         transactions.append(tx_withdraw)
@@ -297,7 +294,7 @@ def process_booking_payment(
         db.flush()
 
         logger.info(
-            f"Booking {booking_id} paid as single service: "
+            f"Booking {booking_id} paid as single: "
             f"+{price:.2f} / -{price:.2f} RUB"
             f"{f' (discount {discount_pct}%)' if discount_pct else ''}"
         )

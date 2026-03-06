@@ -153,14 +153,14 @@ def setup(menu_controller, api):
         # Сортируем по дате
         all_bookings.sort(key=lambda b: b.get("date_start", ""))
 
-        # Добавляем названия услуг
-        services_cache = {}
+        # Добавляем названия пакетов
+        packages_cache: dict[int | None, str] = {}
         for b in all_bookings:
-            svc_id = b.get("service_id")
-            if svc_id not in services_cache:
-                svc = await api.get_service(svc_id)
-                services_cache[svc_id] = svc.get("name", "—") if svc else "—"
-            b["_service_name"] = services_cache[svc_id]
+            pkg_id = b.get("service_package_id")
+            if pkg_id not in packages_cache:
+                pkg = await api.get_package(pkg_id) if pkg_id else None
+                packages_cache[pkg_id] = pkg.get("name", "—") if pkg else "—"
+            b["_service_name"] = packages_cache[pkg_id]
 
         if not all_bookings:
             text = t("admin:schbook:empty", lang)
@@ -236,11 +236,11 @@ def setup(menu_controller, api):
 
         # Получаем связанные данные
         client = await api.get_user(booking.get("client_id"))
-        service = await api.get_service(booking.get("service_id"))
+        pkg = await api.get_package(booking.get("service_package_id")) if booking.get("service_package_id") else None
         specialist = await api.get_specialist(booking.get("specialist_id"))
 
         client_name = _format_name(client) if client else "—"
-        service_name = service.get("name", "—") if service else "—"
+        service_name = pkg.get("name", "—") if pkg else "—"
 
         spec_name = "—"
         if specialist:

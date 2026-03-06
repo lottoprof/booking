@@ -43,12 +43,6 @@ async def _enrich_booking(booking: dict) -> dict:
             enriched["location_street"] = location.get("street", "")
             enriched["location_house"] = location.get("house", "")
 
-    if booking.get("service_id"):
-        service = await api.get_service(booking["service_id"])
-        if service:
-            enriched["service_name"] = service.get("name", "")
-            enriched["service_duration"] = service.get("duration_min", 0)
-
     if booking.get("specialist_id"):
         specialist = await api.get_specialist(booking["specialist_id"])
         if specialist:
@@ -60,6 +54,7 @@ async def _enrich_booking(booking: dict) -> dict:
         package = await api.get_package(booking["service_package_id"])
         if package:
             enriched["package_name"] = package.get("name", "")
+            enriched["service_name"] = package.get("name", "")
             enriched["package_duration"] = package.get("total_duration_min", 0)
             # Resolve individual services in package
             items = package.get("package_items") or []

@@ -303,8 +303,8 @@ def setup(menu_controller, api):
                     ds = dt.strftime("%d.%m %H:%M")
                 except Exception:
                     ds = ds[:16] if ds else "—"
-                svc = await api.get_service(b.get("service_id"))
-                svc_name = svc.get("name", "—") if svc else "—"
+                pkg = await api.get_package(b.get("service_package_id")) if b.get("service_package_id") else None
+                svc_name = pkg.get("name", "—") if pkg else "—"
                 lines.append(f"• {ds} — {svc_name}")
             if len(active) > 5:
                 lines.append(f"• ...+{len(active)-5}")

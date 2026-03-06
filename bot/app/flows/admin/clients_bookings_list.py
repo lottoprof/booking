@@ -71,21 +71,14 @@ def setup(menu_controller, api):
             return
 
         # Собираем данные для отображения
-        services = await api.get_services()
-        service_map = {s["id"]: s["name"] for s in services}
-
         users_cache: dict[int, str] = {}
         packages_cache: dict[int, str] = {}
         for b in bookings:
-            # Display name: пакет (если есть) или услуга
             pkg_id = b.get("service_package_id")
-            if pkg_id:
-                if pkg_id not in packages_cache:
-                    pkg = await api.get_package(pkg_id)
-                    packages_cache[pkg_id] = pkg["name"] if pkg else "?"
-                b["_display_name"] = packages_cache[pkg_id]
-            else:
-                b["_display_name"] = service_map.get(b["service_id"], "?")
+            if pkg_id and pkg_id not in packages_cache:
+                pkg = await api.get_package(pkg_id)
+                packages_cache[pkg_id] = pkg["name"] if pkg else "?"
+            b["_display_name"] = packages_cache.get(pkg_id, "?")
 
             # Дата-время
             ds = b.get("date_start", "")

@@ -97,7 +97,6 @@ class Services(Base):
     color_code = Column(Text)
 
     company = relationship('Company', back_populates='services')
-    bookings = relationship('Bookings', back_populates='service')
     service_rooms = relationship('ServiceRooms', back_populates='service')
 
 
@@ -262,8 +261,7 @@ class Bookings(Base):
 
     company_id = Column(ForeignKey('company.id', ondelete='CASCADE'), nullable=False)
     location_id = Column(ForeignKey('locations.id'), nullable=False)
-    service_id = Column(ForeignKey('services.id'))  # nullable for preset-based bookings
-    service_package_id = Column(ForeignKey('service_packages.id'))  # preset
+    service_package_id = Column(ForeignKey('service_packages.id'))
     client_id = Column(ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     specialist_id = Column(ForeignKey('specialists.id', ondelete='CASCADE'), nullable=False)
     date_start = Column(Text, nullable=False)
@@ -284,7 +282,6 @@ class Bookings(Base):
     company = relationship('Company', back_populates='bookings')
     location = relationship('Locations', back_populates='bookings')
     room = relationship('Rooms', back_populates='bookings')
-    service = relationship('Services', back_populates='bookings')
     service_package = relationship('ServicePackages', back_populates='bookings')
     specialist = relationship('Specialists', back_populates='bookings')
     booking_discounts = relationship('BookingDiscounts', back_populates='booking')

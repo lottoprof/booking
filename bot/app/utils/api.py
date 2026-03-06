@@ -623,7 +623,6 @@ class ApiClient:
         date_end: str,
         duration_minutes: int,
         break_minutes: int = 0,
-        service_id: int = None,
         room_id: int = None,
         service_package_id: int = None,
         notes: str = None,
@@ -643,7 +642,6 @@ class ApiClient:
             date_end: End datetime ISO format (required)
             duration_minutes: Duration in minutes (required)
             break_minutes: Break after service (default 0)
-            service_id: Service ID (optional if service_package_id given)
             room_id: Room ID (optional)
             service_package_id: Service package ID (optional)
             notes: Notes (optional)
@@ -664,8 +662,6 @@ class ApiClient:
             "duration_minutes": duration_minutes,
             "break_minutes": break_minutes,
         }
-        if service_id:
-            data["service_id"] = service_id
         if room_id:
             data["room_id"] = room_id
         if service_package_id:
@@ -699,7 +695,6 @@ class ApiClient:
         Допустимые поля:
             - date_start, date_end: Перенос записи
             - specialist_id: Смена специалиста
-            - service_id: Смена услуги
             - duration_minutes: Изменение длительности
             - final_price: Изменение цены
             - room_id: Смена комнаты

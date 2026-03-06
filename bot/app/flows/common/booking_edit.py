@@ -163,7 +163,6 @@ def setup(mc):
         await state.update_data(
             reschedule_booking_id=booking_id,
             reschedule_location_id=booking["location_id"],
-            reschedule_service_id=booking.get("service_id"),
             reschedule_service_package_id=booking.get("service_package_id"),
             reschedule_duration=booking.get("duration_minutes", 60),
             reschedule_break=booking.get("break_minutes", 0),
@@ -195,7 +194,6 @@ def setup(mc):
         data = await state.get_data()
 
         location_id = data["reschedule_location_id"]
-        service_id = data.get("reschedule_service_id")
         service_package_id = data.get("reschedule_service_package_id")
 
         lang = DEFAULT_LANG
@@ -203,7 +201,6 @@ def setup(mc):
         # Get available time slots for this date
         slots = await api.get_slots_day(
             location_id,
-            service_id=service_id if not service_package_id else None,
             date=date_str,
             service_package_id=service_package_id,
         )

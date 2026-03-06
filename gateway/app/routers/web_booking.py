@@ -87,8 +87,7 @@ class WebDaySlotsResponse(BaseModel):
 
 class SlotReserveRequest(BaseModel):
     location_id: int
-    service_id: Optional[int] = None
-    service_package_id: Optional[int] = None  # preset
+    service_package_id: Optional[int] = None
     specialist_id: Optional[int] = None
     date: str  # YYYY-MM-DD
     time: str  # HH:MM
@@ -506,7 +505,6 @@ async def create_slot_reserve(data: SlotReserveRequest):
 
     reserve_data = {
         "location_id": data.location_id,
-        "service_id": data.service_id,
         "service_package_id": data.service_package_id,
         "specialist_id": data.specialist_id,
         "date": data.date,
@@ -574,7 +572,6 @@ async def create_pending_booking(data: WebBookingRequest):
 
     pending_data = {
         "location_id": reserve["location_id"],
-        "service_id": reserve.get("service_id"),
         "service_package_id": reserve.get("service_package_id"),
         "specialist_id": reserve.get("specialist_id"),
         "date": reserve["date"],

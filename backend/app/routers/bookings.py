@@ -117,9 +117,6 @@ def create_booking(
             total_brk = sum(s.break_min or 0 for s in services_list)
             booking_data["duration_minutes"] = total_dur
             booking_data["break_minutes"] = total_brk
-            # If no service_id, use first service for backward compat
-            if not data.service_id:
-                booking_data["service_id"] = services_list[0].id
 
     obj = DBBookings(**booking_data)
     db.add(obj)
@@ -158,7 +155,6 @@ def update_booking(
     Supports updating:
     - date_start, date_end: Reschedule appointment
     - specialist_id: Change specialist
-    - service_id: Change service
     - duration_minutes: Update duration
     - final_price: Update price
     - room_id: Change room

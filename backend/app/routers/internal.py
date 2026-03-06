@@ -59,7 +59,6 @@ CLIENT_ROLE_ID = 4
 class WebBookingCreate(BaseModel):
     """Request body for creating booking from web."""
     location_id: int
-    service_id: int | None = None
     service_package_id: int | None = None
     specialist_id: int | None = None
     date: str = Field(description="Date in YYYY-MM-DD format")
@@ -150,33 +149,31 @@ def create_booking_from_web(
             detail="Location not found or inactive"
         )
 
-    # Step 2: Resolve service_id from service_package if needed
+    # Step 2: Resolve service_id from service_package for validation
     service_package_id = data.service_package_id
-    service_id = data.service_id
 
-    if not service_id and service_package_id:
-        package = db.get(DBServicePackages, service_package_id)
-        if not package or not package.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Service package not found or inactive"
-            )
-        try:
-            items = json.loads(package.package_items) if package.package_items else []
-        except (json.JSONDecodeError, TypeError):
-            items = []
-        if not items:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Service package has no items"
-            )
-        service_id = items[0].get("service_id")
-
-    if not service_id:
+    if not service_package_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Either service_id or service_package_id is required"
+            detail="service_package_id is required"
         )
+
+    package = db.get(DBServicePackages, service_package_id)
+    if not package or not package.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Service package not found or inactive"
+        )
+    try:
+        items = json.loads(package.package_items) if package.package_items else []
+    except (json.JSONDecodeError, TypeError):
+        items = []
+    if not items:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Service package has no items"
+        )
+    service_id = items[0].get("service_id")
 
     service = db.get(DBServices, service_id)
     if not service or not service.is_active:
@@ -240,7 +237,6 @@ def create_booking_from_web(
     booking = DBBookings(
         company_id=location.company_id,
         location_id=data.location_id,
-        service_id=service_id,
         service_package_id=service_package_id,
         client_id=client.id,
         specialist_id=specialist_id,
