@@ -39,6 +39,13 @@ if [[ "$PENDING" -gt 50 ]]; then
   NEED_RESET=1
 fi
 
+# 4. allowed_updates missing channel_post or message_reaction
+HAS_CHANNEL=$(echo "$INFO" | jq '.result.allowed_updates // [] | index("channel_post")')
+HAS_REACTION=$(echo "$INFO" | jq '.result.allowed_updates // [] | index("message_reaction")')
+if [[ "$HAS_CHANNEL" == "null" || "$HAS_REACTION" == "null" ]]; then
+  NEED_RESET=1
+fi
+
 if [[ "$NEED_RESET" -eq 0 ]]; then
   echo "[OK] Webhook is healthy"
   exit 0
@@ -47,10 +54,13 @@ fi
 echo "[WARN] Webhook looks broken → resetting"
 
 # ===== Reset webhook =====
+ALLOWED='["message","edited_message","callback_query","channel_post","edited_channel_post","message_reaction"]'
+
 curl -s -X POST \
   "${API}/setWebhook" \
   -d "url=${WEBHOOK_URL}" \
   -d "secret_token=${TG_WEBHOOK_SECRET}" \
+  -d "allowed_updates=${ALLOWED}" \
 | jq .
 
 echo "[DONE] Webhook reset completed"
