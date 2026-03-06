@@ -128,6 +128,7 @@ CREATE TABLE service_packages (
     is_active INTEGER NOT NULL DEFAULT 1,
     show_on_pricing INTEGER NOT NULL DEFAULT 1,
     show_on_booking INTEGER NOT NULL DEFAULT 1,
+    sort_order INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (company_id) REFERENCES company(id) ON DELETE CASCADE
 );
 
@@ -506,4 +507,4 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 -- Mark all existing migrations as applied
 INSERT OR IGNORE INTO schema_migrations (version) VALUES
-    (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12),(13),(14),(15),(16),(17);
+    (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12),(13),(14),(15),(16),(17),(18);

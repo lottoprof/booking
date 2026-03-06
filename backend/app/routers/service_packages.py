@@ -31,6 +31,7 @@ def list_service_packages(db: Session = Depends(get_db)):
     packages = (
         db.query(DBServicePackages)
         .filter(DBServicePackages.is_active == 1)
+        .order_by(DBServicePackages.sort_order)
         .all()
     )
     return [_to_read(p, db) for p in packages]

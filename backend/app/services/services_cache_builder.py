@@ -46,6 +46,7 @@ def build_pricing_cards(db: Session, view: Optional[str] = None) -> list[dict]:
     packages = (
         db.query(DBServicePackages)
         .filter(DBServicePackages.is_active == 1)
+        .order_by(DBServicePackages.sort_order)
         .all()
     )
 

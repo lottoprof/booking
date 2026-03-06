@@ -11,6 +11,7 @@ class ServicePackageCreate(BaseModel):
     package_items: str = "[]"
     show_on_pricing: bool = True
     show_on_booking: bool = True
+    sort_order: int = 0
 
     model_config = {"from_attributes": True}
 
@@ -22,6 +23,7 @@ class ServicePackageUpdate(BaseModel):
     package_items: Optional[str] = None
     show_on_pricing: Optional[bool] = None
     show_on_booking: Optional[bool] = None
+    sort_order: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
@@ -35,6 +37,7 @@ class ServicePackageRead(BaseModel):
     is_active: bool
     show_on_pricing: bool
     show_on_booking: bool
+    sort_order: int = 0
     package_price: Optional[float] = None  # computed dynamically
     total_duration_min: Optional[int] = None  # computed dynamically
 

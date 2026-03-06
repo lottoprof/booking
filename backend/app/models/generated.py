@@ -74,6 +74,7 @@ class ServicePackages(Base):
     description = Column(Text)
     show_on_pricing = Column(Integer, nullable=False, server_default=text('1'))
     show_on_booking = Column(Integer, nullable=False, server_default=text('1'))
+    sort_order = Column(Integer, nullable=False, server_default=text('0'))
 
     company = relationship('Company', back_populates='service_packages')
     client_packages = relationship('ClientPackages', back_populates='package')
