@@ -158,12 +158,14 @@ def kb_hashtags(
             text=f"{prefix}{cat['name']}",
             callback_data=f"chp:htag:{slug}",
         )])
-    rows.append([InlineKeyboardButton(
-        text=t("admin:channel:done", lang), callback_data="chp:htag_done",
-    )])
-    rows.append([InlineKeyboardButton(
-        text=t("admin:channel:skip", lang), callback_data="chp:htag_skip",
-    )])
+    rows.append([
+        InlineKeyboardButton(
+            text=t("admin:channel:done", lang), callback_data="chp:htag_done",
+        ),
+        InlineKeyboardButton(
+            text=t("admin:channel:skip", lang), callback_data="chp:htag_skip",
+        ),
+    ])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
