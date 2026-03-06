@@ -6,7 +6,7 @@ Bot must be admin in the draft channel.
 
 - New channel_post → create channel_posts record (status=draft)
 - Edited channel_post → update draft_text
-- Reaction ✅ → status=ready, ❌ or remove ✅ → status=draft
+- Reaction 👍 → status=ready, 👎 or remove 👍 → status=draft
 
 Media groups are debounced: multiple messages with the same media_group_id
 are merged into a single channel_posts row (first message becomes anchor,
@@ -19,6 +19,7 @@ import logging
 
 from aiogram import F, Router
 from aiogram.types import (
+    MessageReactionCountUpdated,
     MessageReactionUpdated,
     ReactionTypeEmoji,
 )
@@ -234,3 +235,47 @@ async def on_reaction(event: MessageReactionUpdated):
             json={"status": new_status},
         )
         logger.info("Post id=%d status → %s (reaction)", target["id"], new_status)
+
+
+@router.message_reaction_count()
+async def on_reaction_count(event: MessageReactionCountUpdated):
+    """Anonymous reaction count update in channel (channels send this, not message_reaction)."""
+    if not _is_draft_channel(event.chat.id):
+        return
+
+    msg_id = event.message_id
+
+    # Check if 👍 is present with count > 0
+    has_thumbs_up = False
+    for r in event.reactions or []:
+        if isinstance(r.type, ReactionTypeEmoji) and r.type.emoji == "👍":
+            if r.total_count > 0:
+                has_thumbs_up = True
+            break
+
+    new_status = "ready" if has_thumbs_up else "draft"
+
+    # Find the post
+    all_posts = await api._request("GET", "/channel-posts")
+    if not all_posts:
+        return
+
+    target = None
+    for p in all_posts:
+        if p["draft_message_id"] == msg_id:
+            target = p
+            break
+
+    if not target:
+        logger.warning("Reaction count for msg_id=%d but no post found", msg_id)
+        return
+
+    if target["status"] in ("published", "scheduled"):
+        return
+
+    if target["status"] != new_status:
+        await api._request(
+            "PATCH", f"/channel-posts/{target['id']}",
+            json={"status": new_status},
+        )
+        logger.info("Post id=%d status → %s (reaction_count)", target["id"], new_status)

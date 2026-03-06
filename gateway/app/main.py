@@ -213,9 +213,6 @@ async def telegram_webhook(
     # 2. Парсим update
     try:
         update = await request.json()
-        logger.info(f"Update keys: {list(update.keys())}")
-        if "message_reaction_count" in update:
-            logger.info(f"Reaction count payload: {update['message_reaction_count']}")
     except Exception:
         return {"ok": True}
 
