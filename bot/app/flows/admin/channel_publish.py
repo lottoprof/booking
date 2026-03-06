@@ -585,7 +585,7 @@ def setup(menu_controller, get_user_role):
             return
 
         # Convert to UTC for storage
-        dt_utc = dt_msk.astimezone(datetime.UTC)
+        dt_utc = dt_msk.astimezone(timezone.utc)  # noqa: UP017
         data = await state.get_data()
         post_id = data["post_id"]
         scheduled_at = dt_utc.strftime("%Y-%m-%d %H:%M:%S")
