@@ -213,7 +213,7 @@ async def telegram_webhook(
     # 2. Парсим update
     try:
         update = await request.json()
-        logger.debug(f"Update keys: {list(update.keys())}")
+        logger.info(f"Update keys: {list(update.keys())}")
     except Exception:
         return {"ok": True}
 
