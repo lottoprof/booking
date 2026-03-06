@@ -825,6 +825,7 @@ def setup(menu_controller, get_user_role):
 
 def _build_cta_keyboard(
     cta_buttons: list[dict],
+    lang: str = DEFAULT_LANG,
 ) -> InlineKeyboardMarkup | None:
     """Build InlineKeyboardMarkup from CTA button specs."""
     from bot.app.config import MINIAPP_URL
@@ -841,23 +842,17 @@ def _build_cta_keyboard(
         ref = btn.get("ref")
 
         if btn_type == "booking":
-            if ref:
-                url = f"{base_url}/book?service={ref}"
-            else:
-                url = f"{base_url}/book"
-            text = "📋 Записаться"
+            url = f"{base_url}/book?service={ref}" if ref else f"{base_url}/book"
+            text = t("admin:channel:cta_booking", lang)
         elif btn_type == "blog":
-            if ref:
-                url = f"{base_url}/blog/{ref}.html"
-            else:
-                url = f"{base_url}/blog"
-            text = "📖 Читать"
+            url = f"{base_url}/blog/{ref}.html" if ref else f"{base_url}/blog"
+            text = t("admin:channel:cta_blog", lang)
         elif btn_type == "pricing":
             url = f"{base_url}/pricing"
-            text = "💰 Цены"
+            text = t("admin:channel:cta_pricing", lang)
         elif btn_type == "home":
             url = base_url
-            text = "🌐 На сайт"
+            text = t("admin:channel:cta_home", lang)
         else:
             continue
 
