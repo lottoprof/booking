@@ -26,6 +26,7 @@ from bot.app.events.consumer import (
     p2p_consumer_loop,
     retry_consumer_loop,
 )
+from bot.app.events.channel_publisher import channel_publisher_loop
 
 # ВАЖНО: импорт на уровне модуля, НЕ внутри handler
 from bot.app.main import process_update
@@ -81,6 +82,10 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(
             web_booking_consumer_loop(REDIS_URL, DOMAIN_API_URL),
             name="web_booking_consumer"
+        ),
+        asyncio.create_task(
+            channel_publisher_loop(REDIS_URL, DOMAIN_API_URL),
+            name="channel_publisher"
         ),
     ]
     logger.info("Event consumer loops started")

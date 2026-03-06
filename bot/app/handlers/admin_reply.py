@@ -19,6 +19,7 @@ from bot.app.flows.admin import packages as packages_flow
 from bot.app.flows.admin import clients as clients_flow
 from bot.app.flows.admin import schedule as schedule_flow
 from bot.app.flows.admin import google_calendar as gcal_flow
+from bot.app.flows.admin import channel_publish as channel_flow
 
 
 import logging
@@ -46,6 +47,7 @@ def setup(menu_controller, get_user_role):
     clients_router = clients_flow.setup(menu_controller, get_user_role)
     schedule_router = schedule_flow.setup(menu_controller, get_user_role)
     gcal_router = gcal_flow.setup(menu_controller, get_user_role)
+    channel_router = channel_flow.setup(menu_controller, get_user_role)
 
     # ==========================================================
     # CONTEXT HANDLERS: menu_context → {action → handler}
@@ -117,6 +119,7 @@ def setup(menu_controller, get_user_role):
             t("admin:main:settings", lang),
             t("admin:main:schedule", lang),
             t("admin:main:clients", lang),
+            t("admin:main:channel", lang),
             # Back buttons
             t("admin:settings:back", lang),
             t("admin:schedule:back", lang),
@@ -180,6 +183,9 @@ def setup(menu_controller, get_user_role):
         elif text == t("admin:main:clients", lang):
             await flow.to_clients(message, lang)
 
+        elif text == t("admin:main:channel", lang):
+            await channel_router.show_list(message)
+
         # ==============================================================
         # Level 1 → BACK to Main
         # ==============================================================
@@ -224,6 +230,7 @@ def setup(menu_controller, get_user_role):
     router.include_router(clients_router)
     router.include_router(schedule_router)
     router.include_router(gcal_router)
+    router.include_router(channel_router)
     router.include_router(reply_router)  # Catch-all последний
 
 

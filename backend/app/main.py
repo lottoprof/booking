@@ -32,6 +32,7 @@ from .routers import (
     audit_log,
     notification_settings,
     ad_templates,
+    channel_posts,
     wallets,
     slots,
     integrations,
@@ -104,6 +105,7 @@ app.include_router(push_subscriptions.router)
 app.include_router(notification_settings.router)
 app.include_router(ad_templates.router)
 app.include_router(audit_log.router)
+app.include_router(channel_posts.router)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Domain API Routers

@@ -477,6 +477,26 @@ CREATE TABLE promotions (
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ── Channel Posts ─────────────────────────────
+
+CREATE TABLE IF NOT EXISTS channel_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    draft_message_id INTEGER NOT NULL,
+    draft_chat_id INTEGER NOT NULL,
+    draft_text TEXT,
+    media_group_id TEXT,
+    media_files TEXT,
+    public_message_id INTEGER,
+    public_chat_id INTEGER,
+    cta_buttons TEXT,
+    hashtags TEXT,
+    scheduled_at TEXT,
+    published_at TEXT,
+    status TEXT NOT NULL DEFAULT 'draft',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ── Schema Migrations ─────────────────────────
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -486,4 +506,4 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 -- Mark all existing migrations as applied
 INSERT OR IGNORE INTO schema_migrations (version) VALUES
-    (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12),(13),(14),(15),(16);
+    (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12),(13),(14),(15),(16),(17);

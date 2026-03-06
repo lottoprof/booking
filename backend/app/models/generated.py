@@ -466,3 +466,23 @@ class BookingExternalEvents(Base):
     booking = relationship('Bookings', back_populates='external_events')
     specialist_integration = relationship('SpecialistIntegrations', back_populates='booking_external_events')
 
+
+class ChannelPosts(Base):
+    __tablename__ = 'channel_posts'
+
+    id = Column(Integer, primary_key=True)
+    draft_message_id = Column(Integer, nullable=False)
+    draft_chat_id = Column(Integer, nullable=False)
+    draft_text = Column(Text)
+    media_group_id = Column(Text)
+    media_files = Column(Text)
+    public_message_id = Column(Integer)
+    public_chat_id = Column(Integer)
+    cta_buttons = Column(Text)
+    hashtags = Column(Text)
+    scheduled_at = Column(Text)
+    published_at = Column(Text)
+    status = Column(Text, nullable=False, server_default=text("'draft'"))
+    created_at = Column(Text, server_default=text('CURRENT_TIMESTAMP'))
+    updated_at = Column(Text, server_default=text('CURRENT_TIMESTAMP'))
+

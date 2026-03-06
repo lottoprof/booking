@@ -25,6 +25,7 @@ from bot.app.flows.client.menu import ClientMenuFlow
 
 from bot.app.handlers import admin_reply
 from bot.app.handlers import client_reply
+from bot.app.handlers import channel_monitor
 from bot.app.flows.admin import booking_notify
 from bot.app.flows.common import booking_edit
 
@@ -344,6 +345,9 @@ dp.include_router(client_notify_router)
 
 # Booking edit module — all roles (bke:* callbacks)
 dp.include_router(booking_edit.setup(menu))
+
+# Channel monitor — no role filter (channel_post / edited_channel_post / message_reaction)
+dp.include_router(channel_monitor.router)
 
 
 # ===============================

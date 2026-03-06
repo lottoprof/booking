@@ -27,6 +27,7 @@ def admin_main(lang: str) -> ReplyKeyboardMarkup:
             ],
             [
                 KeyboardButton(text=t("admin:main:clients", lang)),
+                KeyboardButton(text=t("admin:main:channel", lang)),
             ],
         ],
         resize_keyboard=True,
