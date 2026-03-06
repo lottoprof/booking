@@ -221,9 +221,9 @@ async def on_reaction(event: MessageReactionUpdated):
     if target["status"] in ("published", "scheduled"):
         return
 
-    if "✅" in new_emojis:
+    if "👍" in new_emojis:
         new_status = "ready"
-    elif "❌" in new_emojis or not new_emojis:
+    elif "👎" in new_emojis or not new_emojis:
         new_status = "draft"
     else:
         return
