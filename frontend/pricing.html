@@ -652,6 +652,8 @@
     /* ══════════════════════════════════════════
        FILTERS
        ══════════════════════════════════════════ */
+    const CATEGORY_LABELS = { body: 'Процедуры', combo: 'Комплексы' };
+
     function buildFilters(services) {
       const categories = [...new Set(services.map(s => s.category).filter(Boolean))];
       const container = document.getElementById('filters');
@@ -660,7 +662,7 @@
         const btn = document.createElement('button');
         btn.className = 'filter-btn';
         btn.dataset.filter = cat;
-        btn.textContent = cat;
+        btn.textContent = CATEGORY_LABELS[cat] || cat;
         container.appendChild(btn);
       });
     }
