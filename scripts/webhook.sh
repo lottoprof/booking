@@ -54,7 +54,7 @@ fi
 echo "[WARN] Webhook looks broken → resetting"
 
 # ===== Reset webhook =====
-ALLOWED='["message","edited_message","callback_query","channel_post","edited_channel_post","message_reaction"]'
+ALLOWED='["message","edited_message","callback_query","channel_post","edited_channel_post","message_reaction","message_reaction_count"]'
 
 curl -s -X POST \
   "${API}/setWebhook" \

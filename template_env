@@ -41,6 +41,10 @@ SUPPORT_TG_ID=9876543210
 CHANNEL_URL=https://t.me/channel
 TG_BOT_URL=https://t.me/upgradelpgbot
 
+# Канал: приватный (черновики) и публичный
+TG_CHANNEL_DRAFT_ID=-100XXXXXXXXXX
+TG_CHANNEL_PUBLIC_ID=-100XXXXXXXXXX
+
 # Google Calendar OAuth
 GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=xxx
