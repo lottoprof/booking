@@ -823,9 +823,13 @@ def _build_cta_keyboard(
     cta_buttons: list[dict],
 ) -> InlineKeyboardMarkup | None:
     """Build InlineKeyboardMarkup from CTA button specs."""
-    from bot.app.config import CHANNEL_URL
+    from bot.app.config import MINIAPP_URL
 
-    base_url = (CHANNEL_URL or "https://upgradelpg.site").rstrip("/")
+    # Derive site base URL from MINIAPP_URL (https://domain/miniapp → https://domain)
+    if MINIAPP_URL:
+        base_url = MINIAPP_URL.rsplit("/", 1)[0]
+    else:
+        base_url = "https://upgradelpg.site"
     rows = []
 
     for btn in cta_buttons:
