@@ -94,9 +94,13 @@ def build_pricing_cards(db: Session, view: Optional[str] = None) -> list[dict]:
                     svc_categories.add(svc.category)
                 total_duration += svc.duration_min
 
-        category = first_svc.category if first_svc and len(first_items) == 1 else None
-        if len(svc_categories) == 1:
-            category = svc_categories.pop()
+        unique_sids = {item.get("service_id") for item in first_items}
+        if len(unique_sids) > 1:
+            category = "combo"
+        elif first_svc:
+            category = first_svc.category
+        else:
+            category = None
 
         description = first_pkg.description
 
