@@ -204,7 +204,6 @@ CREATE TABLE bookings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     company_id INTEGER NOT NULL,
     location_id INTEGER NOT NULL,
-    service_id INTEGER NOT NULL,
     room_id INTEGER,
     client_id INTEGER NOT NULL,
     specialist_id INTEGER NOT NULL,
@@ -225,7 +224,6 @@ CREATE TABLE bookings (
 
     FOREIGN KEY (company_id) REFERENCES company(id) ON DELETE CASCADE,
     FOREIGN KEY (location_id) REFERENCES locations(id),
-    FOREIGN KEY (service_id) REFERENCES services(id),
     FOREIGN KEY (room_id) REFERENCES rooms(id),
     FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (specialist_id) REFERENCES specialists(id) ON DELETE CASCADE
@@ -507,4 +505,4 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 -- Mark all existing migrations as applied
 INSERT OR IGNORE INTO schema_migrations (version) VALUES
-    (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12),(13),(14),(15),(16),(17),(18);
+    (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12),(13),(14),(15),(16),(17),(18),(19);
