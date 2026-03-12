@@ -200,7 +200,7 @@ def get_user_active_bookings(id: int, db: Session = Depends(get_db)):
     bookings = (
         db.query(DBBookings)
         .options(
-            joinedload(DBBookings.service),
+            joinedload(DBBookings.service_package),
             joinedload(DBBookings.specialist),
             joinedload(DBBookings.location),
         )
@@ -216,7 +216,7 @@ def get_user_active_bookings(id: int, db: Session = Depends(get_db)):
     result = []
     for b in bookings:
         data = BookingReadWithDetails.model_validate(b)
-        data.service_name = b.service.name if b.service else None
+        data.service_name = b.service_package.name if b.service_package else None
         data.specialist_name = b.specialist.display_name or (b.specialist.user.first_name if b.specialist and b.specialist.user else None)
         data.location_name = b.location.name if b.location else None
         result.append(data)

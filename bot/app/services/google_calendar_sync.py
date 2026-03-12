@@ -43,13 +43,20 @@ async def sync_booking_to_google(
             return False
 
         if result.get("synced"):
+            # Extract details from first successful result
+            results = result.get("results", [])
+            first = results[0] if results else {}
             logger.info(
                 f"Booking {booking_id} synced to Google Calendar: "
-                f"event_id={result.get('event_id')}, action={result.get('action')}"
+                f"event_id={first.get('event_id')}, action={first.get('action')}"
             )
             return True
         else:
-            reason = result.get("reason", "Unknown")
+            # Extract reason: top-level (no integrations) or from results
+            reason = result.get("reason")
+            if not reason:
+                reasons = [r.get("reason", "?") for r in result.get("results", [])]
+                reason = "; ".join(reasons) if reasons else "Unknown"
             logger.info(f"Booking {booking_id} not synced: {reason}")
             # Not an error if no integration exists
             return True
