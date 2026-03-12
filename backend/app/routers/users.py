@@ -1,28 +1,29 @@
 # backend/app/routers/users.py
+# ruff: noqa: B008
 # API.md: PATCH = ALLOWED, DELETE = soft-delete (is_active)
 
 import logging
 from datetime import datetime
 from typing import Optional
-
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import text, func, or_
 from urllib.parse import unquote
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, or_, text
+from sqlalchemy.orm import Session, joinedload
+
 from ..database import get_db
-from ..models.generated import Users as DBUsers, Bookings as DBBookings, UserRoles as DBUserRoles
+from ..models.generated import Bookings as DBBookings
+from ..models.generated import UserRoles as DBUserRoles
+from ..models.generated import Users as DBUsers
+from ..schemas.bookings import BookingRead, BookingReadWithDetails
 from ..schemas.users import (
-    UserCreate,
-    UserUpdate,
-    UserRead,
-    UserStatsRead,
     RoleChangeRequest,
     RoleChangeResponse,
+    UserCreate,
+    UserRead,
+    UserStatsRead,
+    UserUpdate,
 )
-from ..schemas.bookings import BookingRead
-from ..schemas.bookings import BookingRead, BookingReadWithDetails
-
 
 logger = logging.getLogger(__name__)
 
@@ -326,15 +327,16 @@ def update_user(
     # ==========================================================
     if "phone" in update_data and update_data["phone"]:
         phone = update_data["phone"]
+        phone_digits = phone.lstrip("+")
         try:
             result = db.execute(
                 text("""
                     SELECT id, first_name, last_name
                     FROM imported_clients
-                    WHERE phone = :phone
+                    WHERE REPLACE(phone, '+', '') = :phone
                       AND matched_user_id IS NULL
                 """),
-                {"phone": phone}
+                {"phone": phone_digits}
             ).fetchone()
             
             if result:

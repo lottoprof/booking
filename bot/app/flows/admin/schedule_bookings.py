@@ -1,11 +1,11 @@
 """
 bot/app/flows/admin/schedule_bookings.py
 
-Просмотр активных записей на ближайшую неделю.
+Просмотр всех активных записей (pending/confirmed).
 """
 
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext  # noqa: F401
@@ -135,17 +135,14 @@ def setup(menu_controller, api):
 
         today = date.today()
         date_from = today.isoformat()
-        date_to = (today + timedelta(days=7)).isoformat()
 
-        # Получаем записи со статусами pending и confirmed
+        # Получаем все записи со статусами pending и confirmed от сегодня
         pending = await api.get_bookings(
             date_from=date_from,
-            date_to=date_to,
             status="pending"
         )
         confirmed = await api.get_bookings(
             date_from=date_from,
-            date_to=date_to,
             status="confirmed"
         )
         all_bookings = pending + confirmed
