@@ -12,6 +12,7 @@ FSM states:
 
 import json
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 
 from aiogram import F, Router
@@ -29,6 +30,17 @@ from bot.app.keyboards.admin import admin_main
 from bot.app.utils.api import api
 from bot.app.utils.pagination import build_nav_row
 from bot.app.utils.state import user_lang
+
+_TRANSLIT = str.maketrans(
+    "абвгдеёжзийклмнопрстуфхцчшщъыьэюя",
+    "abvgdeejziyklmnoprstufhccss_y_eua",
+)
+
+
+def _slugify(text: str) -> str:
+    s = text.lower().strip().translate(_TRANSLIT)
+    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    return s or "service"
 
 logger = logging.getLogger(__name__)
 
@@ -442,6 +454,11 @@ def setup(menu_controller, get_user_role):
             await _add_cta_button(state, {"type": "booking", "ref": None})
             await _after_button_added(callback, state, lang)
             return
+
+        # Generate slug for packages (API doesn't return it)
+        for p in active:
+            if "slug" not in p:
+                p["slug"] = _slugify(p.get("name", "service"))
 
         text = t("admin:channel:btn_choose_service", lang)
         kb = kb_items_select(active, "slug", "name", "chp:booksvc", lang)
