@@ -1,9 +1,9 @@
 # backend/app/routers/integrations.py
+# ruff: noqa: B008
 # API endpoints for specialist integrations (Google Calendar)
 
 import logging
 from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -43,8 +43,8 @@ router = APIRouter(prefix="/integrations", tags=["integrations"])
 
 @router.get("/google/auth-url")
 def get_google_auth_url(
-    specialist_id: Optional[int] = Query(None, description="Specialist ID requesting OAuth"),
-    user_id: Optional[int] = Query(None, description="User ID requesting OAuth (for admin/manager)"),
+    specialist_id: int | None = Query(None, description="Specialist ID requesting OAuth"),
+    user_id: int | None = Query(None, description="User ID requesting OAuth (for admin/manager)"),
     sync_scope: str = Query("own", description="Sync scope: own, location, all"),
     db: Session = Depends(get_db),
 ) -> dict:
@@ -87,7 +87,7 @@ def handle_google_callback(
     try:
         tokens = exchange_code_for_tokens(code, state)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
 
     specialist_id = tokens.get("specialist_id")
     user_id = tokens.get("user_id")
@@ -587,12 +587,19 @@ def _sync_single_integration(
             if not external_event:
                 return {"integration_id": integration.id, "synced": False, "reason": "No event to delete"}
 
-            delete_event(
-                access_token=integration.access_token,
-                refresh_token=integration.refresh_token,
-                calendar_id=integration.calendar_id or "primary",
-                event_id=external_event.external_event_id,
-            )
+            try:
+                delete_event(
+                    access_token=integration.access_token,
+                    refresh_token=integration.refresh_token,
+                    calendar_id=integration.calendar_id or "primary",
+                    event_id=external_event.external_event_id,
+                )
+            except Exception as del_err:
+                # 410 Gone = already deleted in Google — proceed with local cleanup
+                if "410" in str(del_err):
+                    logger.info(f"Event already deleted in Google for booking {booking_id}")
+                else:
+                    raise
 
             db.delete(external_event)
             integration.last_sync_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
