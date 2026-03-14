@@ -938,7 +938,6 @@
           this.state.clientId = userData.client_id;
           if (locations.length > 0) this.state.locationId = locations[0].id;
           this.services = services.map(card => ({
-            id: card.service_id || card.variants?.[0]?.package_id || 0,
             service_package_id: card.variants?.[0]?.package_id || null,
             name: card.name,
             description: card.description,
@@ -1041,7 +1040,7 @@
           const icon = s.icon || '◈';
           const range = this.priceRange(s.variants);
           return `
-            <div class="service-card" data-id="${s.id}">
+            <div class="service-card" data-id="${s.service_package_id}">
               <div class="service-card-icon">${icon}</div>
               <div class="service-card-body">
                 <div class="service-card-name">${this.esc(s.name)}</div>
@@ -1061,14 +1060,14 @@
         });
       }
 
-      async selectService(id) {
-        const service = this.services.find(s => s.id === id);
+      async selectService(packageId) {
+        const service = this.services.find(s => s.service_package_id === packageId);
         if (!service) return;
         this.tg.HapticFeedback.selectionChanged();
         this.state.service = service;
 
         document.querySelectorAll('.service-card').forEach(el => {
-          el.classList.toggle('selected', el.dataset.id === String(id));
+          el.classList.toggle('selected', el.dataset.id === String(packageId));
         });
 
         await this.loadCalendar();
@@ -1080,7 +1079,7 @@
         if (!this.state.service) return;
         try {
           const data = await this.fetchAPI(
-            `/web/slots/calendar?location_id=${this.state.locationId}&service_id=${this.state.service.id}`
+            `/web/slots/calendar?location_id=${this.state.locationId}`
           );
           this.availableDays.clear();
           for (const day of data.days) this.availableDays.set(day.date, day.has_slots);
@@ -1216,11 +1215,8 @@
           d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
 
         try {
-          const svcParam = this.state.service.service_package_id
-            ? `service_package_id=${this.state.service.service_package_id}`
-            : `service_id=${this.state.service.id}`;
           const data = await this.fetchAPI(
-            `/web/slots/day?location_id=${this.state.locationId}&${svcParam}&date=${this.state.date}`
+            `/web/slots/day?location_id=${this.state.locationId}&service_package_id=${this.state.service.service_package_id}&date=${this.state.date}`
           );
           this.timeSlots = data.slots || [];
           document.getElementById('time-skeleton').classList.add('hidden');
@@ -1491,7 +1487,6 @@
             body: JSON.stringify({
               company_id: 1,
               location_id: this.state.locationId,
-              service_id: this.state.service.id,
               service_package_id: this.state.service.service_package_id || null,
               client_id: this.state.clientId,
               specialist_id: this.state.specialistId,
