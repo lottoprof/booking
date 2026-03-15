@@ -1,33 +1,29 @@
 # bot/app/main.py
 
-import os
 import logging
-from pathlib import Path
-from typing import Optional
+import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from aiogram import Bot, Dispatcher, F
-from aiogram.filters import Command, BaseFilter
-from aiogram.types import Update, Message, CallbackQuery, TelegramObject
-from aiogram.fsm.storage.redis import RedisStorage
+from aiogram.filters import BaseFilter, Command
 from aiogram.fsm.context import FSMContext
+from aiogram.fsm.storage.redis import RedisStorage
+from aiogram.types import CallbackQuery, Message, TelegramObject, Update
 
-from bot.app.config import BOT_TOKEN, MINIAPP_URL
-from bot.app.i18n.loader import load_messages, t, DEFAULT_LANG
-from bot.app.keyboards.common import language_inline
-from bot.app.keyboards.admin import admin_main
-from bot.app.keyboards.client import client_main
-from bot.app.utils.state import user_lang
-from bot.app.utils.menucontroller import MenuController
-from bot.app.utils.api import api
+from bot.app.config import BOT_TOKEN, MINIAPP_URL, TG_PROXY_URL
+from bot.app.flows.admin import booking_notify
 from bot.app.flows.admin.menu import AdminMenuFlow
 from bot.app.flows.client.menu import ClientMenuFlow
-
-from bot.app.handlers import admin_reply
-from bot.app.handlers import client_reply
-from bot.app.handlers import channel_monitor
-from bot.app.flows.admin import booking_notify
 from bot.app.flows.common import booking_edit
+from bot.app.handlers import admin_reply, channel_monitor, client_reply
+from bot.app.i18n.loader import DEFAULT_LANG, load_messages, t
+from bot.app.keyboards.admin import admin_main
+from bot.app.keyboards.client import client_main
+from bot.app.keyboards.common import language_inline
+from bot.app.utils.api import api
+from bot.app.utils.menucontroller import MenuController
+from bot.app.utils.state import user_lang
 
 BOT_DIR = Path(__file__).resolve().parent
 
@@ -44,7 +40,13 @@ if not REDIS_URL:
 
 storage = RedisStorage.from_url(REDIS_URL)
 
-bot = Bot(token=BOT_TOKEN)
+if TG_PROXY_URL:
+    from aiogram.client.session.aiohttp import AiohttpSession  # noqa: E402
+    _session = AiohttpSession(proxy=TG_PROXY_URL)
+    bot = Bot(token=BOT_TOKEN, session=_session)
+    logger.info(f"Bot using proxy: {TG_PROXY_URL}")
+else:
+    bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=storage)
 
 menu = MenuController()
@@ -62,8 +64,8 @@ load_messages(BOT_DIR / "i18n" / "messages.txt")
 class TgUserContext:
     """Контекст пользователя от gateway."""
     tg_id: int
-    user_id: Optional[int]
-    company_id: Optional[int]
+    user_id: int | None
+    company_id: int | None
     role: str
     is_new: bool
 
@@ -71,7 +73,7 @@ class TgUserContext:
 _current_user_context: dict[int, TgUserContext] = {}
 
 
-def get_user_context(tg_id: int) -> Optional[TgUserContext]:
+def get_user_context(tg_id: int) -> TgUserContext | None:
     return _current_user_context.get(tg_id)
 
 
@@ -100,7 +102,7 @@ class RoleFilter(BaseFilter):
 # USER CREATION (without phone)
 # ===============================
 
-async def create_user_without_phone(message: Message) -> Optional[int]:
+async def create_user_without_phone(message: Message) -> int | None:
     """
     Создаёт user без телефона при первом контакте.
     
