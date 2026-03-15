@@ -53,9 +53,8 @@ if TG_PROXY_URL:
         base=f"{TG_PROXY_URL}/bot{{token}}/{{method}}",
         file=f"{TG_PROXY_URL}/file/bot{{token}}/{{path}}",
     )
-    _session = AiohttpSession()
+    _session = AiohttpSession(api=_server)
     _session._connector_init["ssl"] = _ssl_ctx
-    _session.api = _server
     bot = Bot(token=BOT_TOKEN, session=_session)
     logger.info(f"Bot using tunnel: {TG_PROXY_URL}")
 else:
