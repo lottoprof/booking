@@ -15,15 +15,16 @@ set +a
 
 API="https://api.telegram.org/bot${TG_BOT_TOKEN}"
 
-# ===== Proxy (optional) =====
-CURL_PROXY=""
+# ===== Tunnel (optional) =====
+CURL_TUNNEL=""
 if [[ -n "$TG_PROXY_URL" ]]; then
-  CURL_PROXY="--socks5-hostname ${TG_PROXY_URL#socks5://}"
-  echo "[INFO] Using proxy: $TG_PROXY_URL"
+  CURL_TUNNEL="--resolve api.telegram.org:${TG_PROXY_URL}:127.0.0.1"
+  API="https://api.telegram.org:${TG_PROXY_URL}/bot${TG_BOT_TOKEN}"
+  echo "[INFO] Using tunnel on port $TG_PROXY_URL"
 fi
 
 # ===== Get webhook info =====
-INFO=$(curl -s $CURL_PROXY "${API}/getWebhookInfo")
+INFO=$(curl -s $CURL_TUNNEL "${API}/getWebhookInfo")
 
 CURRENT_URL=$(echo "$INFO" | jq -r '.result.url // empty')
 LAST_ERROR_DATE=$(echo "$INFO" | jq -r '.result.last_error_date // empty')
@@ -63,7 +64,7 @@ echo "[WARN] Webhook looks broken → resetting"
 # ===== Reset webhook =====
 ALLOWED='["message","edited_message","callback_query","channel_post","edited_channel_post","message_reaction","message_reaction_count"]'
 
-curl -s $CURL_PROXY -X POST \
+curl -s $CURL_TUNNEL -X POST \
   "${API}/setWebhook" \
   -d "url=${WEBHOOK_URL}" \
   -d "secret_token=${TG_WEBHOOK_SECRET}" \

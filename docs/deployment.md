@@ -370,10 +370,106 @@ crontab -e
 | `GOOGLE_CLIENT_SECRET`| Google OAuth secret                          | `xxx`                                 |
 | `GOOGLE_REDIRECT_URI`| Google OAuth redirect                         | `https://example.com/oauth/google/callback` |
 | `MINIAPP_URL`        | URL Telegram Mini App                         | `https://upgradebot.online/miniapp`  |
+| `TG_PROXY_URL`       | Порт SSH-tunnel к Telegram API (опционально)  | `8443`                                |
 
 ---
 
-## 10. Логи и диагностика
+## 10. Telegram API Proxy (SSH tunnel)
+
+Если провайдер блокирует исходящий трафик к `api.telegram.org` (DPI по SNI), бот не сможет отправлять сообщения. Входящий webhook при этом работает (Telegram → nginx → gateway).
+
+### Диагностика
+
+```bash
+# TLS к Telegram API проходит?
+curl -sv --max-time 10 https://api.telegram.org/ 2>&1 | head -15
+
+# Если зависает на "Encrypted Extensions" — провайдер блокирует по SNI
+```
+
+### Решение: SSH port forward через VPS
+
+Требуется VPS с доступом к Telegram API. На backup8t — SSH-алиас `amnezia`.
+
+**Принцип работы:**
+```
+aiogram → api.telegram.org:8443 → (resolver: 127.0.0.1) → SSH tunnel → VPS → 149.154.166.110:443
+```
+
+SNI в TLS handshake = `api.telegram.org` (правильный), поэтому сертификат валиден и Telegram возвращает API-ответ.
+
+### Настройка
+
+```bash
+# 1. Запустить SSH tunnel (от пользователя a3)
+ssh -L 8443:149.154.166.110:443 -f -N amnezia
+
+# 2. Проверить
+curl -s --max-time 10 --resolve 'api.telegram.org:8443:127.0.0.1' https://api.telegram.org:8443/ | head -3
+
+# 3. Добавить в .env
+echo 'TG_PROXY_URL=8443' >> .env
+
+# 4. Перезапустить gateway (через tmux!)
+```
+
+### Как работает в коде
+
+При наличии `TG_PROXY_URL` в `.env` (`bot/app/main.py`):
+
+1. `TelegramAPIServer` с URL `https://api.telegram.org:8443/bot{token}/{method}`
+2. Кастомный aiohttp resolver: `api.telegram.org` → `127.0.0.1`
+3. Трафик идёт на `127.0.0.1:8443` → SSH tunnel → VPS → Telegram API
+
+Без `TG_PROXY_URL` — прямое подключение как обычно.
+
+### Автозапуск tunnel
+
+Tunnel нужно поднимать при старте сервера. Systemd user service:
+
+```bash
+# ~/.config/systemd/user/tg-tunnel.service
+[Unit]
+Description=SSH tunnel to Telegram API
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/ssh -L 8443:149.154.166.110:443 -N -o ServerAliveInterval=30 -o ServerAliveCountMax=3 amnezia
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+```
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now tg-tunnel
+systemctl --user status tg-tunnel
+```
+
+### Диагностика tunnel
+
+```bash
+# Tunnel жив?
+pgrep -af 'ssh -L 8443'
+
+# Telegram API отвечает через tunnel?
+curl -s --max-time 5 --resolve 'api.telegram.org:8443:127.0.0.1' \
+  https://api.telegram.org:8443/bot${TG_BOT_TOKEN}/getWebhookInfo | jq .
+
+# Если пусто — перезапустить tunnel
+pkill -f 'ssh -L 8443'
+ssh -L 8443:149.154.166.110:443 -f -N amnezia
+```
+
+### webhook.sh
+
+Скрипт `scripts/webhook.sh` также поддерживает proxy. При наличии `TG_PROXY_URL` в `.env` curl использует `--socks5-hostname` или `--resolve` для обхода блокировки.
+
+---
+
+## 11. Логи и диагностика
 
 ### tmux
 
@@ -417,7 +513,7 @@ bash scripts/webhook.sh
 
 ---
 
-## 11. Docker (справка)
+## 12. Docker (справка)
 
 Docker не является основным способом деплоя, но может использоваться при необходимости.
 
