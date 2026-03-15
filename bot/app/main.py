@@ -41,22 +41,35 @@ if not REDIS_URL:
 storage = RedisStorage.from_url(REDIS_URL)
 
 if TG_PROXY_URL:
-    import ssl  # noqa: E402
-
     from aiogram.client.session.aiohttp import AiohttpSession  # noqa: E402
     from aiogram.client.telegram import TelegramAPIServer  # noqa: E402
+    from aiohttp.resolver import AbstractResolver  # noqa: E402
 
-    _ssl_ctx = ssl.create_default_context()
-    _ssl_ctx.check_hostname = False
-    _ssl_ctx.verify_mode = ssl.CERT_NONE
+    _tunnel_port = int(TG_PROXY_URL)
+
+    class _TgLocalResolver(AbstractResolver):
+        """Resolve api.telegram.org to 127.0.0.1 for SSH tunnel."""
+
+        async def resolve(self, host: str, port: int = 0, family: int = 0) -> list[dict]:
+            if host == "api.telegram.org":
+                return [{"hostname": host, "host": "127.0.0.1", "port": port,
+                         "family": 2, "proto": 0, "flags": 0}]
+            import socket  # noqa: E402
+            infos = socket.getaddrinfo(host, port, family, socket.SOCK_STREAM)
+            return [{"hostname": host, "host": info[4][0], "port": info[4][1],
+                     "family": info[0], "proto": info[2], "flags": 0} for info in infos]
+
+        async def close(self) -> None:
+            pass
+
     _server = TelegramAPIServer(
-        base=f"{TG_PROXY_URL}/bot{{token}}/{{method}}",
-        file=f"{TG_PROXY_URL}/file/bot{{token}}/{{path}}",
+        base=f"https://api.telegram.org:{_tunnel_port}/bot{{token}}/{{method}}",
+        file=f"https://api.telegram.org:{_tunnel_port}/file/bot{{token}}/{{path}}",
     )
     _session = AiohttpSession(api=_server)
-    _session._connector_init["ssl"] = _ssl_ctx
+    _session._connector_init["resolver"] = _TgLocalResolver()
     bot = Bot(token=BOT_TOKEN, session=_session)
-    logger.info(f"Bot using tunnel: {TG_PROXY_URL}")
+    logger.info(f"Bot using tunnel on port {_tunnel_port}")
 else:
     bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=storage)
