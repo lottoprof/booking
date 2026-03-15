@@ -41,10 +41,23 @@ if not REDIS_URL:
 storage = RedisStorage.from_url(REDIS_URL)
 
 if TG_PROXY_URL:
+    import ssl  # noqa: E402
+
     from aiogram.client.session.aiohttp import AiohttpSession  # noqa: E402
-    _session = AiohttpSession(proxy=TG_PROXY_URL)
+    from aiogram.client.telegram import TelegramAPIServer  # noqa: E402
+
+    _ssl_ctx = ssl.create_default_context()
+    _ssl_ctx.check_hostname = False
+    _ssl_ctx.verify_mode = ssl.CERT_NONE
+    _server = TelegramAPIServer(
+        base=f"{TG_PROXY_URL}/bot{{token}}/{{method}}",
+        file=f"{TG_PROXY_URL}/file/bot{{token}}/{{path}}",
+    )
+    _session = AiohttpSession()
+    _session._connector_init["ssl"] = _ssl_ctx
+    _session.api = _server
     bot = Bot(token=BOT_TOKEN, session=_session)
-    logger.info(f"Bot using proxy: {TG_PROXY_URL}")
+    logger.info(f"Bot using tunnel: {TG_PROXY_URL}")
 else:
     bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=storage)
