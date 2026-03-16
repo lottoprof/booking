@@ -178,6 +178,16 @@ MenuController tracks message IDs in Redis (`tg:menu:{chat_id}`, `tg:inline:{cha
 
 The contract defines three blocks (ВРЕМЯ, УСЛУГИ, ДЕНЬГИ), their boundaries, and entity relationships. Code must stay consistent with it.
 
+### Deployment — Production Server
+
+Full documentation: `docs/deployment.md`. Exact tmux commands: `.claude/skills/tmux-upgrade.md`.
+
+**NEVER start/restart servers via `nohup`, `&`, or direct process launch.** All server management is through `tmux send-keys` to the `upgrade` session on `backup8t`.
+
+- Deploy: `git push backup8t master` → restart via tmux
+- tmux session `upgrade`: `servers.1` = gateway (8080), `servers.2` = backend (8000)
+- Before any server work — read `.claude/skills/tmux-upgrade.md` for exact commands
+
 ### SQLite Timestamp Format
 
 Always use `"%Y-%m-%d %H:%M:%S"` for timestamps. Never use `datetime.isoformat()` — it produces `T` separator and microseconds that are inconsistent with SQLite `CURRENT_TIMESTAMP`.

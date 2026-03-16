@@ -378,7 +378,7 @@ crontab -e
 
 Если провайдер блокирует исходящий трафик к `api.telegram.org` (DPI по SNI), бот не сможет отправлять сообщения. Входящий webhook при этом работает (Telegram → nginx → gateway).
 
-### Диагностика
+### Диагностика блокировки
 
 ```bash
 # TLS к Telegram API проходит?
@@ -389,63 +389,105 @@ curl -sv --max-time 10 https://api.telegram.org/ 2>&1 | head -15
 
 ### Решение: SSH port forward через VPS
 
-Требуется VPS с доступом к Telegram API. На backup8t — SSH-алиас `amnezia`.
+Требуется VPS с доступом к Telegram API и SSH-алиас для подключения (в `~/.ssh/config`).
 
 **Принцип работы:**
 ```
-aiogram → api.telegram.org:8443 → (resolver: 127.0.0.1) → SSH tunnel → VPS → 149.154.166.110:443
+aiogram → api.telegram.org:8443 → (custom resolver: 127.0.0.1) → SSH tunnel → VPS → Telegram API (443)
 ```
 
-SNI в TLS handshake = `api.telegram.org` (правильный), поэтому сертификат валиден и Telegram возвращает API-ответ.
+- SSH tunnel (`ssh -L`) пробрасывает локальный порт 8443 на IP Telegram API (443) через VPS
+- Кастомный aiohttp resolver в `bot/app/main.py` направляет `api.telegram.org` на `127.0.0.1`
+- SNI в TLS = `api.telegram.org` (правильный) → сертификат валиден, API отвечает
+- Провайдер видит только зашифрованный SSH-трафик к VPS
 
 ### Настройка
 
 ```bash
-# 1. Запустить SSH tunnel (от пользователя a3)
-ssh -L 8443:149.154.166.110:443 -f -N amnezia
+# 1. SSH-ключ для VPS (если ещё нет)
+ssh-keygen -t ed25519 -C "{server}-proxy"
+ssh-copy-id {vps-alias}
 
-# 2. Проверить
-curl -s --max-time 10 --resolve 'api.telegram.org:8443:127.0.0.1' https://api.telegram.org:8443/ | head -3
+# 2. Запустить SSH tunnel
+ssh -L 8443:{telegram-api-ip}:443 -f -N {vps-alias}
 
-# 3. Добавить в .env
-echo 'TG_PROXY_URL=8443' >> .env
+# 3. Проверить
+curl -s --max-time 10 --resolve 'api.telegram.org:8443:127.0.0.1' \
+  https://api.telegram.org:8443/ | head -3
 
-# 4. Перезапустить gateway (через tmux!)
+# 4. Добавить в .env
+echo 'TG_PROXY_URL=8443' >> /home/{user}/upgrade/.env
+
+# 5. Перезапустить gateway (через tmux!)
 ```
+
+Актуальный IP Telegram API: `dig api.telegram.org +short`
 
 ### Как работает в коде
 
 При наличии `TG_PROXY_URL` в `.env` (`bot/app/main.py`):
 
-1. `TelegramAPIServer` с URL `https://api.telegram.org:8443/bot{token}/{method}`
-2. Кастомный aiohttp resolver: `api.telegram.org` → `127.0.0.1`
-3. Трафик идёт на `127.0.0.1:8443` → SSH tunnel → VPS → Telegram API
+1. `TelegramAPIServer` с URL `https://api.telegram.org:{port}/bot{token}/{method}`
+2. Кастомный aiohttp resolver (`_TgLocalResolver`): `api.telegram.org` → `127.0.0.1`
+3. Трафик: `127.0.0.1:{port}` → SSH tunnel → VPS → Telegram API
 
 Без `TG_PROXY_URL` — прямое подключение как обычно.
 
-### Автозапуск tunnel
+### Автозапуск tunnel (systemd user service)
 
-Tunnel нужно поднимать при старте сервера. Systemd user service:
+Tunnel должен подниматься автоматически при старте сервера и перезапускаться при обрыве.
+
+**Prerequisite:** enable-linger для пользователя (чтобы user services работали без активной сессии):
 
 ```bash
-# ~/.config/systemd/user/tg-tunnel.service
+sudo loginctl enable-linger {user}
+```
+
+**Unit-файл:**
+
+```bash
+mkdir -p ~/.config/systemd/user/
+
+cat > ~/.config/systemd/user/tg-tunnel.service << 'EOF'
 [Unit]
 Description=SSH tunnel to Telegram API
 After=network-online.target
 
 [Service]
-ExecStart=/usr/bin/ssh -L 8443:149.154.166.110:443 -N -o ServerAliveInterval=30 -o ServerAliveCountMax=3 amnezia
+ExecStart=/usr/bin/ssh -L 8443:{telegram-api-ip}:443 -N \
+  -o ServerAliveInterval=30 \
+  -o ServerAliveCountMax=3 \
+  -o ExitOnForwardFailure=yes \
+  {vps-alias}
 Restart=always
 RestartSec=10
 
 [Install]
 WantedBy=default.target
+EOF
 ```
+
+- `ServerAliveInterval=30` + `ServerAliveCountMax=3` — если VPS не отвечает 90с, SSH умирает → systemd рестартит
+- `ExitOnForwardFailure=yes` — если порт занят, сразу падает → restart
+
+**Управление:**
 
 ```bash
 systemctl --user daemon-reload
 systemctl --user enable --now tg-tunnel
 systemctl --user status tg-tunnel
+
+# Логи
+journalctl --user -u tg-tunnel -f
+
+# Перезапуск
+systemctl --user restart tg-tunnel
+```
+
+**Перед включением** — убить ручной tunnel:
+
+```bash
+pkill -f 'ssh -L 8443'
 ```
 
 ### Диагностика tunnel
@@ -458,14 +500,21 @@ pgrep -af 'ssh -L 8443'
 curl -s --max-time 5 --resolve 'api.telegram.org:8443:127.0.0.1' \
   https://api.telegram.org:8443/bot${TG_BOT_TOKEN}/getWebhookInfo | jq .
 
-# Если пусто — перезапустить tunnel
+# Ручной перезапуск (если не через systemd)
 pkill -f 'ssh -L 8443'
-ssh -L 8443:149.154.166.110:443 -f -N amnezia
+ssh -L 8443:{telegram-api-ip}:443 -f -N {vps-alias}
+
+# Через systemd
+systemctl --user restart tg-tunnel
 ```
 
 ### webhook.sh
 
-Скрипт `scripts/webhook.sh` также поддерживает proxy. При наличии `TG_PROXY_URL` в `.env` curl использует `--socks5-hostname` или `--resolve` для обхода блокировки.
+Скрипт `scripts/webhook.sh` также поддерживает tunnel. При наличии `TG_PROXY_URL` в `.env` curl использует `--resolve api.telegram.org:{port}:127.0.0.1` для обхода блокировки.
+
+### Отключение
+
+Закомментировать или удалить `TG_PROXY_URL` из `.env` и перезапустить gateway — бот пойдёт напрямую.
 
 ---
 
