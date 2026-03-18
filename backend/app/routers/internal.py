@@ -195,7 +195,7 @@ def create_booking_from_web(
         if not specialist_id:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="No specialists available for this time slot"
+                detail="Нет свободных специалистов"
             )
     else:
         # Validate specified specialist is available
@@ -204,7 +204,7 @@ def create_booking_from_web(
         ):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Selected specialist is not available for this time slot"
+                detail="Нет свободных специалистов"
             )
 
     # Validate specialist exists
