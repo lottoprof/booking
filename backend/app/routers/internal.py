@@ -286,8 +286,11 @@ def _find_or_create_user(
     company_id: int,
 ) -> DBUsers:
     """Find user by phone or create new one."""
-    # Try to find existing user
-    user = db.query(DBUsers).filter(DBUsers.phone == phone).first()
+    # Try to find existing user (match with and without leading +)
+    phone_digits = phone.lstrip("+")
+    user = db.query(DBUsers).filter(
+        DBUsers.phone.in_([phone, phone_digits, "+" + phone_digits])
+    ).first()
 
     if user:
         # Update name if provided and user has no name
