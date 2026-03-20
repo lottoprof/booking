@@ -151,22 +151,50 @@ curl -k --max-time 5 https://127.0.0.1:{webhook-port}/
 # Ожидаемо: ответ от gateway (403 или аналогичный)
 ```
 
-### 6. Установка webhook
+### 6. Сертификат и установка webhook
+
+Self-signed сертификат создаётся на VPS (шаг 1), затем копируется на сервер
+в `data/tg-webhook.pem` и загружается в Telegram при `setWebhook`.
 
 ```bash
-# Скопировать cert с VPS на сервер
-scp {vps-alias}:~/tg-webhook.pem /tmp/tg-webhook.pem
+# Скопировать cert с VPS на сервер (в постоянное место)
+scp {vps-alias}:~/tg-webhook.pem {project-dir}/data/tg-webhook.pem
+```
 
+#### Автоматически (рекомендуется)
+
+Скрипт `scripts/webhook.sh` определяет режим по переменным `.env`:
+- `TG_PROXY_URL` задан → API-вызовы через tunnel (`--resolve`)
+- `TG_PROXY_URL` + `TG_VPS_IP` заданы → webhook на `https://{vps-ip}:{port}/tg/webhook` + загрузка сертификата
+
+```bash
+# Проверка и автоматический сброс при проблемах
+bash scripts/webhook.sh
+
+# Скрипт сам:
+# 1. Сравнит текущий webhook URL с ожидаемым (VPS или прямой)
+# 2. Проверит ошибки и pending updates
+# 3. При необходимости — вызовет setWebhook с -F certificate=@data/tg-webhook.pem
+```
+
+#### Вручную
+
+```bash
 # Установить webhook (через исходящий tunnel)
 curl --resolve "api.telegram.org:{outgoing-port}:127.0.0.1" \
   -F "url=https://{vps-ip}:{webhook-port}/tg/webhook" \
   -F "secret_token={webhook-secret}" \
-  -F "certificate=@/tmp/tg-webhook.pem" \
+  -F "certificate=@{project-dir}/data/tg-webhook.pem" \
   -F 'allowed_updates=["message","edited_message","callback_query","channel_post","edited_channel_post","message_reaction","message_reaction_count"]' \
   "https://api.telegram.org:{outgoing-port}/bot{bot-token}/setWebhook"
 
 # Ожидаемо: {"ok":true,"result":true,"description":"Webhook was set"}
 ```
+
+> **Важно:** сертификат нужен только при первой установке или смене VPS.
+> Telegram запоминает загруженный сертификат — повторные `setWebhook`
+> с тем же URL не требуют повторной загрузки (но скрипт на всякий случай
+> загружает его каждый раз).
 
 ### 7. Проверка
 
@@ -188,11 +216,20 @@ curl -s --resolve "api.telegram.org:{outgoing-port}:127.0.0.1" \
 
 Для исходящего tunnel бот должен подключаться к `127.0.0.1:{outgoing-port}` вместо `api.telegram.org:443`. При этом TLS SNI должен остаться `api.telegram.org`.
 
-### Переменная окружения
+### Переменные окружения
 
 ```env
 # .env
+
+# Порт исходящего tunnel (ssh -L) — бот подключается к localhost:{port}
 TG_PROXY_URL={outgoing-port}
+
+# IP адрес VPS — webhook будет https://{vps-ip}:{outgoing-port}/tg/webhook
+# Если не задан — webhook остаётся на WEBHOOK_URL (прямое подключение)
+TG_VPS_IP={vps-ip}
+
+# Путь к self-signed сертификату VPS (по умолчанию: data/tg-webhook.pem)
+#TG_VPS_CERT=data/tg-webhook.pem
 ```
 
 ### Кастомный resolver + TelegramAPIServer (aiogram 3 + aiohttp)
@@ -392,5 +429,5 @@ curl -F "url=https://{your-domain}/tg/webhook" \
      -F "secret_token={webhook-secret}" \
      "https://api.telegram.org/bot{bot-token}/setWebhook"
 
-# Убрать TG_PROXY_URL из .env и перезапустить gateway
+# Убрать TG_PROXY_URL и TG_VPS_IP из .env и перезапустить gateway
 ```

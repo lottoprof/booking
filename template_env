@@ -52,3 +52,8 @@ GOOGLE_REDIRECT_URI=https://example.com/oauth/google/callback
 
 # Miniapp
 MINIAPP_URL=https://example.com/miniapp
+
+# Telegram API tunnel (при блокировке провайдером)
+# Подробная инструкция: docs/telegram-tunnel.md
+#TG_PROXY_URL=8443
+#TG_VPS_IP=1.2.3.4
