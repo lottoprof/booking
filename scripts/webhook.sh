@@ -16,11 +16,30 @@ set +a
 API="https://api.telegram.org/bot${TG_BOT_TOKEN}"
 
 # ===== Tunnel (optional) =====
+# When TG_PROXY_URL is set, outgoing API calls go through ssh -L tunnel.
+# When TG_VPS_IP is also set, webhook points to VPS (incoming via ssh -R + socat).
 CURL_TUNNEL=""
+EFFECTIVE_WEBHOOK_URL="$WEBHOOK_URL"
+CERT_ARG=""
+
 if [[ -n "$TG_PROXY_URL" ]]; then
   CURL_TUNNEL="--resolve api.telegram.org:${TG_PROXY_URL}:127.0.0.1"
   API="https://api.telegram.org:${TG_PROXY_URL}/bot${TG_BOT_TOKEN}"
-  echo "[INFO] Using tunnel on port $TG_PROXY_URL"
+  echo "[INFO] Using outgoing tunnel on port $TG_PROXY_URL"
+
+  if [[ -n "$TG_VPS_IP" ]]; then
+    EFFECTIVE_WEBHOOK_URL="https://${TG_VPS_IP}:${TG_PROXY_URL}/tg/webhook"
+    echo "[INFO] Webhook via VPS: $EFFECTIVE_WEBHOOK_URL"
+
+    # Self-signed cert for VPS IP (uploaded to Telegram with setWebhook)
+    TG_VPS_CERT="${TG_VPS_CERT:-${PROJECT_DIR}/data/tg-webhook.pem}"
+    if [[ -f "$TG_VPS_CERT" ]]; then
+      CERT_ARG="-F certificate=@${TG_VPS_CERT}"
+      echo "[INFO] Will upload cert: $TG_VPS_CERT"
+    else
+      echo "[WARN] VPS cert not found at $TG_VPS_CERT — webhook may fail"
+    fi
+  fi
 fi
 
 # ===== Get webhook info =====
@@ -33,7 +52,7 @@ PENDING=$(echo "$INFO" | jq -r '.result.pending_update_count // 0')
 NEED_RESET=0
 
 # 1. URL mismatch or empty
-if [[ -z "$CURRENT_URL" || "$CURRENT_URL" != "$WEBHOOK_URL" ]]; then
+if [[ -z "$CURRENT_URL" || "$CURRENT_URL" != "$EFFECTIVE_WEBHOOK_URL" ]]; then
   NEED_RESET=1
 fi
 
@@ -64,12 +83,24 @@ echo "[WARN] Webhook looks broken → resetting"
 # ===== Reset webhook =====
 ALLOWED='["message","edited_message","callback_query","channel_post","edited_channel_post","message_reaction","message_reaction_count"]'
 
-curl -s $CURL_TUNNEL -X POST \
-  "${API}/setWebhook" \
-  -d "url=${WEBHOOK_URL}" \
-  -d "secret_token=${TG_WEBHOOK_SECRET}" \
-  -d "allowed_updates=${ALLOWED}" \
-| jq .
+if [[ -n "$CERT_ARG" ]]; then
+  # VPS mode: use -F (multipart) to upload self-signed cert
+  curl -s $CURL_TUNNEL \
+    -F "url=${EFFECTIVE_WEBHOOK_URL}" \
+    -F "secret_token=${TG_WEBHOOK_SECRET}" \
+    $CERT_ARG \
+    -F "allowed_updates=${ALLOWED}" \
+    "${API}/setWebhook" \
+  | jq .
+else
+  # Direct mode: simple form data
+  curl -s $CURL_TUNNEL -X POST \
+    "${API}/setWebhook" \
+    -d "url=${EFFECTIVE_WEBHOOK_URL}" \
+    -d "secret_token=${TG_WEBHOOK_SECRET}" \
+    -d "allowed_updates=${ALLOWED}" \
+  | jq .
+fi
 
 echo "[DONE] Webhook reset completed"
 
