@@ -120,10 +120,10 @@ Telegram-бот:
 
 **Назначение**
 - просмотр услуг и записей
-- запись — **только через Mini App** (WebApp)
+- запись через **Mini App** (WebApp) или **сайт** (web booking)
 
 **Входы**
-- Web: имя + телефон
+- Web (сайт): имя + телефон
 - Telegram / Mini App: `tg_id`
 
 **Клавиатура (ReplyKeyboard)**
@@ -132,13 +132,13 @@ Telegram-бот:
 [      Связаться      ]
 ```
 
-Кнопка «Записаться» отключена — запись только через Mini App (WebApp button в боте).
+Кнопка «Записаться» в боте отключена — запись через Mini App (WebApp button) или сайт.
 
 **Функции**
 - просмотр записей
 - просмотр услуг и цен
 - связь с поддержкой
-- запись через Mini App (phone gate: soft, non-blocking)
+- запись через Mini App или сайт (phone gate: soft, non-blocking)
 
 ---
 
@@ -176,7 +176,6 @@ Telegram-бот:
 Бот:
 - НЕ делает запросы к backend для аутентификации
 - получает готовый контекст от gateway
-- удалить bot/app/auth.py
 
 ---
 
@@ -233,6 +232,8 @@ POST /wallets/{user_id}/withdraw
 POST /wallets/{user_id}/payment
 POST /wallets/{user_id}/refund
 POST /wallets/{user_id}/correction
+POST /wallets/{user_id}/package-purchase
+POST /wallets/{user_id}/package-refund
 ```
 
 Бот:
@@ -275,293 +276,32 @@ Telegram-бот:
 - три роли
 - нулевая бизнес-логика
 
-## 11. Навигация и reply-клавиатуры
+## 11. Навигация и клавиатуры
 
-Telegram-бот использует: 
-- *ReplyKeyboardMarkup* — клавиатура под полем ввода (обычная) для навигации по меню.
-- *InlineKeyboardMarkup* — инлайн-кнопки в сообщении для взаимодействия пользователя с сервисом
+> **Полный UI-контракт клавиатур:** [`docs/tg_kbrd.md`](tg_kbrd.md) (v3.0)
+>
+> Там описаны: типы переходов (A/B1/B2/C), MenuController, якорь меню,
+> inline cleanup, пагинация, Redis-хранилище, чеклист и запреты.
 
-Принципы:
+Краткие принципы:
 
-- reply-кнопка всегда отправляет сообщение пользователя
-- бот **не полагается на текст кнопки как на “команду”**
-- навигация реализуется через единый router по `message.text`
-- кнопки обрабатываются **после определения роли**
-- текст кнопки  локализован i18n
+- **MenuController** (`bot/app/utils/menucontroller.py`) — единственный способ управления клавиатурами
+- Навигация через reply-handlers (`handlers/*_reply.py`), не через FSM
+- FSM — только для бизнес-сценариев (wizard, ввод данных)
+- `last_menu_message_id` хранится в Redis (`tg:menu:{chat_id}`)
+- `ReplyKeyboardRemove` запрещён между меню
+- Текст кнопок локализован через i18n
 
-Важно:
-
-- удаление сообщения пользователя допускается и применяется при необходимости чистого UI
-- смена меню реализуется через:
-  - `ReplyKeyboardRemove()`
-  - последующую отправку новой reply-клавиатуры
-
-Навигация не является бизнес-логикой и относится к UI-слою бота.
-
-### Типы поведения кнопок
-
-#### ReplyKeyboardMarkup
-
-Тип A — Навигация (основной в навигации)
-- Reply → Reply
-- смена меню
-- обязательна очистка чата
-- используется для переходов между разделами
-
-Тип B — Конечная точка
-- Reply → Inline
-- завершение меню
-- переход к интерактивному действию
-
-Тип C — Традиционный выбор (редкий)
-- Reply → Reply
-- сообщение пользователя не удаляется
-- используется в пошаговых сценариях выбора значений
-
-
-> Для “чистого чата” при навигации Reply → Reply требуется хранить  `last_menu_message_id` (message_id последнего меню-сообщения бота) и удалять его при смене меню.
-> Это обязательный механизм UI-слоя (MenuController) и не относится к FSM.
-
-
-#### InlineKeyboardMarkup
-
-Тип 1 — С удалением сообщения (основной в сценариях взаимодействия)
-- callback → delete_message
-- одноразовые подтверждения
-
-Тип 2 — Без удаления
-- callback → edit_message_text / edit_message_reply_markup
-- настройки, переключатели
-
-
-Навигация Telegram-бота реализуется через MenuController.
-
-Handlers:
-- только определяют сценарий
-- не управляют удалением сообщений
-- не хранят состояние меню
-
-MenuController:
-- отвечает за очистку чата
-- управляет сменой reply-меню
-- выполняет переход Reply → Inline
-
-MenuController не является middleware.
-Он не принимает решений о сценариях и не знает бизнес-контекста.
-Handlers определяют тип поведения (A / B / C),
-MenuController выполняет только технические действия.
-
-### menu_controller.py (или utils/menu.py)
-```
-from aiogram.types import Message, ReplyKeyboardRemove
-from aiogram.exceptions import TelegramBadRequest
-
-class MenuController:
-    def __init__(self):
-        self.last_menu_message = {}
-
-    async def clear(self, message: Message):
-        chat_id = message.chat.id
-
-        # удалить сообщение пользователя
-        try:
-            await message.delete()
-        except TelegramBadRequest:
-            pass
-
-        # удалить предыдущее меню бота
-        if chat_id in self.last_menu_message:
-            try:
-                await message.bot.delete_message(
-                    chat_id,
-                    self.last_menu_message[chat_id]
-                )
-            except TelegramBadRequest:
-                pass
-            self.last_menu_message.pop(chat_id, None)
-
-    async def show_reply_menu(self, message: Message, kb):
-        msg = await message.answer(
-            "\u200b",
-            reply_markup=kb
-        )
-        self.last_menu_message[message.chat.id] = msg.message_id
-
-    async def navigate(self, message: Message, kb):
-        await self.clear(message)
-        await self.show_reply_menu(message, kb)
-
-    async def finish_to_inline(self, message: Message, text, inline_kb):
-        await self.clear(message)
-        await message.answer(text, reply_markup=inline_kb)
+## 12. Структура handlers
 
 ```
-
-### Handler (пример)
-
-```
-@router.message(F.text == t("admin:main:settings", lang))
-async def to_settings(message: Message):
-    await menu.navigate(message, admin_settings(lang))
-```
-
-```
-@router.message(F.text == t("admin:settings:notifications", lang))
-async def notifications(message: Message):
-    await menu.finish_to_inline(
-        message,
-        "🔔 Уведомления",
-        notifications_inline_kb()
-    )
-
-```
-
-### Использование FSM (Finite State Machine)
-
-FSM **не используется** для навигации по меню.
-
-Навигация между разделами (Тип A, Тип B):
-- реализуется через reply-handlers
-- управляется MenuController
-- не требует хранения состояния
-
-FSM используется в сценариях типа C и при взаимодействии через Inline:
-
-- пошаговый ввод данных
-- мастера (wizard)
-- подтверждения
-- временный контекст пользователя
-
-Примеры сценариев с FSM:
-- выбор даты → времени → подтверждение записи
-- ввод суммы / комментария
-- настройки с несколькими шагами
-
-FSM может использоваться совместно с MenuController:
-- MenuController отвечает за очистку UI
-- FSM — за бизнес-контекст шага
-
-
-
-> `last_menu_message_id` является обязательным UI-состоянием.
-> В production хранится в Redis.
-> FSM используется только для бизнес-сценариев и не заменяет `last_menu_message_id`.
-
-
-## 12. Структура handlers и маршрутизация
-
-Для обработки reply-кнопок используется вынос handlers в отдельные модули.
-
-Принцип:
-
-- один router на роль
-- router не привязан к конкретному тексту кнопки в декораторе
-- маршрутизация выполняется внутри handler по `message.text`
-- это необходимо для корректной работы i18n
-
-Пример структуры:
-
 bot/
-├── handlers/
-│   ├── admin_reply.py
-│   ├── specialist_reply.py
-│   └── client_reply.py
-└── main.py
+├── main.py                    # dp, bot, process_update, route_by_role
+├── keyboards/                 # структура кнопок (is_persistent=True)
+├── flows/                     # FSM-сценарии по ролям
+├── handlers/                  # reply-роутинг: text → flow action
+└── utils/menucontroller.py    # транспорт: send/delete, Redis
+```
 
-### Итог
-
-✔ main.py — тонкий entrypoint
-✔ Вся UI-логика → MenuController
-✔ Вся навигация → handlers/*_reply.py
-✔ FSM — только в flows/*
-
-Принято. Делаем **п.1 — фиксируем UI-контракт**. Ниже — **формальный, короткий и однозначный документ**, который дальше используется как источник истины для п.2–4 и тестов п.5.
-
----
-
-# UI-контракт Telegram-бота (v1)
-
-## Область
-
-Навигация меню с **ReplyKeyboard** (Android-устойчиво), без системной клавиатуры, с чистым чатом.
-
----
-
-## Термины
-
-* **ReplyKeyboard** — клавиатура ввода Telegram (не inline).
-* **InlineKeyboard** — кнопки под сообщением (callback).
-* **ZWS** — `\u200b` (ZERO WIDTH SPACE).
-* **Якорь меню** — единственное bot-сообщение, которое Telegram может считать источником ReplyKeyboard.
-* **last_menu_message_id** — `message_id` якоря меню для чата.
-
----
-
-## Инварианты (обязательны)
-
-1. В чате **ровно один** потенциальный якорь ReplyKeyboard.
-2. В режиме Reply→Reply **сообщение пользователя не удаляется**.
-3. ReplyKeyboard отправляется **только** с **непустым текстом** (ZWS).
-4. Удаляется **только** предыдущий якорь меню (**один**, не “через одно”).
-5. Удаление якоря выполняется **до** отправки нового меню.
-6. `ReplyKeyboardRemove` **запрещён** между меню.
-
-Нарушение любого пункта = риск схлопывания ReplyKeyboard на Android.
-
----
-
-| Файл | Назначение |
-|------|-----------|
-| `rooms.py` | LIST/VIEW/DELETE/CREATE + multi-select услуг |
-| `rooms_edit.py` | FSM редактирования (name, notes, order, services) |
-| `api.py` | Методы  |
-| `admin_reply.py` | Роутинг + context_handlers |
-| `menu.py` |  навигация |
-| `admin.py` |  Reply keyboard |
-
-
-
-## TODO (Telegram Bot)
-
-- [ ] Вынести reply-handlers администратора в `handlers/admin_reply.py`
-- [ ] Реализовать функцию регистрации handlers:
-      `register_admin_handlers(dp)`
-- [ ] Подключать handlers в `main.py`, без логики внутри `main`
-- [ ] Применить единый router для reply-кнопок (1 handler вместо N)
-- [ ] Аналогично реализовать:
-      - specialist_reply
-      - client_reply
-- [ ] Зафиксировать правило:
-      reply-кнопки не считаются командами
-- [ ] Не использовать `F.text == t(..., DEFAULT_LANG)` в декораторах
-- [ ] Вынести импорт `process_update` на уровень модуля (не lazy-import)
-- [ ] Реализовать обязательную очистку чата через last_menu_message_id (удаление предыдущего меню бота)
-- [ ] В PROD хранить last_menu_message_id в Redis (обязательно для восстановления после рестарта)
-- [ ] В DEV допускается in-memory dict для last_menu_message_id
-
-
-
-### Примечание: route_by_role и reply-handlers
-
-route_by_role используется только как точка входа при старте сценария.
-
-Схема работы:
-- /start → route_by_role() → initial menu
-- дальнейшая навигация осуществляется только через reply-handlers
-
-Это не является ошибкой и считается нормальной архитектурой.
-
-
-Надо Проверить
-
-route_by_role() и reply-handlers ДУБЛИРУЮТ друг друга
-
-Сейчас схема такая:
-/start → route_by_role() → admin_menu()
-нажал кнопку → reply handler → switch_kb()
-но при этом:
-route_by_role() больше не участвует в навигации
-reply-handlers работают в обход router
-Это не ошибка, но важно понимать:
-❗ route_by_role теперь — только точка входа,
-❗ вся навигация дальше идёт через reply-handlers.
+- Один router на роль (`admin_reply.py`, `specialist_reply.py`, `client_reply.py`)
+- `route_by_role()` — только точка входа (`/start`), дальше навигация через reply-handlers
