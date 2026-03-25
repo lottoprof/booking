@@ -454,7 +454,8 @@ Description=SSH tunnel to Telegram API
 After=network-online.target
 
 [Service]
-ExecStart=/usr/bin/ssh -L 8443:{telegram-api-ip}:443 -N \
+Environment=TG_API_IP={telegram-api-ip}
+ExecStart=/usr/bin/ssh -L 8443:${TG_API_IP}:443 -N \
   -o ServerAliveInterval=30 \
   -o ServerAliveCountMax=3 \
   -o ExitOnForwardFailure=yes \
@@ -467,8 +468,11 @@ WantedBy=default.target
 EOF
 ```
 
+- `Environment=TG_API_IP` — IP Telegram API вынесен в переменную; при смене IP не нужно править весь юнит
 - `ServerAliveInterval=30` + `ServerAliveCountMax=3` — если VPS не отвечает 90с, SSH умирает → systemd рестартит
 - `ExitOnForwardFailure=yes` — если порт занят, сразу падает → restart
+- При смене VPS достаточно обновить `~/.ssh/config` — юнит использует SSH-алиас
+- При смене IP Telegram API: `systemctl --user edit tg-tunnel` → добавить `[Service]` + `Environment=TG_API_IP=новый_ip`
 
 **Управление:**
 
@@ -515,6 +519,117 @@ systemctl --user restart tg-tunnel
 ### Отключение
 
 Закомментировать или удалить `TG_PROXY_URL` из `.env` и перезапустить gateway — бот пойдёт напрямую.
+
+### Запасной вариант: stunnel (при блокировке SSH)
+
+Если провайдер начнёт блокировать SSH-протокол (DPI на SSH handshake), SSH tunnel перестанет работать. Следующий шаг — stunnel: обёртка трафика в обычный TLS, неотличимый от HTTPS.
+
+**Эскалация:**
+
+| Уровень блокировки | Решение | Что менять |
+|---|---|---|
+| Блокировка по SNI | SSH -L (текущее) | — |
+| SSH на стандартном порту | SSH -L через порт 443 VPS | `ssh -L 8443:...:443 -p 443 {vps-alias}` |
+| DPI на SSH-протокол | stunnel | см. ниже |
+
+**Схема stunnel:**
+```
+server:8443 → stunnel(client) :8443→{vps-ip}:443 → stunnel(server) → 149.154.166.110:443
+```
+
+Провайдер видит обычный TLS-трафик на порт 443 VPS — неотличим от HTTPS.
+
+#### Настройка VPS (server-side)
+
+```bash
+apt install stunnel4
+
+# Сгенерировать самоподписанный сертификат (или использовать Let's Encrypt)
+openssl req -new -x509 -days 3650 -nodes \
+  -out /etc/stunnel/stunnel.pem \
+  -keyout /etc/stunnel/stunnel.pem \
+  -subj "/CN={vps-hostname}"
+
+cat > /etc/stunnel/stunnel.conf << 'EOF'
+pid = /var/run/stunnel4/stunnel.pid
+setuid = stunnel4
+setgid = stunnel4
+
+[tg-proxy]
+accept = 0.0.0.0:443
+connect = {telegram-api-ip}:443
+cert = /etc/stunnel/stunnel.pem
+EOF
+
+systemctl enable --now stunnel4
+```
+
+> Если на VPS уже занят порт 443 (nginx/другой сервис), использовать другой порт (например, 8443) и пробросить через iptables или использовать свободный порт.
+
+#### Настройка сервера (client-side)
+
+```bash
+apt install stunnel4
+
+cat > /etc/stunnel/stunnel.conf << 'EOF'
+pid = /var/run/stunnel4/stunnel.pid
+setuid = stunnel4
+setgid = stunnel4
+
+[tg-proxy]
+client = yes
+accept = 127.0.0.1:8443
+connect = {vps-ip}:443
+# Для самоподписанного сертификата:
+verifyChain = no
+EOF
+
+systemctl enable --now stunnel4
+```
+
+#### systemd user service (альтернатива системному stunnel)
+
+Если нет root-доступа, stunnel можно запустить как user service:
+
+```bash
+cat > ~/.config/systemd/user/tg-stunnel.service << 'EOF'
+[Unit]
+Description=stunnel to Telegram API via VPS
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/stunnel /home/{user}/.config/stunnel/stunnel.conf
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+EOF
+
+mkdir -p ~/.config/stunnel
+cat > ~/.config/stunnel/stunnel.conf << 'EOF'
+foreground = yes
+pid =
+
+[tg-proxy]
+client = yes
+accept = 127.0.0.1:8443
+connect = {vps-ip}:443
+verifyChain = no
+EOF
+
+systemctl --user daemon-reload
+systemctl --user enable --now tg-stunnel
+```
+
+> `foreground = yes` и пустой `pid =` — обязательны для работы под systemd.
+
+#### Переключение SSH → stunnel
+
+1. Остановить SSH tunnel: `systemctl --user stop tg-tunnel` (или `pkill -f 'ssh -L 8443'`)
+2. Запустить stunnel (systemd или вручную)
+3. Проверить: `curl -s --max-time 5 --resolve 'api.telegram.org:8443:127.0.0.1' https://api.telegram.org:8443/`
+4. Код бота и `.env` менять **не нужно** — `TG_PROXY_URL=8443` работает с любым транспортом на `127.0.0.1:8443`
 
 ---
 
