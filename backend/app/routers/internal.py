@@ -300,16 +300,57 @@ def _find_or_create_user(
             db.refresh(user)
         return user
 
+    # Check imported_clients for name/last_name before creating
+    imported_first = None
+    imported_last = None
+    imported_id = None
+    try:
+        result = db.execute(
+            text("""
+                SELECT id, first_name, last_name
+                FROM imported_clients
+                WHERE REPLACE(phone, '+', '') = :phone
+                  AND matched_user_id IS NULL
+            """),
+            {"phone": phone_digits}
+        ).fetchone()
+        if result:
+            imported_id, imported_first, imported_last = result
+    except Exception as e:
+        logger.debug(f"[MATCHING] imported_clients lookup failed: {e}")
+
     # Create new user
-    first_name = name or "Web Client"
+    first_name = name or imported_first or "Web Client"
     user = DBUsers(
         company_id=company_id,
         phone=phone,
         first_name=first_name,
+        last_name=imported_last,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Mark imported_client as matched
+    if imported_id:
+        try:
+            db.execute(
+                text("""
+                    UPDATE imported_clients
+                    SET matched_user_id = :user_id,
+                        matched_at = :now
+                    WHERE id = :id
+                """),
+                {
+                    "user_id": user.id,
+                    "now": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                    "id": imported_id,
+                }
+            )
+            db.commit()
+            logger.info(f"[MATCHING] imported_clients.id={imported_id} → users.id={user.id}")
+        except Exception as e:
+            logger.debug(f"[MATCHING] imported_clients update failed: {e}")
 
     # Add client role
     user_role = DBUserRoles(
